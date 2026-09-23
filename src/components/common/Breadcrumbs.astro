@@ -1,0 +1,37 @@
+---
+import type { BreadcrumbItem } from '@/types/schema';
+
+export interface Props {
+  items: BreadcrumbItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<nav aria-label="Breadcrumb" class="mb-8 flex items-center text-xs text-brand-text-dim font-mono">
+  <ol class="inline-flex flex-wrap items-center space-x-1.5">
+    <li class="inline-flex items-center">
+      <a href="/" class="transition-colors hover:text-brand-accent">
+        Home
+      </a>
+    </li>
+
+    {items.map((item, index) => {
+      const isLast = index === items.length - 1;
+      return (
+        <li class="inline-flex items-center">
+          <span class="mx-1 text-brand-text-dim/60">/</span>
+          {isLast ? (
+            <span class="text-brand-text font-medium" aria-current="page">
+              {item.name}
+            </span>
+          ) : (
+            <a href={item.url} class="transition-colors hover:text-brand-accent">
+              {item.name}
+            </a>
+          )}
+        </li>
+      );
+    })}
+  </ol>
+</nav>

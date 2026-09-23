@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" fill="none">
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="800" y2="450" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0A0D14"/>
+      <stop offset="50%" stop-color="#0F1523"/>
+      <stop offset="100%" stop-color="#0A0D14"/>
+    </linearGradient>
+    <filter id="glow" x="400" y="0" width="400" height="450" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="70" result="blur"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="450" rx="20" fill="url(#bg-grad)"/>
+  <circle cx="680" cy="180" r="200" fill="#10B981" fill-opacity="0.12" filter="url(#glow)"/>
+  <circle cx="200" cy="350" r="160" fill="#06B6D4" fill-opacity="0.08" filter="url(#glow)"/>
+  <rect x="16" y="16" width="768" height="418" rx="16" stroke="#232D4B" stroke-width="1.5" stroke-opacity="0.6"/>
+
+  <!-- Top Badges -->
+  <g transform="translate(50, 48)">
+    <rect width="170" height="28" rx="14" fill="#10B981" fill-opacity="0.15" stroke="#10B981" stroke-opacity="0.6"/>
+    <circle cx="14" cy="14" r="4" fill="#10B981"/>
+    <text x="96" y="18" fill="#34D399" font-family="monospace" font-size="10.5" font-weight="700" text-anchor="middle" letter-spacing="1">VERIFIED CASE STUDY</text>
+
+    <rect x="180" width="130" height="28" rx="14" fill="#1E293B" stroke="#334155" stroke-opacity="0.6"/>
+    <text x="245" y="18" fill="#94A3B8" font-family="monospace" font-size="10.5" font-weight="600" text-anchor="middle">panoramalenstrip.com</text>
+  </g>
+
+  <!-- Main Headline -->
+  <text x="50" y="130" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="800" letter-spacing="-0.5">Panorama Lens Trip</text>
+  <text x="50" y="172" fill="#34D399" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700">SEO, 95 Mobile CWV &amp; Conversion Engine</text>
+  
+  <text x="50" y="215" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="400">
+    Organic Google Rankings • WhatsApp Lead Funnels • Adventure Tourism
+  </text>
+
+  <!-- 3 Metrics Preview Cards -->
+  <g transform="translate(50, 255)">
+    <!-- Card 1: Performance -->
+    <rect width="215" height="125" rx="14" fill="#111726" stroke="#10B981" stroke-width="1.2" stroke-opacity="0.4"/>
+    <text x="20" y="32" fill="#34D399" font-family="monospace" font-size="11" font-weight="700">Lighthouse Mobile</text>
+    <text x="20" y="78" fill="#10B981" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="900">95<tspan font-size="18" fill="#6EE7B7">/100</tspan></text>
+    <text x="20" y="104" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="11">100 Best Practices • 93 A11y</text>
+
+    <!-- Card 2: Organic Clicks -->
+    <g transform="translate(230, 0)">
+      <rect width="225" height="125" rx="14" fill="#111726" stroke="#38BDF8" stroke-width="1.2" stroke-opacity="0.4"/>
+      <text x="20" y="32" fill="#38BDF8" font-family="monospace" font-size="11" font-weight="700">Google Search Console</text>
+      <text x="20" y="78" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="900">3.39K</text>
+      <text x="20" y="104" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="11">Clicks • 231K Impressions (1.5% CTR)</text>
+    </g>
+
+    <!-- Card 3: Ranking & Conversion -->
+    <g transform="translate(470, 0)">
+      <rect width="230" height="125" rx="14" fill="#111726" stroke="#A78BFA" stroke-width="1.2" stroke-opacity="0.4"/>
+      <text x="20" y="32" fill="#C4B5FD" font-family="monospace" font-size="11" font-weight="700">Search Rank &amp; Leads</text>
+      <text x="20" y="78" fill="#A78BFA" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="900">Top 2-3</text>
+      <text x="20" y="104" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="11">240 Keywords • WhatsApp Inquiries</text>
+    </g>
+  </g>
+</svg>

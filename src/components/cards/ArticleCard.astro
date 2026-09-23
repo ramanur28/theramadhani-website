@@ -1,0 +1,103 @@
+---
+export interface Props {
+  title: string;
+  description: string;
+  slug: string;
+  publishDate: Date | string;
+  author?: string;
+  tags: string[];
+  coverImage?: string;
+  coverAlt?: string;
+  quickAnswer: string;
+}
+
+const {
+  title,
+  description,
+  slug,
+  publishDate,
+  author = 'Ramadhani',
+  tags,
+  coverImage,
+  coverAlt,
+  quickAnswer,
+} = Astro.props;
+
+const dateStr = typeof publishDate === 'string'
+  ? publishDate
+  : publishDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+const safeCoverImage = coverImage ? (coverImage.startsWith('http') || coverImage.startsWith('/') ? coverImage : `/${coverImage}`) : null;
+---
+
+<article class="minimal-card group flex flex-col justify-between overflow-hidden">
+  {safeCoverImage && (
+    <a
+      href={`/articles/${slug}`}
+      class="block overflow-hidden border-b border-brand-border bg-brand-surface aspect-video relative focus:outline-none"
+    >
+      <img
+        src={safeCoverImage}
+        alt={coverAlt || title}
+        width="600"
+        height="338"
+        class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+        loading="lazy"
+      />
+      <div class="absolute top-3 right-3">
+        <span class="font-mono text-[10px] text-brand-accent bg-brand-bg/90 backdrop-blur-xs px-2 py-0.5 rounded border border-brand-border font-semibold shadow-xs">
+          #{tags[0] || 'Guide'}
+        </span>
+      </div>
+    </a>
+  )}
+
+  <div class="p-6 sm:p-7 flex flex-col justify-between flex-1">
+    <div>
+      {!safeCoverImage && (
+        <div class="flex items-center gap-2 text-xs text-brand-text-dim mb-3 font-mono">
+          <time>{dateStr}</time>
+          <span>&bull;</span>
+          <span class="text-brand-accent font-semibold">#{tags[0] || 'SEO'}</span>
+        </div>
+      )}
+
+      {safeCoverImage && (
+        <div class="flex items-center gap-2 text-[11px] text-brand-text-dim mb-2.5 font-mono">
+          <time>{dateStr}</time>
+          <span>&bull;</span>
+          <span>By {author}</span>
+        </div>
+      )}
+
+      <h3 class="font-display text-lg font-bold tracking-tight text-brand-text group-hover:text-brand-accent transition-colors">
+        <a href={`/articles/${slug}`} class="focus:outline-none">
+          {title}
+        </a>
+      </h3>
+
+      <p class="mt-2.5 text-xs sm:text-sm leading-relaxed text-brand-text-muted line-clamp-2">
+        {description}
+      </p>
+
+      <!-- Key Takeaway Snippet -->
+      <div class="mt-4 rounded-md border border-brand-border bg-brand-surface p-3 text-xs text-brand-text-muted">
+        <span class="font-mono text-[10px] uppercase tracking-wider text-brand-accent block mb-1 font-semibold">Key Takeaway</span>
+        <p class="font-editorial italic line-clamp-2 text-brand-text font-normal">"{quickAnswer}"</p>
+      </div>
+    </div>
+
+    <div class="mt-6 flex items-center justify-between border-t border-brand-border pt-4 text-xs">
+      <span class="text-brand-text-dim font-mono text-[11px]">By {author}</span>
+      <a
+        href={`/articles/${slug}`}
+        class="font-semibold text-brand-accent inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+      >
+        <span>Read Article</span>
+        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</article>

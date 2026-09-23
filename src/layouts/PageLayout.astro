@@ -1,0 +1,79 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumbs from '@/components/common/Breadcrumbs.astro';
+import type { ServiceSchemaData, ArticleSchemaData, PersonSchemaData, FAQItem, BreadcrumbItem } from '@/types/schema';
+
+export interface Props {
+  title: string;
+  description: string;
+  headline?: string;
+  subheadline?: string;
+  badge?: string;
+  breadcrumbs?: BreadcrumbItem[];
+  faq?: FAQItem[];
+  service?: ServiceSchemaData;
+  person?: PersonSchemaData;
+  article?: ArticleSchemaData;
+  type?: 'website' | 'article' | 'service' | 'person' | 'about' | 'contact';
+}
+
+const {
+  title,
+  description,
+  headline,
+  subheadline,
+  badge,
+  breadcrumbs,
+  faq,
+  service,
+  person,
+  article,
+  type = 'website',
+} = Astro.props;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  breadcrumbs={breadcrumbs}
+  faq={faq}
+  service={service}
+  person={person}
+  article={article}
+  type={type}
+>
+  <div class="relative py-16 sm:py-24">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      {breadcrumbs && (
+        <div class="animate-hero-entrance">
+          <Breadcrumbs items={breadcrumbs} />
+        </div>
+      )}
+
+      {(headline || badge) && (
+        <div class="mb-16 max-w-3xl">
+          {badge && (
+            <div class="mb-4 inline-flex items-center gap-2 font-mono text-xs font-semibold text-brand-accent animate-hero-entrance badge-shimmer">
+              <span class="h-1.5 w-1.5 rounded-full bg-brand-accent"></span>
+              {badge}
+            </div>
+          )}
+          {headline && (
+            <h1 class="font-display text-3xl font-extrabold tracking-tight text-brand-text sm:text-5xl lg:text-5xl leading-tight animate-hero-stagger-1">
+              {headline}
+            </h1>
+          )}
+          {subheadline && (
+            <p class="mt-5 text-base sm:text-lg leading-relaxed text-brand-text-muted max-w-prose font-normal animate-hero-stagger-2">
+              {subheadline}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div class="reveal-on-scroll reveal-delay-100">
+        <slot />
+      </div>
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,218 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import type { BreadcrumbItem } from '@/types/schema';
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { name: 'Contact', url: '/contact' },
+];
+---
+
+<PageLayout
+  title="Request Search Traffic & Lead Conversion Audit | The Ramadhani"
+  description="Request a confidential search rankings and article conversion audit with Ramadhani. Uncover where your website is leaking leads and how to rank top-3 on Google."
+  headline="Stop losing search traffic. Start generating qualified leads."
+  subheadline="I personally audit your Google rankings, pinpoint where article readers are bouncing, and deliver a concrete blueprint to turn your website into an automated lead-generating machine."
+  badge="Confidential Consultation &bull; 48-Hour Audit"
+  breadcrumbs={breadcrumbs}
+  type="contact"
+>
+  <div class="grid grid-cols-1 gap-12 lg:grid-cols-12">
+    <!-- Left: Low-Friction Inquiry Form -->
+    <div class="lg:col-span-7">
+      <div class="minimal-card p-8 sm:p-10">
+        <h2 class="font-display text-xl font-bold text-brand-text mb-2">
+          Request Your Search &amp; Lead Conversion Audit
+        </h2>
+        <p class="text-xs text-brand-text-muted mb-8">
+          Fill out your details below. I personally review your domain's rankings and conversion bottlenecks and respond within 24 business hours.
+        </p>
+
+        <form
+          action="/api/contact"
+          method="POST"
+          class="space-y-5"
+          id="contact-form"
+        >
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label for="name" class="block text-xs font-medium text-brand-text-muted mb-1.5 font-mono">
+                Your Name *
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                placeholder="John Davis"
+                class="w-full rounded-lg border border-brand-border bg-brand-surface px-3.5 py-2.5 text-xs text-brand-text placeholder-brand-text-dim focus:border-brand-accent focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label for="email" class="block text-xs font-medium text-brand-text-muted mb-1.5 font-mono">
+                Business Email *
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                placeholder="john@mybusiness.com"
+                class="w-full rounded-lg border border-brand-border bg-brand-surface px-3.5 py-2.5 text-xs text-brand-text placeholder-brand-text-dim focus:border-brand-accent focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label for="website" class="block text-xs font-medium text-brand-text-muted mb-1.5 font-mono">
+                Website URL *
+              </label>
+              <input
+                type="url"
+                id="website"
+                name="website"
+                required
+                placeholder="https://mybusiness.com"
+                class="w-full rounded-lg border border-brand-border bg-brand-surface px-3.5 py-2.5 text-xs text-brand-text placeholder-brand-text-dim focus:border-brand-accent focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label for="industry" class="block text-xs font-medium text-brand-text-muted mb-1.5 font-mono">
+                Industry Priority / Business Type *
+              </label>
+              <select
+                id="industry"
+                name="industry"
+                required
+                class="w-full rounded-lg border border-brand-border bg-brand-surface px-3.5 py-2.5 text-xs text-brand-text focus:border-brand-accent focus:outline-none"
+              >
+                <optgroup label="Primary Priority Focus">
+                  <option value="home-services">Home Services Agencies &amp; Contractors</option>
+                  <option value="real-estate">Real Estate Agencies &amp; Brokerages</option>
+                </optgroup>
+                <optgroup label="Specialized Growth Verticals">
+                  <option value="medical-wellness">Medical &amp; Wellness Businesses</option>
+                  <option value="b2b-saas">B2B SaaS &amp; Tech Platforms</option>
+                  <option value="finance">Finance &amp; Wealth Advisory Businesses</option>
+                  <option value="travel">Travel &amp; Hospitality Agencies</option>
+                </optgroup>
+                <optgroup label="Other Scenarios">
+                  <option value="agency-burnout">Burned By Past SEO Agency (Need Sales Results)</option>
+                  <option value="other">Other High-Intent Commercial Business</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="service" class="block text-xs font-medium text-brand-text-muted mb-1.5 font-mono">
+              Primary Goal *
+            </label>
+            <select
+              id="service"
+              name="service"
+              required
+              class="w-full rounded-lg border border-brand-border bg-brand-surface px-3.5 py-2.5 text-xs text-brand-text focus:border-brand-accent focus:outline-none"
+            >
+              <option value="article-conversion">Turn Search Traffic &amp; Articles Into Leads (Primary)</option>
+              <option value="rankings">Rank Top-3 on Google for Commercial Keywords</option>
+              <option value="geo">Dominate Google AI Overviews &amp; Generative Engines</option>
+              <option value="full-engine">Full Search-to-Lead Growth Engine (All 3)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="message" class="block text-xs font-medium text-brand-text-muted mb-1.5 font-mono">
+              Current Search Bottlenecks &amp; Monthly Lead Goals *
+            </label>
+            <textarea
+              id="message"
+              name="message"
+              rows="4"
+              required
+              placeholder="Tell me about your current website traffic, past experience with SEO agencies, and how many qualified leads or booked jobs you want per month..."
+              class="w-full rounded-lg border border-brand-border bg-brand-surface px-3.5 py-2.5 text-xs text-brand-text placeholder-brand-text-dim focus:border-brand-accent focus:outline-none"
+            ></textarea>
+          </div>
+
+          <button
+            type="submit"
+            id="submit-btn"
+            class="btn-primary w-full text-xs py-3"
+          >
+            <span>Request Free Search &amp; Lead Audit</span>
+            <span class="ml-1.5">&rarr;</span>
+          </button>
+        </form>
+
+        <div id="form-success" class="hidden mt-6 rounded-xl border border-brand-accent/40 bg-brand-accent/10 p-5 text-center text-xs text-brand-text">
+          <p class="font-bold text-brand-accent">Audit Request Received</p>
+          <p class="mt-1 text-brand-text-muted">I have received your domain details and will reply personally with initial diagnostic insights within 24 business hours.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Direct Expectations & Engagement Details -->
+    <div class="lg:col-span-5 space-y-6">
+      <div class="minimal-card p-6 sm:p-7">
+        <h3 class="font-display text-sm font-bold text-brand-text mb-4">What Happens in the Audit?</h3>
+        <ol class="space-y-3.5 text-xs text-brand-text-muted">
+          <li class="flex gap-2.5">
+            <span class="font-mono text-brand-accent font-bold">01.</span>
+            <span><strong class="text-brand-text">Traffic Leak Analysis:</strong> I pinpoint exactly where your current article and page visitors are bouncing without taking action.</span>
+          </li>
+          <li class="flex gap-2.5">
+            <span class="font-mono text-brand-accent font-bold">02.</span>
+            <span><strong class="text-brand-text">Commercial Keyword Gap:</strong> I identify high-ticket commercial keywords your competitors are ranking for that you are currently missing.</span>
+          </li>
+          <li class="flex gap-2.5">
+            <span class="font-mono text-brand-accent font-bold">03.</span>
+            <span><strong class="text-brand-text">Lead Engine Blueprint:</strong> A step-by-step roadmap to re-engineer your articles and rank in Google's Top 3 with measurable revenue accountability.</span>
+          </li>
+        </ol>
+      </div>
+
+      <div class="minimal-card p-6 sm:p-7">
+        <h3 class="font-display text-sm font-bold text-brand-text mb-4">Direct Communication</h3>
+        <div class="space-y-3 text-xs text-brand-text-muted">
+          <div>
+            <span class="block text-brand-text-dim font-mono text-[11px]">Direct Email:</span>
+            <a href="mailto:contact@ramadhani.cloud" class="font-semibold text-brand-text hover:text-brand-accent transition-colors">
+              contact@ramadhani.cloud
+            </a>
+          </div>
+          <div>
+            <span class="block text-brand-text-dim font-mono text-[11px]">Response Time Commitment:</span>
+            <span class="font-semibold text-brand-text">&lt; 24 Business Hours</span>
+          </div>
+          <div>
+            <span class="block text-brand-text-dim font-mono text-[11px]">Specialist Guarantee:</span>
+            <span class="font-medium text-brand-text">Zero junior account managers. You work directly with me.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setupForm() {
+      const form = document.getElementById('contact-form') as HTMLFormElement;
+      const success = document.getElementById('form-success');
+      if (!form || !success) return;
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        form.classList.add('opacity-40', 'pointer-events-none');
+        setTimeout(() => {
+          form.classList.add('hidden');
+          success.classList.remove('hidden');
+        }, 400);
+      });
+    }
+
+    setupForm();
+    document.addEventListener('astro:page-load', setupForm);
+  </script>
+</PageLayout>

@@ -1,0 +1,83 @@
+backend:
+  name: github
+  repo: ramanur28/ramadhani-profile
+  branch: main
+  base_url: https://ramadhani.cloud
+  auth_endpoint: auth
+
+# Enable automatic local backend for seamless local development
+local_backend:
+  url: http://localhost:8081/api/v1
+  allowed_hosts: ['localhost', '127.0.0.1']
+
+# Unified Media Library (Shared across Media Assets tab, Articles, and Case Studies)
+media_folder: "public/images/uploads"
+public_folder: "/images/uploads"
+max_file_size: 5242880 # 5MB limit
+
+# Clean URL & Filename Sanitization
+slug:
+  encoding: "ascii"
+  clean_accents: true
+  sanitize_replacement: "-"
+
+collections:
+  - name: "work"
+    label: "Case Studies & Work"
+    label_singular: "Case Study"
+    folder: "src/content/work"
+    create: true
+    slug: "{{slug}}"
+    extension: "mdx"
+    format: "frontmatter"
+    editor:
+      preview: true
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Client Name", name: "client", widget: "string", hint: "e.g. DataFlow Systems, BioVitality Insights, FleetLogix" }
+      - { label: "Industry", name: "industry", widget: "string", hint: "e.g. Fintech & Data Infrastructure, HealthTech, B2B Logistics" }
+      - { label: "Service", name: "service", widget: "string", hint: "e.g. Technical SEO & Generative Engine Optimization (GEO)" }
+      - { label: "Description (140-160 chars)", name: "description", widget: "string", hint: "Used as meta description and overview summary" }
+      - { label: "Slug", name: "slug", widget: "string", required: false, hint: "Custom URL path (optional, defaults to filename slug)" }
+      - { label: "Publish Date", name: "publishDate", widget: "datetime", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false }
+      - { label: "Cover Image / Diagram", name: "coverImage", widget: "image", required: false, choose_url: true, default: "/images/uploads/geo-blueprint.svg", hint: "Optional hero diagram or preview card" }
+      - { label: "Cover Alt Text", name: "coverAlt", widget: "string", required: false, default: "Case study architecture diagram" }
+      - label: "Key Impact Metrics"
+        name: "metrics"
+        widget: "list"
+        summary: "{{fields.value}} — {{fields.label}}"
+        fields:
+          - { label: "Value (e.g. +310%, 5.2x, 0.8s, 100/100)", name: "value", widget: "string" }
+          - { label: "Metric Label (e.g. AI Answer Citations, ROAS, LCP)", name: "label", widget: "string" }
+      - { label: "Quick Answer Block (40-60 words)", name: "quickAnswer", widget: "text", hint: "Definitive executive outcome summary rendered under H1" }
+      - label: "Tech Stack & Tooling"
+        name: "techStack"
+        widget: "list"
+        required: false
+        default: []
+      - { label: "Featured on Homepage", name: "featured", widget: "boolean", default: false }
+      - { label: "Case Study Body", name: "body", widget: "markdown" }
+
+  - name: "articles"
+    label: "Articles & Guides"
+    label_singular: "Article"
+    folder: "src/content/articles"
+    create: true
+    slug: "{{slug}}"
+    extension: "mdx"
+    format: "frontmatter"
+    editor:
+      preview: true
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Description (140-160 chars)", name: "description", widget: "string", hint: "Used as meta description and snippet" }
+      - { label: "Slug", name: "slug", widget: "string", required: false }
+      - { label: "Publish Date", name: "publishDate", widget: "datetime", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false }
+      - { label: "Updated Date", name: "updatedDate", widget: "datetime", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, required: false }
+      - { label: "Author", name: "author", widget: "string", default: "Ramadhani" }
+      - { label: "Tags", name: "tags", widget: "list" }
+      - { label: "Cover Image", name: "coverImage", widget: "image", default: "/images/uploads/geo-blueprint.svg", choose_url: true }
+      - { label: "Cover Alt Text", name: "coverAlt", widget: "string", default: "Article cover image" }
+      - { label: "Quick Answer Block (40-60 words)", name: "quickAnswer", widget: "text", hint: "Definitive summary block rendered under H1 for AI and readers" }
+      - { label: "Featured on Homepage", name: "featured", widget: "boolean", default: false }
+      - { label: "Body", name: "body", widget: "markdown" }

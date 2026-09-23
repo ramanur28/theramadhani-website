@@ -1,0 +1,49 @@
+---
+import { getCollection, render } from 'astro:content';
+import ArticleLayout from '@/layouts/ArticleLayout.astro';
+import type { FAQItem } from '@/types/schema';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('articles');
+  return articles.map((article) => ({
+    params: { slug: article.data.slug || article.id },
+    props: { article },
+  }));
+}
+
+const { article } = Astro.props;
+const { Content, headings } = await render(article);
+
+// FAQ Schema extract for articles
+const faqData: FAQItem[] = [
+  {
+    question: `What is the core takeaway of "${article.data.title}"?`,
+    answer: article.data.quickAnswer,
+  },
+  {
+    question: 'How does this methodology align with AI Answer Engines (Perplexity, ChatGPT, Claude)?',
+    answer: 'It leverages entity-dense semantic linking, high-speed static DOM rendering, and concise 40-60 word definitive answer blocks to optimize retrieval augmented generation (RAG) synthesis.',
+  },
+  {
+    question: 'Who is the author of this technical publication?',
+    answer: `${article.data.author} is a Senior Digital Marketing Specialist with expertise in Technical SEO, Generative Engine Optimization (GEO), and Google Ads acquisition funnels.`,
+  },
+];
+---
+
+<ArticleLayout
+  title={article.data.title}
+  description={article.data.description}
+  publishDate={article.data.publishDate}
+  updatedDate={article.data.updatedDate}
+  author={article.data.author}
+  tags={article.data.tags}
+  coverImage={article.data.coverImage}
+  coverAlt={article.data.coverAlt}
+  quickAnswer={article.data.quickAnswer}
+  slug={article.data.slug || article.id}
+  faq={faqData}
+  headings={headings}
+>
+  <Content />
+</ArticleLayout>

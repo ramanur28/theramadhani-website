@@ -1,0 +1,573 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PerformanceAudit from '@/components/islands/PerformanceAudit.tsx';
+import ServiceCard from '@/components/cards/ServiceCard.astro';
+import ArticleCard from '@/components/cards/ArticleCard.astro';
+import { getCollection } from 'astro:content';
+
+const articles = await getCollection('articles');
+const recentArticles = articles
+  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime())
+  .slice(0, 3);
+
+const services = [
+  {
+    number: '01',
+    title: 'High-Intent Google Ranking & Traffic',
+    description: 'Engineering technical SEO, Core Web Vitals, and local-to-national topical authority to rank top-3 for the exact commercial keywords customers search when ready to buy.',
+    href: '/services/seo',
+    features: [
+      'Commercial-intent keyword & search query targeting',
+      'Sub-second Core Web Vitals code refactoring',
+      'Interconnected Schema.org Knowledge Graph',
+      'High-authority search displacement strategy',
+    ],
+  },
+  {
+    number: '02',
+    title: 'Article-to-Lead Conversion Engine',
+    description: 'Transforming passive blog posts and guides into automated lead-generation machines with dynamic quote triggers, direct answer blocks, and high-converting funnel bridges.',
+    href: '/services/seo',
+    features: [
+      'Informational-to-commercial intent bridge funnels',
+      'In-article instant quote & estimate lead magnets',
+      '40-60 word definitive direct answer blocks',
+      'Full conversion rate optimization (CRO) telemetry',
+    ],
+  },
+  {
+    number: '03',
+    title: 'Generative Engine Optimization (GEO)',
+    description: 'Positioning your business as the #1 recommended solution in Google AI Overviews, Perplexity Pro, and ChatGPT Search when prospective clients ask AI for recommendations.',
+    href: '/services/geo',
+    features: [
+      'Google AI Overviews citation & synthesis engineering',
+      'Standards-compliant /llms.txt entity deployment',
+      'AI recommendation grounding & brand inclusion',
+      'Neural vector & semantic RAG optimization',
+    ],
+  },
+];
+
+const painPoints = [
+  {
+    number: '01',
+    title: 'The Revenue Blindspot',
+    subtitle: 'You know SEO & GEO can scale your revenue, but lack the technical roadmap.',
+    description: 'You see competitors dominating top search positions and being quoted in AI answer engines. Without an engineered search blueprint, you are missing out on high-intent inbound demand every single day.',
+    highlight: 'Stop guessing what Google wants',
+  },
+  {
+    number: '02',
+    title: 'The Leaky Article Trap',
+    subtitle: 'You have Google search traffic, but almost zero conversions to show for it.',
+    description: 'Thousands of visitors read your articles and blog posts, but 99% bounce without calling or requesting a quote. Your content is treated as informational fluff rather than an engineered lead-generation funnel.',
+    highlight: 'Turn readers into booked jobs',
+  },
+  {
+    number: '03',
+    title: 'The SEO Agency Burnout',
+    subtitle: 'You hired an agency, received monthly PDF reports, and saw zero sales impact.',
+    description: 'Traditional agencies celebrate vanity metrics like impressions and low-intent rankings that never move your bank account. We align search ranking strictly with qualified inquiries, booked estimates, and pipeline revenue.',
+    highlight: 'Accountable to real revenue',
+  },
+];
+
+const proofPoints = [
+  {
+    metric: '95/100',
+    metricLabel: 'Mobile Lighthouse & 100 Best Practices',
+    clientType: 'Adventure Travel & Tour Operator',
+    summary: 'Achieved a 95 Mobile Performance score, 100 Best Practices, and sub-second Core Web Vitals on panoramalenstrip.com, slashing bounce rates for mobile travelers.',
+    href: '/work/panoramalenstrip-seo-performance-conversion',
+  },
+  {
+    metric: '3.39K',
+    metricLabel: 'Organic Search Clicks (231K Impressions)',
+    clientType: 'Commercial Travel Keyword Intent',
+    summary: 'Scaled organic search visibility across 240 commercial keywords with an 8.9 average position, capturing #2 for "bromo volcano tour" and top-3 for Ijen and Ring of Fire.',
+    href: '/work/panoramalenstrip-seo-performance-conversion',
+  },
+  {
+    metric: 'Click to Chat',
+    metricLabel: 'Direct WhatsApp Tour Booking Leads',
+    clientType: 'Article-to-Lead Conversion Engine',
+    summary: 'Engineered high-converting itinerary CTA bridges and tracked direct WhatsApp inquiries via GA4 "click to chat", turning international search traffic into booked expeditions.',
+    href: '/work/panoramalenstrip-seo-performance-conversion',
+  },
+];
+---
+
+<BaseLayout
+  title="The Ramadhani | Google Rankings & Article-to-Lead Generation Engine"
+  description="I help high-intent businesses and Home Services rank at the top of Google, capture search traffic, and turn articles into automated lead-generating machines."
+  type="website"
+>
+  <!-- 1. Hero Section: Exact Proportional Viewport Height -->
+  <section class="relative w-full h-[calc(100vh-4rem)] h-[calc(100dvh-4rem)] min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] flex items-center justify-center border-b border-brand-border overflow-hidden px-4 sm:px-6 lg:px-8">
+    <!-- Zero-Overhead Hero Background: Static WebP on Mobile, Dynamic Stream on Desktop -->
+    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
+      <picture class="absolute inset-0 w-full h-full">
+        <source media="(max-width: 767px)" srcset="/images/hero-poster-mobile.webp" type="image/webp" />
+        <source media="(min-width: 768px)" srcset="/images/hero-poster.webp" type="image/webp" />
+        <img
+          src="/images/hero-poster-mobile.webp"
+          alt=""
+          fetchpriority="high"
+          loading="eager"
+          decoding="async"
+          class="w-full h-full object-cover"
+        />
+      </picture>
+      <div id="desktop-hero-video-container" class="hidden md:block absolute inset-0 w-full h-full"></div>
+    </div>
+
+    <!-- Centered Proportional Hero Content Card with High-Opacity Frost -->
+    <div class="relative z-10 mx-auto max-w-2xl lg:max-w-3xl w-full flex items-center justify-center">
+      <div class="w-full rounded-2xl bg-brand-bg/90 backdrop-blur-xl p-5 sm:p-7 lg:p-9 border border-brand-border/80 shadow-2xl">
+        
+        <!-- Category Badge -->
+        <div class="animate-hero-entrance inline-flex items-center gap-1.5 rounded-full border border-brand-border bg-brand-surface px-2.5 py-0.5 font-mono text-[11px] font-semibold text-brand-text mb-4 shadow-2xs badge-shimmer">
+          <span class="h-1.5 w-1.5 rounded-full bg-brand-accent animate-pulse"></span>
+          Google Rankings &bull; Article SEO &bull; Lead Generation Machine
+        </div>
+
+        <!-- H1 Headline -->
+        <h1 class="animate-hero-stagger-1 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-brand-text leading-[1.18]">
+          I rank websites at the top of Google and turn search traffic into an <span class="text-brand-accent underline decoration-brand-accent/30 decoration-2 underline-offset-4">automated lead generator</span>.
+        </h1>
+
+        <!-- Subheading Paragraph -->
+        <p class="animate-hero-stagger-2 mt-3.5 text-xs sm:text-sm leading-relaxed text-brand-text-muted max-w-xl font-normal">
+          Stop settling for vanity traffic that never books calls. Specialized search ranking and article conversion architecture engineered for <strong class="text-brand-text font-semibold">Home Services</strong>, <strong class="text-brand-text font-semibold">Real Estate Agencies</strong>, and high-value verticals burned by traditional SEO agencies.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="animate-hero-stagger-3 mt-5 flex flex-wrap items-center gap-3">
+          <a
+            href="/contact"
+            class="btn-primary text-xs sm:text-sm py-2.5 px-5 group"
+            id="hero-cta-audit"
+          >
+            <span>Get Free Traffic &amp; Lead Audit</span>
+            <svg class="ml-1.5 h-3.5 w-3.5 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+          <a
+            href="/services/seo"
+            class="btn-secondary text-xs sm:text-sm py-2.5 px-5"
+          >
+            <span>Explore Lead Conversion Model</span>
+          </a>
+        </div>
+
+        <!-- Social Proof Signals -->
+        <div class="animate-hero-stagger-4 mt-5 flex flex-wrap items-center gap-4 sm:gap-6 text-[11px] sm:text-xs text-brand-text-dim pt-4 border-t border-brand-border/70">
+          <div class="flex items-center gap-1.5">
+            <svg class="h-3.5 w-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Home Services Specialist</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <svg class="h-3.5 w-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Articles Converted to Inbound Leads</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <svg class="h-3.5 w-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Zero Vanity Reports &bull; Revenue First</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Direct Answer Block: E-E-A-T & Positioning Summary -->
+  <section class="py-16 sm:py-20 border-b border-brand-border bg-brand-surface/40">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        
+        <!-- Left: Direct Answer Block -->
+        <div class="lg:col-span-7 reveal-on-scroll">
+          <aside class="quick-answer-editorial p-6 sm:p-7 shadow-xs" aria-label="Direct Summary">
+            <div class="flex items-center justify-between mb-3">
+              <span class="font-mono text-xs font-bold uppercase tracking-wider text-brand-accent">
+                Direct Answer &bull; The Core Methodology
+              </span>
+              <span class="font-mono text-[10px] text-brand-text-dim bg-brand-surface px-2 py-0.5 rounded border border-brand-border">
+                E-E-A-T Grounded
+              </span>
+            </div>
+            <p class="font-editorial text-sm sm:text-base text-brand-text leading-relaxed italic">
+              "The Ramadhani is a search growth specialist who helps businesses—particularly high-ticket Home Services and companies burned by traditional agencies—capture real customer demand. His approach combines top-3 Google search rankings, Article SEO conversion architecture that turns blog readers into booked jobs, and Generative Engine Optimization (GEO) for Google AI Overviews."
+            </p>
+            <div class="mt-4 pt-3 border-t border-brand-border/60 flex items-center justify-between text-[11px] font-mono text-brand-text-dim">
+              <span>Optimized for qualified pipeline &amp; AI grounding</span>
+              <span>58 words</span>
+            </div>
+          </aside>
+        </div>
+
+        <!-- Right: 3 Benchmark Metrics -->
+        <div class="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3.5">
+          <div class="rounded-xl border border-brand-border bg-brand-card p-4 flex items-center justify-between shadow-sm reveal-on-scroll reveal-delay-150 minimal-card">
+            <div>
+              <span class="text-xs text-brand-text-muted font-medium block">Organic Search Traffic</span>
+              <span class="font-mono text-xl font-bold text-brand-text">3.39K Clicks</span>
+            </div>
+            <span class="font-mono text-xs text-brand-accent bg-brand-accent/10 px-2 py-1 rounded font-semibold">231K Impr &bull; 1.5% CTR</span>
+          </div>
+
+          <div class="rounded-xl border border-brand-border bg-brand-card p-4 flex items-center justify-between shadow-sm reveal-on-scroll reveal-delay-250 minimal-card">
+            <div>
+              <span class="text-xs text-brand-text-muted font-medium block">Commercial Search Rankings</span>
+              <span class="font-mono text-xl font-bold text-brand-text">Top 2–3 Dominance</span>
+            </div>
+            <span class="font-mono text-xs text-brand-accent bg-brand-accent/10 px-2 py-1 rounded font-semibold">240 Keywords</span>
+          </div>
+
+          <div class="rounded-xl border border-brand-border bg-brand-card p-4 flex items-center justify-between shadow-sm reveal-on-scroll reveal-delay-350 minimal-card">
+            <div>
+              <span class="text-xs text-brand-text-muted font-medium block">Mobile Performance Score</span>
+              <span class="font-mono text-xl font-bold text-brand-text">95/100 Mobile</span>
+            </div>
+            <span class="font-mono text-xs text-brand-accent bg-brand-accent/10 px-2 py-1 rounded font-semibold">100 Best Practices</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. NEW SECTION: The 3 Costly Traps Killing Your Search Revenue -->
+  <section class="py-20 sm:py-24 border-b border-brand-border bg-brand-surface/20">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="max-w-2xl reveal-on-scroll mb-12">
+        <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+          The Problem &bull; Why Most SEO Fails
+        </div>
+        <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-brand-text">
+          The 3 Costly Traps Killing Your Search Revenue
+        </h2>
+        <p class="mt-3 text-xs sm:text-sm leading-relaxed text-brand-text-muted">
+          Getting organic clicks is only half the battle. If your search presence isn't engineered to convert visitors into booked estimates and paying clients, you are subsidizing vanity metrics.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {painPoints.map((point, idx) => (
+          <div class={`minimal-card p-6 sm:p-7 flex flex-col justify-between reveal-on-scroll ${idx === 0 ? 'reveal-delay-100' : idx === 1 ? 'reveal-delay-200' : 'reveal-delay-300'} border-t-2 border-t-brand-accent/60`}>
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="font-mono text-xs font-bold text-brand-accent bg-brand-accent/10 px-2 py-0.5 rounded">
+                  Problem {point.number}
+                </span>
+                <span class="text-[11px] font-mono text-brand-text-dim">
+                  {point.highlight}
+                </span>
+              </div>
+              <h3 class="font-display text-lg font-bold text-brand-text mb-2">
+                {point.title}
+              </h3>
+              <p class="text-xs font-semibold text-brand-text-muted mb-3 italic">
+                "{point.subtitle}"
+              </p>
+              <p class="text-xs leading-relaxed text-brand-text-muted">
+                {point.description}
+              </p>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-brand-border/70 flex items-center justify-between">
+              <span class="text-[11px] font-mono text-brand-text-dim">How We Solve It:</span>
+              <a href="/services/seo" class="text-xs font-semibold text-brand-accent hover:underline flex items-center gap-1">
+                <span>View Solution</span>
+                <span>&rarr;</span>
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Target Market & Industry Priority Section -->
+  <section class="py-16 border-b border-brand-border bg-gradient-to-r from-brand-surface via-brand-surface/70 to-brand-surface">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="max-w-2xl mb-10 reveal-on-scroll">
+        <div class="inline-flex items-center gap-2 rounded-full border border-brand-border bg-brand-bg px-3 py-1 font-mono text-xs font-medium text-brand-accent mb-3">
+          <span>Industry Priority &bull; Targeted Verticals</span>
+        </div>
+        <h2 class="font-display text-2xl sm:text-3xl font-bold text-brand-text">
+          Engineered For High-Value, Search-Driven Industries
+        </h2>
+        <p class="mt-2 text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+          We prioritize sectors where a single client or booked contract represents thousands in revenue, and where winning Google Search &amp; converting article traffic directly fuels sales pipeline.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 reveal-on-scroll">
+        <!-- Tier 1: Primary Priority -->
+        <div class="minimal-card p-6 sm:p-7 border-l-4 border-l-brand-accent flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="font-mono text-xs font-bold text-brand-accent bg-brand-accent/10 px-2 py-0.5 rounded">
+                Tier 1 &bull; Primary Focus
+              </span>
+              <span class="text-[11px] font-mono text-brand-text-dim">High-Ticket &bull; Local Dominance</span>
+            </div>
+            <h3 class="font-display text-lg font-bold text-brand-text mb-3">
+              Home Services &amp; Real Estate Agencies
+            </h3>
+            <ul class="space-y-3 text-xs text-brand-text-muted leading-relaxed">
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-bold">&check;</span>
+                <span><strong class="text-brand-text">Home Services Agencies &amp; Contractors:</strong> HVAC, Roofing, Plumbing, Remodeling, Electrical, and Solar businesses needing emergency phone calls and booked project quotes.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-bold">&check;</span>
+                <span><strong class="text-brand-text">Real Estate Agencies &amp; Brokerages:</strong> Property developers and agencies dominating localized buyer/seller searches and converting neighborhood guides into buyer leads.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-brand-border/70 flex items-center justify-between">
+            <span class="text-[11px] font-mono text-brand-text-dim">Immediate Quote &amp; Call Funnels</span>
+            <a href="/contact" class="text-xs font-semibold text-brand-accent hover:underline">Get Audit &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Tier 2: Specialized Verticals -->
+        <div class="minimal-card p-6 sm:p-7 border-l-4 border-l-brand-border flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="font-mono text-xs font-bold text-brand-text-muted bg-brand-surface px-2 py-0.5 rounded border border-brand-border">
+                Tier 2 &bull; Specialized Verticals
+              </span>
+              <span class="text-[11px] font-mono text-brand-text-dim">High-Trust &bull; High-AOV</span>
+            </div>
+            <h3 class="font-display text-lg font-bold text-brand-text mb-3">
+              Medical, B2B SaaS, Finance &amp; Travel
+            </h3>
+            <ul class="space-y-2.5 text-xs text-brand-text-muted leading-relaxed">
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-bold">&bull;</span>
+                <span><strong class="text-brand-text">Medical &amp; Wellness Businesses:</strong> Clinics, aesthetic practices, and health centers acquiring high-trust patient appointments.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-bold">&bull;</span>
+                <span><strong class="text-brand-text">B2B SaaS Platforms:</strong> Software platforms turning technical comparison guides into qualified trial and demo signups.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-bold">&bull;</span>
+                <span><strong class="text-brand-text">Finance Businesses:</strong> Wealth management, advisory, and fintech capturing high-net-worth client inquiries.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-bold">&bull;</span>
+                <span><strong class="text-brand-text">Travel Agencies:</strong> Luxury tour operators and bespoke agencies turning destination articles into bookings.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-brand-border/70 flex items-center justify-between">
+            <span class="text-[11px] font-mono text-brand-text-dim">Also: SEO Agency Burnouts</span>
+            <a href="/contact" class="text-xs font-semibold text-brand-accent hover:underline">Audit Your Funnel &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Core Services Overview -->
+  <section class="py-20 sm:py-28 border-b border-brand-border bg-brand-surface/30">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="max-w-xl reveal-on-scroll">
+        <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+          Three Dedicated Capabilities
+        </div>
+        <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-brand-text">
+          The Search &amp; Lead Generation Architecture
+        </h2>
+        <p class="mt-3 text-xs sm:text-sm leading-relaxed text-brand-text-muted">
+          A seamless 3-pillar system: rank for commercial terms, turn articles into lead generation machines, and dominate Google AI Overviews.
+        </p>
+      </div>
+
+      <div class="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {services.map((s, idx) => (
+          <div class={`reveal-on-scroll ${idx === 0 ? 'reveal-delay-100' : idx === 1 ? 'reveal-delay-250' : 'reveal-delay-400'}`}>
+            <ServiceCard {...s} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Proof Section: Clickable Performance Cards Linked to /work -->
+  <section class="py-20 sm:py-24 border-b border-brand-border">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12 reveal-on-scroll">
+        <div class="max-w-xl">
+          <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+            Verified Proof &bull; Real Pipeline
+          </div>
+          <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-brand-text">
+            Real Inbound Growth &amp; Measurable Pipeline
+          </h2>
+          <p class="mt-3 text-xs sm:text-sm text-brand-text-muted">
+            Every engagement is measured against quantitative booked estimates, phone inquiries, or verified customer revenue.
+          </p>
+        </div>
+        <a
+          href="/work"
+          class="text-xs font-semibold text-brand-accent hover:underline inline-flex items-center gap-1 shrink-0"
+        >
+          <span>View All Case Studies</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {proofPoints.map((proof, idx) => (
+          <div class={`reveal-on-scroll ${idx === 0 ? 'reveal-delay-100' : idx === 1 ? 'reveal-delay-250' : 'reveal-delay-400'}`}>
+            <a
+              href={proof.href}
+              class="minimal-card group p-6 sm:p-7 flex flex-col justify-between focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent hover:border-brand-accent h-full block"
+            >
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-mono text-xs text-brand-accent font-semibold">
+                    {proof.clientType}
+                  </span>
+                  <span class="text-brand-text-dim text-xs group-hover:text-brand-accent group-hover:translate-x-1 transition-transform duration-300">
+                    &rarr;
+                  </span>
+                </div>
+                <div class="font-mono text-3xl sm:text-4xl font-bold text-brand-text group-hover:text-brand-accent transition-colors duration-300">
+                  {proof.metric}
+                </div>
+                <div class="text-xs font-medium text-brand-text-muted mt-1">
+                  {proof.metricLabel}
+                </div>
+              </div>
+
+              <div class="mt-5 border-t border-brand-border pt-4">
+                <p class="text-xs leading-relaxed text-brand-text-muted">
+                  {proof.summary}
+                </p>
+                <div class="mt-3 text-[11px] font-semibold text-brand-accent flex items-center gap-1 group-hover:translate-x-1 transition-transform duration-300">
+                  <span>Explore Case Study</span>
+                  <span aria-hidden="true">&rarr;</span>
+                </div>
+              </div>
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Interactive Diagnostic Tool -->
+  <section class="py-20 sm:py-24 border-b border-brand-border">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 reveal-on-scroll">
+      <PerformanceAudit client:visible />
+    </div>
+  </section>
+
+  <!-- 8. Latest Articles (3 Most Recent) -->
+  <section class="py-20 sm:py-28 border-b border-brand-border">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12 reveal-on-scroll">
+        <div>
+          <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+            Publications &bull; Conversion Engineering
+          </div>
+          <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-brand-text">
+            Search, Content &amp; Lead Strategy
+          </h2>
+        </div>
+        <a
+          href="/articles"
+          class="text-xs font-semibold text-brand-accent hover:underline inline-flex items-center gap-1"
+        >
+          <span>View All Publications</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {recentArticles.map((art, idx) => (
+          <div class={`reveal-on-scroll ${idx === 0 ? 'reveal-delay-100' : idx === 1 ? 'reveal-delay-250' : 'reveal-delay-400'}`}>
+            <ArticleCard
+              title={art.data.title}
+              description={art.data.description}
+              slug={art.data.slug || art.id}
+              publishDate={art.data.publishDate}
+              author={art.data.author}
+              tags={art.data.tags}
+              coverImage={art.data.coverImage}
+              coverAlt={art.data.coverAlt}
+              quickAnswer={art.data.quickAnswer}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Bottom CTA -->
+  <section class="py-20 sm:py-28">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center reveal-on-scroll">
+      <h2 class="font-display text-3xl sm:text-4xl font-bold tracking-tight text-brand-text">
+        Ready to turn your search traffic into booked jobs?
+      </h2>
+      <p class="mt-4 text-sm leading-relaxed text-brand-text-muted max-w-xl mx-auto">
+        I personally audit your search rankings, find where article readers are bouncing, and build a customized blueprint to turn your website into a reliable lead-generating machine.
+      </p>
+
+      <div class="mt-8 flex items-center justify-center gap-4">
+        <a href="/contact" class="btn-primary">
+          <span>Get Free Traffic &amp; Lead Audit</span>
+          <span class="ml-1.5">&rarr;</span>
+        </a>
+        <a href="/about" class="btn-secondary">
+          <span>About The Ramadhani</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dynamic Desktop-Only Video Streaming Script -->
+  <script is:inline>
+    function initDesktopHeroVideo() {
+      if (window.innerWidth < 768) return;
+      const mount = document.getElementById('desktop-hero-video-container');
+      if (!mount || mount.querySelector('video')) return;
+
+      const video = document.createElement('video');
+      video.autoplay = true;
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      video.poster = '/images/hero-poster.webp';
+      video.className = 'w-full h-full object-cover';
+
+      const src = document.createElement('source');
+      src.src = '/videos/hero-bg-video.mp4';
+      src.type = 'video/mp4';
+      video.appendChild(src);
+      mount.appendChild(video);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initDesktopHeroVideo);
+    } else {
+      initDesktopHeroVideo();
+    }
+    document.addEventListener('astro:page-load', initDesktopHeroVideo);
+  </script>
+</BaseLayout>

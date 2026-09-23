@@ -1,0 +1,28 @@
+---
+export interface Props {
+  answer: string;
+}
+
+const { answer } = Astro.props;
+---
+
+<aside
+  class="quick-answer-editorial my-8 p-6 sm:p-7"
+  aria-label="Executive and AI Direct Answer Summary"
+>
+  <div class="flex items-center gap-2 mb-3">
+    <span class="h-2 w-2 rounded-full bg-brand-accent"></span>
+    <span class="font-mono text-xs font-bold uppercase tracking-wider text-brand-accent">
+      Direct Answer &bull; TL;DR
+    </span>
+  </div>
+
+  <p class="font-editorial text-lg sm:text-xl leading-relaxed text-brand-text font-normal italic">
+    "{answer}"
+  </p>
+
+  <div class="mt-4 pt-3 border-t border-brand-border flex items-center justify-between text-[11px] text-brand-text-dim font-mono">
+    <span>Optimized for AI synthesis (Perplexity, ChatGPT, AI Overviews)</span>
+    <span>40-60 words</span>
+  </div>
+</aside>

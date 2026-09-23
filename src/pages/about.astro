@@ -1,0 +1,209 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import type { PersonSchemaData, BreadcrumbItem } from '@/types/schema';
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { name: 'About', url: '/about' },
+];
+
+const personData: PersonSchemaData = {
+  name: 'Ramadhani',
+  jobTitle: 'Search Rankings & Article Conversion Specialist',
+  worksFor: 'The Ramadhani',
+  url: 'https://ramadhani.cloud/about',
+  image: 'https://ramadhani.cloud/images/ramadhani-portrait.svg',
+  description: 'Search growth specialist helping Home Services and high-intent businesses rank top of Google and turn article traffic into automated lead-generating machines.',
+  sameAs: [
+    'https://www.linkedin.com/in/ramadhani-marketing',
+    'https://twitter.com/ramadhani_seo',
+    'https://github.com/ramadhani',
+  ],
+  knowsAbout: [
+    'High-Intent Google Search Rankings',
+    'Article-to-Lead Conversion Architecture',
+    'Home Services SEO & Local Dominance',
+    'Generative Engine Optimization (GEO & AI Overviews)',
+    'Core Web Vitals Code Engineering',
+    'Schema.org Knowledge Graph Modeling',
+  ],
+  hasCredential: [
+    'Advanced Search Architecture & Conversion Specialist',
+    'Generative Search & AI Overviews Grounding Specialist',
+    'Google Search & Measurement Certified Professional',
+  ],
+};
+---
+
+<PageLayout
+  title="About The Ramadhani | Search Rankings & Article Conversion Specialist"
+  description="Background and philosophy of Ramadhani — helping Home Services and businesses rank top-3 on Google and turn search traffic into an automated lead generator."
+  headline="Turning Google Search into a predictable lead-generation machine."
+  subheadline="I bridge the critical gap between top Google rankings, in-article conversion architecture, and actual booked revenue."
+  badge="Entity Profile &bull; E-E-A-T"
+  breadcrumbs={breadcrumbs}
+  person={personData}
+  type="person"
+>
+  <div class="grid grid-cols-1 gap-12 lg:grid-cols-12">
+    <!-- Left: Entity Profile Card -->
+    <div class="lg:col-span-4 space-y-6">
+      <div class="minimal-card p-6 sm:p-7">
+        <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-brand-accent/15 border border-brand-accent/30 font-mono text-2xl font-bold text-brand-accent">
+          R
+        </div>
+
+        <div class="mt-5">
+          <h2 class="font-display text-xl font-bold text-brand-text">Ramadhani</h2>
+          <p class="text-xs text-brand-accent font-mono mt-0.5 font-semibold">
+            Search Rankings &amp; Conversion Specialist
+          </p>
+        </div>
+
+        <div class="mt-6 border-t border-brand-border pt-5 space-y-3 text-xs text-brand-text-muted">
+          <div class="flex justify-between">
+            <span>Specialization:</span>
+            <span class="font-semibold text-brand-text">Home Services &amp; Lead Gen</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Core Focus:</span>
+            <span class="font-semibold text-brand-text">Rankings + Article Conversion</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Key Outcome:</span>
+            <span class="font-semibold text-brand-text">Booked Jobs &amp; Inbound Calls</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Engagement Model:</span>
+            <span class="font-semibold text-brand-text">Direct 1-on-1 Specialist Partnership</span>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-2">
+          <a href="/contact" class="btn-primary w-full text-xs py-2.5">
+            Get Free Traffic &amp; Lead Audit
+          </a>
+        </div>
+      </div>
+
+      <!-- Verified External Profiles -->
+      <div class="minimal-card p-6 reveal-on-scroll reveal-delay-100">
+        <h3 class="font-mono text-xs font-semibold uppercase tracking-wider text-brand-text mb-3">
+          Verified Profiles (`sameAs`)
+        </h3>
+        <ul class="space-y-2.5 text-xs text-brand-text-muted">
+          <li>
+            <a href="https://www.linkedin.com/in/ramadhani-marketing" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between text-brand-text hover:text-brand-accent transition-colors font-medium">
+              <span>LinkedIn Profile</span>
+              <span class="text-brand-text-dim text-[11px] font-mono">&nearr;</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://twitter.com/ramadhani_seo" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between text-brand-text hover:text-brand-accent transition-colors font-medium">
+              <span>Twitter / X (@ramadhani_seo)</span>
+              <span class="text-brand-text-dim text-[11px] font-mono">&nearr;</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/ramadhani" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between text-brand-text hover:text-brand-accent transition-colors font-medium">
+              <span>GitHub Organization</span>
+              <span class="text-brand-text-dim text-[11px] font-mono">&nearr;</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Verified Credentials -->
+      <div class="minimal-card p-6 reveal-on-scroll reveal-delay-100">
+        <h3 class="font-mono text-xs font-semibold uppercase tracking-wider text-brand-text mb-3">
+          Certifications &amp; Guilds
+        </h3>
+        <ul class="space-y-2 text-xs text-brand-text-muted">
+          {personData.hasCredential?.map((cred) => (
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-mono font-bold">&bull;</span>
+              <span class="text-brand-text font-medium">{cred}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Right: Origin Narrative & Anti-Agency Philosophy -->
+    <div class="lg:col-span-8 space-y-8">
+      
+      <!-- Philosophy / Origin -->
+      <section class="minimal-card p-8 sm:p-10">
+        <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+          The Anti-Agency Philosophy &bull; Revenue First
+        </div>
+        <h2 class="font-display text-2xl font-bold text-brand-text mb-6">
+          Why Traffic Without Conversions Is Pure Vanity
+        </h2>
+        <div class="space-y-5 text-sm leading-relaxed text-brand-text-muted">
+          <p>
+            For years, the digital marketing agency playbook has been broken. Agencies sell clients on "keyword volume" and celebrate monthly reports showing organic impression growth. But when you look at the client's bank account or sales schedule, nothing has changed.
+          </p>
+          <p>
+            You cannot pay payroll or buy materials with "impressions." A business only wins when organic search traffic turns into <strong>qualified inbound phone calls, quote requests, and booked jobs</strong>.
+          </p>
+          <p>
+            The biggest missed opportunity in digital marketing today is <strong>Article SEO without conversion architecture</strong>. Businesses publish informational articles that attract thousands of visitors, but 99% of them leave without a trace because the article never provides a clear, high-trust bridge to take action.
+          </p>
+          <p>
+            My work is engineered around solving this exact problem: getting your website to rank top-3 for commercial buyer searches, and re-architecting your articles with instant quote calculators, direct answer blocks, and high-converting funnels that turn searchers into booked revenue.
+          </p>
+        </div>
+      </section>
+
+      <!-- Who This Is For vs NOT For -->
+      <section class="minimal-card p-8 sm:p-10 border-l-4 border-l-brand-accent">
+        <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+          Strict Positioning &bull; Transparency
+        </div>
+        <h2 class="font-display text-2xl font-bold text-brand-text mb-4">
+          Who I Work With (And Who I Do Not)
+        </h2>
+        <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mb-6">
+          To maintain high execution rigor and guarantee direct personal access, I strictly partner with businesses where search visibility creates transformative revenue:
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div class="rounded-xl border border-brand-border bg-brand-surface p-4">
+            <span class="font-mono font-bold text-red-600 dark:text-red-400 block mb-1">&times; What I Do NOT Do</span>
+            <ul class="space-y-2 text-brand-text-muted mt-2">
+              <li>&bull; Vanity traffic reports that don't affect sales</li>
+              <li>&bull; Generic informational blog posts with zero CTAs</li>
+              <li>&bull; Spammy link building or PBNs</li>
+              <li>&bull; Handing client work off to junior account managers</li>
+            </ul>
+          </div>
+
+          <div class="rounded-xl border border-brand-border bg-brand-surface p-4">
+            <span class="font-mono font-bold text-brand-accent block mb-1">&check; Industry Priorities (Who This IS For)</span>
+            <ul class="space-y-2 text-brand-text-muted mt-2">
+              <li>&bull; <strong>Primary Focus:</strong> Home services agencies &amp; Real estate agencies</li>
+              <li>&bull; <strong>Core Verticals:</strong> Medical &amp; wellness, B2B SaaS, Finance businesses, Travel agencies</li>
+              <li>&bull; <strong>SEO Agency Burnouts:</strong> Businesses burned by past agencies that delivered zero sales impact</li>
+              <li>&bull; Companies with existing traffic looking to turn articles into automated lead machines</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Core Knowledge Domains -->
+      <section class="minimal-card p-8 sm:p-10">
+        <h2 class="font-display text-xl font-bold text-brand-text mb-4">
+          Core Domains of Authority (`knowsAbout`)
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          {personData.knowsAbout?.map((topic) => (
+            <div class="rounded-lg border border-brand-border bg-brand-surface p-3.5 flex items-center gap-2.5">
+              <span class="h-1.5 w-1.5 rounded-full bg-brand-accent"></span>
+              <span class="font-semibold text-brand-text">{topic}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  </div>
+</PageLayout>

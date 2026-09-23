@@ -1,0 +1,168 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumbs from '@/components/common/Breadcrumbs.astro';
+import QuickAnswer from '@/components/common/QuickAnswer.astro';
+import FaqAccordion from '@/components/islands/FaqAccordion.tsx';
+import type { FAQItem, BreadcrumbItem, ArticleSchemaData } from '@/types/schema';
+
+export interface Props {
+  title: string;
+  description: string;
+  publishDate: Date;
+  updatedDate?: Date;
+  author: string;
+  tags: string[];
+  coverImage: string;
+  coverAlt?: string;
+  quickAnswer: string;
+  slug: string;
+  faq?: FAQItem[];
+  headings?: { depth: number; slug: string; text: string }[];
+}
+
+const {
+  title,
+  description,
+  publishDate,
+  updatedDate,
+  author,
+  tags,
+  coverImage,
+  coverAlt = 'Article cover image',
+  quickAnswer,
+  slug,
+  faq = [],
+  headings = [],
+} = Astro.props;
+
+const formattedPublishDate = publishDate.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { name: 'Articles', url: '/articles' },
+  { name: title, url: `/articles/${slug}` },
+];
+
+const articleSchema: ArticleSchemaData = {
+  headline: title,
+  description: description,
+  datePublished: publishDate.toISOString(),
+  dateModified: updatedDate ? updatedDate.toISOString() : publishDate.toISOString(),
+  authorName: author,
+  authorUrl: 'https://ramadhani.dev/about',
+  imageUrl: coverImage,
+  articleUrl: `https://ramadhani.dev/articles/${slug}`,
+  keywords: tags,
+};
+
+const tocHeadings = headings.filter(h => h.depth === 2 || h.depth === 3);
+
+// Sanitize image path so relative or root-relative paths work cleanly
+const safeCoverImage = coverImage ? (coverImage.startsWith('http') || coverImage.startsWith('/') ? coverImage : `/${coverImage}`) : null;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  image={coverImage}
+  article={articleSchema}
+  faq={faq}
+  breadcrumbs={breadcrumbs}
+  type="article"
+>
+  <article class="py-16 sm:py-24">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+      <!-- Breadcrumbs -->
+      <Breadcrumbs items={breadcrumbs} />
+
+      <!-- Metadata Header -->
+      <div class="flex items-center gap-2 text-xs text-brand-text-dim mb-4 font-mono">
+        <time datetime={publishDate.toISOString()} class="font-medium">{formattedPublishDate}</time>
+        <span>&bull;</span>
+        <span class="text-brand-accent font-semibold">#{tags[0]}</span>
+      </div>
+
+      <!-- Editorial H1 -->
+      <h1 class="font-display text-3xl font-extrabold tracking-tight text-brand-text sm:text-4xl lg:text-5xl leading-tight animate-hero-stagger-1">
+        {title}
+      </h1>
+
+      <!-- Cover Image Banner -->
+      {safeCoverImage && (
+        <figure class="my-8 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface shadow-sm animate-hero-stagger-3 reveal-scale">
+          <img
+            src={safeCoverImage}
+            alt={coverAlt || title}
+            width="800"
+            height="450"
+            class="w-full h-auto aspect-video object-cover"
+            loading="eager"
+            fetchpriority="high"
+          />
+          {coverAlt && coverAlt !== 'Article cover image' && (
+            <figcaption class="px-4 py-2 text-center font-mono text-[11px] text-brand-text-dim border-t border-brand-border/60 bg-brand-bg/50">
+              {coverAlt}
+            </figcaption>
+          )}
+        </figure>
+      )}
+
+      <!-- Quick Answer Callout Block directly under Cover Image/H1 -->
+      <QuickAnswer answer={quickAnswer} />
+
+      <!-- Table of Contents -->
+      {tocHeadings.length > 0 && (
+        <div class="my-10 rounded-xl border border-brand-border bg-brand-card p-6 shadow-sm reveal-on-scroll reveal-delay-150">
+          <div class="font-mono text-xs font-bold uppercase tracking-wider text-brand-text mb-3">
+            In this guide
+          </div>
+          <nav aria-label="Table of Contents">
+            <ul class="space-y-2 text-xs text-brand-text-muted">
+              {tocHeadings.map((h) => (
+                <li class={h.depth === 3 ? "ml-3 text-brand-text-dim" : "font-semibold text-brand-text hover:text-brand-accent transition-colors"}>
+                  <a href={`#${h.slug}`} class="flex items-center gap-1.5">
+                    <span class="text-brand-accent font-bold">&rsaquo;</span>
+                    <span>{h.text}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      )}
+
+      <!-- Main MDX Body with High Contrast Prose -->
+      <div class="prose max-w-none text-base leading-relaxed reveal-on-scroll reveal-delay-200 text-[#374151] prose-headings:font-display prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-[#111317] prose-p:text-[#374151] prose-p:leading-relaxed prose-strong:text-[#111317] prose-strong:font-bold prose-li:text-[#374151] prose-a:text-brand-accent prose-a:font-semibold prose-a:underline hover:prose-a:text-brand-accent-hover prose-code:font-mono prose-code:text-brand-accent prose-code:bg-brand-surface prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:border prose-pre:border-brand-border prose-pre:bg-brand-surface prose-pre:text-brand-text prose-blockquote:border-l-brand-accent prose-blockquote:text-brand-text prose-blockquote:bg-brand-surface/70 prose-blockquote:rounded-r-lg prose-blockquote:p-4 prose-th:text-brand-text prose-th:font-bold prose-td:text-brand-text-muted">
+        <slot />
+      </div>
+
+      <!-- FAQ Section -->
+      {faq && faq.length > 0 && (
+        <div class="mt-16 border-t border-brand-border pt-12 reveal-on-scroll reveal-delay-150">
+          <FaqAccordion client:visible items={faq} title="Frequently Asked Questions & Citations" />
+        </div>
+      )}
+
+      <!-- Author Bio Component -->
+      <div class="mt-16 rounded-2xl border border-brand-border bg-brand-card p-7 shadow-sm">
+        <div class="flex items-start gap-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-accent/15 border border-brand-accent/30 font-mono text-base font-bold text-brand-accent">
+            R
+          </div>
+          <div class="flex-1 text-xs leading-relaxed text-brand-text-muted">
+            <div class="flex items-center justify-between">
+              <span class="font-display text-sm font-bold text-brand-text">Written by {author}</span>
+              <a href="/about" class="text-brand-accent font-semibold hover:underline font-mono text-[11px]">Profile &rarr;</a>
+            </div>
+            <p class="mt-1.5 text-brand-text-muted text-xs">
+              Digital Marketing Specialist in Technical SEO, Generative Engine Optimization (GEO), and paid search acquisition.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

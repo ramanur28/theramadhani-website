@@ -1,0 +1,108 @@
+services:
+  # Production Caddy Static Web Server with Automatic TLS & Brotli/Gzip Compression
+  web:
+    image: ${WEB_IMAGE:-ramadhani-web:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ramadhani-web-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      - SITE_DOMAIN=${SITE_DOMAIN:-ramadhani.cloud}
+      - SITE_URL=${SITE_URL:-https://ramadhani.cloud}
+      - ACME_EMAIL=${ACME_EMAIL:-ramanur321@gmail.com}
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 80 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - umami
+      - oauth
+
+  # Decap CMS GitHub OAuth Proxy
+  oauth:
+    image: ghcr.io/njfamirm/decap-cms-github-backend:main
+    container_name: ramadhani-oauth
+    restart: unless-stopped
+    environment:
+      - OAUTH_GITHUB_CLIENT_ID=${OAUTH_CLIENT_ID}
+      - OAUTH_GITHUB_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
+      - PORT=80
+      - HOST=0.0.0.0
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Self-Hosted Umami Analytics Application
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: ramadhani-umami-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://${UMAMI_DB_USER:-umami_admin}:${UMAMI_DB_PASSWORD:-umami_prod_secure_pass}@umami-db:5432/${UMAMI_DB_NAME:-umami_analytics}
+      - DATABASE_TYPE=postgresql
+      - APP_SECRET=${UMAMI_APP_SECRET:-change_this_secret_in_prod_env_32chars}
+    networks:
+      - internal-net
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/api/heartbeat"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Lightweight PostgreSQL Database for Umami Analytics
+  umami-db:
+    image: postgres:16-alpine
+    container_name: ramadhani-umami-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${UMAMI_DB_NAME:-umami_analytics}
+      - POSTGRES_USER=${UMAMI_DB_USER:-umami_admin}
+      - POSTGRES_PASSWORD=${UMAMI_DB_PASSWORD:-umami_prod_secure_pass}
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${UMAMI_DB_USER:-umami_admin} -d ${UMAMI_DB_NAME:-umami_analytics}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  internal-net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  umami_db_data:

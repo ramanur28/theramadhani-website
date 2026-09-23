@@ -1,0 +1,214 @@
+---
+import type { ServiceSchemaData, ArticleSchemaData, PersonSchemaData, FAQItem, BreadcrumbItem } from '@/types/schema';
+
+export interface Props {
+  type?: 'website' | 'article' | 'service' | 'person' | 'about' | 'contact' | 'custom';
+  title?: string;
+  description?: string;
+  canonicalUrl?: string;
+  article?: ArticleSchemaData;
+  service?: ServiceSchemaData;
+  person?: PersonSchemaData;
+  faq?: FAQItem[];
+  breadcrumbs?: BreadcrumbItem[];
+  customSchema?: Record<string, any>[];
+}
+
+const {
+  canonicalUrl = Astro.url.href,
+  article,
+  service,
+  person,
+  faq,
+  breadcrumbs,
+  customSchema = [],
+} = Astro.props;
+
+const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : 'https://ramadhani.dev';
+const personId = `${siteUrl}/#person`;
+const orgId = `${siteUrl}/#organization`;
+const websiteId = `${siteUrl}/#website`;
+
+// 1. WebSite Schema (Sitewide)
+const websiteSchema: Record<string, any> = {
+  '@type': 'WebSite',
+  '@id': websiteId,
+  url: siteUrl,
+  name: 'The Ramadhani - SEO & GEO Specialist',
+  description: 'Authority in SEO, Generative Engine Optimization (GEO), and Paid Search Performance.',
+  publisher: {
+    '@id': orgId,
+  },
+  inLanguage: 'en-US',
+};
+
+// 2. Organization Schema (Sitewide in Base Layout)
+const organizationSchema: Record<string, any> = {
+  '@type': 'Organization',
+  '@id': orgId,
+  name: 'The Ramadhani',
+  url: siteUrl,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${siteUrl}/images/brand-logo.png`,
+    caption: 'The Ramadhani Logo',
+  },
+  founder: {
+    '@id': personId,
+  },
+  sameAs: [
+    'https://www.linkedin.com/in/ramadhani-marketing',
+    'https://twitter.com/ramadhani_seo',
+    'https://github.com/ramadhani',
+  ],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'sales & consulting',
+    email: 'contact@ramadhani.dev',
+    url: `${siteUrl}/contact`,
+  },
+};
+
+// 3. Person Schema (Sitewide & /about & Article Author)
+const personSchema: Record<string, any> = {
+  '@type': 'Person',
+  '@id': personId,
+  name: person?.name || 'Ramadhani',
+  jobTitle: person?.jobTitle || 'Lead Digital Marketing & GEO Specialist',
+  worksFor: {
+    '@id': orgId,
+  },
+  url: `${siteUrl}/about`,
+  image: `${siteUrl}/images/ramadhani-portrait.svg`,
+  description: person?.description || 'Digital marketing authority specializing in Technical SEO, Generative Engine Optimization (GEO), and full-funnel Google Ads growth.',
+  sameAs: person?.sameAs || [
+    'https://www.linkedin.com/in/ramadhani-marketing',
+    'https://twitter.com/ramadhani_seo',
+    'https://github.com/ramadhani',
+  ],
+  knowsAbout: person?.knowsAbout || [
+    'Search Engine Optimization (SEO)',
+    'Generative Engine Optimization (GEO)',
+    'AI Search & Answer Engine Optimization',
+    'Google Ads Optimization',
+    'Core Web Vitals Engineering',
+    'Conversion Rate Optimization',
+  ],
+  hasCredential: [
+    {
+      '@type': 'EducationalOccupationalCredential',
+      name: 'Google Ads Search & Measurement Certified',
+    },
+    {
+      '@type': 'EducationalOccupationalCredential',
+      name: 'Advanced Technical SEO & Schema Authority',
+    },
+  ],
+};
+
+const graph: Record<string, any>[] = [
+  websiteSchema,
+  organizationSchema,
+  personSchema,
+];
+
+// 4. BreadcrumbList Schema (Every non-home page)
+if (breadcrumbs && breadcrumbs.length > 0) {
+  const itemListElement = breadcrumbs.map((crumb, idx) => ({
+    '@type': 'ListItem',
+    position: idx + 1,
+    name: crumb.name,
+    item: crumb.url.startsWith('http') ? crumb.url : `${siteUrl}${crumb.url}`,
+  }));
+
+  graph.push({
+    '@type': 'BreadcrumbList',
+    '@id': `${canonicalUrl}#breadcrumb`,
+    itemListElement,
+  });
+}
+
+// 5. Service Schema (/services/* pages)
+if (service) {
+  graph.push({
+    '@type': 'Service',
+    '@id': `${canonicalUrl}#service`,
+    name: service.name,
+    serviceType: service.serviceType,
+    description: service.description,
+    url: canonicalUrl,
+    provider: {
+      '@id': orgId,
+    },
+    areaServed: {
+      '@type': 'Country',
+      name: service.areaServed || 'Global',
+    },
+    offers: {
+      '@type': 'Offer',
+      price: service.offers?.price || 'Custom Scope',
+      priceCurrency: service.offers?.priceCurrency || 'USD',
+      url: `${siteUrl}/contact`,
+    },
+  });
+}
+
+// 6. Article / BlogPosting Schema
+if (article) {
+  graph.push({
+    '@type': 'BlogPosting',
+    '@id': `${canonicalUrl}#article`,
+    isPartOf: {
+      '@id': `${siteUrl}/#website`,
+    },
+    headline: article.headline,
+    description: article.description,
+    datePublished: article.datePublished,
+    dateModified: article.dateModified || article.datePublished,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': canonicalUrl,
+    },
+    author: {
+      '@id': personId,
+    },
+    publisher: {
+      '@id': orgId,
+    },
+    image: {
+      '@type': 'ImageObject',
+      url: article.imageUrl.startsWith('http') ? article.imageUrl : `${siteUrl}${article.imageUrl}`,
+    },
+    keywords: article.keywords && article.keywords.length > 0 ? article.keywords.join(', ') : undefined,
+    inLanguage: 'en-US',
+  });
+}
+
+// 7. FAQPage Schema
+if (faq && faq.length > 0) {
+  graph.push({
+    '@type': 'FAQPage',
+    '@id': `${canonicalUrl}#faq`,
+    mainEntity: faq.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  });
+}
+
+// Custom schemas
+if (customSchema.length > 0) {
+  graph.push(...customSchema);
+}
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': graph,
+};
+---
+
+<script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData, null, 2)} />

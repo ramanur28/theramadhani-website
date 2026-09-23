@@ -1,0 +1,254 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import FaqAccordion from '@/components/islands/FaqAccordion.tsx';
+import QuickAnswer from '@/components/common/QuickAnswer.astro';
+import type { ServiceSchemaData, FAQItem, BreadcrumbItem } from '@/types/schema';
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { name: 'Services', url: '/services/google-ads' },
+  { name: 'Google Ads Optimization', url: '/services/google-ads' },
+];
+
+const serviceData: ServiceSchemaData = {
+  name: 'Google Ads High-ROI Optimization',
+  serviceType: 'PayPerClickAdvertising',
+  description: 'High-intent Google Ads management, smart bidding optimization, server-side conversion tracking, and landing page CRO to maximize acquisition ROAS.',
+  url: 'https://ramadhani.dev/services/google-ads',
+  areaServed: 'Global',
+
+};
+
+const faqItems: FAQItem[] = [
+
+  {
+    question: 'How do you prevent wasted ad spend on broad-match queries?',
+    answer: 'We deploy strict Single-Themed Ad Groups (STAGs) using phrase and exact match commercial intents, maintain daily negative keyword hygiene lists, and separate Brand, Generic, and Competitor search terms into isolated budget tiers.',
+  },
+  {
+    question: 'What is server-side conversion tracking and why is it necessary?',
+    answer: 'Browser privacy protections (Safari ITP, ad-blockers) block up to 28% of standard client-side conversion pixels. Server-side tracking (via Google Tag Manager and Enhanced Conversions API) transmits conversion data directly from your server, feeding accurate value signals to Smart Bidding algorithms.',
+  },
+  {
+    question: 'What minimum ad spend do you require to take on a client?',
+    answer: 'We typically work with companies spending between $5,000 and $100,000 per month on Google Ads. Below $5,000/mo, machine learning algorithms lack sufficient conversion density to optimize Smart Bidding models effectively.',
+  },
+  {
+    question: 'How quickly can we expect to see an improvement in CPA and ROAS?',
+    answer: 'Negative keyword pruning and waste elimination produce immediate CPA reductions within the first 14 days. Re-training Smart Bidding algorithms with server-side conversion data typically achieves optimal target ROAS scaling within 30 to 60 days.',
+  },
+];
+---
+
+<PageLayout
+  title="Google Ads High-ROI Optimization | The Ramadhani"
+  description="Maximize revenue and ROAS with high-intent Google Ads campaign architecture, server-side conversion tracking, and landing page CRO."
+  headline="Google Ads High-ROI Optimization."
+  subheadline="Eliminate wasted spend on low-intent search terms. Scale your paid acquisition with exact intent targeting and value bidding."
+  badge="Service /03"
+  breadcrumbs={breadcrumbs}
+  service={serviceData}
+  faq={faqItems}
+  type="service"
+>
+  <div class="space-y-16">
+    
+    <!-- 1. 40-60 Word Plain-Language Answer Block (GEO Grounding) -->
+    <QuickAnswer
+      answer="Google Ads Optimization is the disciplined management of paid search campaigns, server-side conversion telemetry, and post-click landing pages. It eliminates wasted spend on low-intent keywords, trains Smart Bidding algorithms on high-value offline conversions, and maximizes return on ad spend (ROAS) for technology companies."
+    />
+
+    <!-- 2. Who It's For & What Problem It Solves -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="minimal-card p-8">
+        <span class="font-mono text-xs font-semibold text-brand-accent uppercase tracking-wider block mb-2">
+          Target ICP
+        </span>
+        <h2 class="font-display text-xl font-bold text-brand-text mb-4">
+          Who This Service Is For
+        </h2>
+        <ul class="space-y-2.5 text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Home Services (HVAC, Roofing, Remodeling, Solar):</strong> Companies that need immediate, high-intent phone calls and booked quotes.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>High-Ticket Contract Values:</strong> Businesses where a single closed customer is worth $3,000 to $50,000+.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Burned by Past Agencies:</strong> Advertisers tired of paying for low-quality tire-kicker clicks with zero bottom-line sales ROI.</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="minimal-card p-8">
+        <span class="font-mono text-xs font-semibold text-brand-accent uppercase tracking-wider block mb-2">
+          Root Problems
+        </span>
+        <h2 class="font-display text-xl font-bold text-brand-text mb-4">
+          What Problems This Solves
+        </h2>
+        <ul class="space-y-2.5 text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Wasted Broad-Match Spend:</strong> Up to 40% of budget leaking into irrelevant informational search terms.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Broken Conversion Telemetry:</strong> Ad blockers preventing Google Smart Bidding from identifying high-value leads.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Low Post-Click Conversion:</strong> High-cost clicks landing on generic, slow, or poorly structured homepage designs.</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. What's Included: Concrete Deliverables -->
+    <section class="minimal-card p-8 sm:p-10">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        Execution &bull; Deliverables
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-6">
+        What Is Included (Concrete Deliverables)
+      </h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-5">
+          <span class="font-mono text-xs font-bold text-brand-accent block mb-1">01. Single-Themed Ad Group (STAG) Architecture</span>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Restructuring search campaigns into hyper-relevant ad groups with customized Responsive Search Ads (RSAs) for 9/10 Quality Scores.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-5">
+          <span class="font-mono text-xs font-bold text-brand-accent block mb-1">02. Server-Side GTM &amp; Enhanced Conversions</span>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Direct API configuration sending first-party hashed conversion data, bypassing ad-blockers and restoring attribution integrity.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-5">
+          <span class="font-mono text-xs font-bold text-brand-accent block mb-1">03. Master Negative Keyword Hygiene</span>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Daily search term audits, account-level exclusion lists, and competitor query containment to eliminate wasteful clicks.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-5">
+          <span class="font-mono text-xs font-bold text-brand-accent block mb-1">04. Landing Page Conversion Rate Optimization</span>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Sub-second page speed engineering, high-intent headline matching, and streamlined form architecture to maximize conversion rates.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. How It Works (Process & Timeline) -->
+    <section class="minimal-card p-8 sm:p-10">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        Roadmap &bull; Timeline
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-6">
+        How It Works (60-Day Scaling Framework)
+      </h2>
+
+      <div class="space-y-6">
+        <div class="flex gap-4 items-start">
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-accent font-mono text-xs font-bold text-white">
+            W1
+          </span>
+          <div>
+            <h3 class="text-sm font-bold text-brand-text">Weeks 1–2: Spend Audit &amp; Telemetry Repair</h3>
+            <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mt-1">
+              Prune immediate negative keyword waste, deploy server-side GTM tracking, and verify Enhanced Conversion API signals.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start">
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-accent font-mono text-xs font-bold text-white">
+            W3
+          </span>
+          <div>
+            <h3 class="text-sm font-bold text-brand-text">Weeks 3–4: Campaign Re-Architecture &amp; Ad Copy Overhaul</h3>
+            <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mt-1">
+              Launch Single-Themed Ad Groups (STAGs), configure ad extensions, and align landing page message matching.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start">
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-accent font-mono text-xs font-bold text-white">
+            W5
+          </span>
+          <div>
+            <h3 class="text-sm font-bold text-brand-text">Weeks 5–8: Value-Based Smart Bidding &amp; Scale</h3>
+            <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mt-1">
+              Switch algorithms to Target CPA / Target ROAS using verified conversion data, scaling budgets into top-converting intents.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Architecture: Precision Tracking & Waste Elimination -->
+    <section class="rounded-2xl border border-brand-accent/30 bg-brand-surface p-8 sm:p-10">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        Engineering Methodology &bull; Precision Tracking
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-4">
+        Zero-Waste Search Intent &amp; Server-Side Telemetry
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
+        <div class="rounded-xl bg-brand-card p-4 border border-brand-border">
+          <div class="font-mono text-xl font-bold text-brand-text">Server-Side GTM</div>
+          <div class="text-xs text-brand-text-muted font-medium mt-1">Enhanced Conversions &amp; First-Party Data</div>
+        </div>
+        <div class="rounded-xl bg-brand-card p-4 border border-brand-border">
+          <div class="font-mono text-xl font-bold text-brand-text">Single-Themed</div>
+          <div class="text-xs text-brand-text-muted font-medium mt-1">Exact Intent Match Ad Grouping</div>
+        </div>
+        <div class="rounded-xl bg-brand-card p-4 border border-brand-border">
+          <div class="font-mono text-xl font-bold text-brand-accent">Negative Sculpting</div>
+          <div class="text-xs text-brand-text-muted font-medium mt-1">Continuous Waste Elimination</div>
+        </div>
+      </div>
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+        High-performing Google Ads campaigns succeed through rigorous measurement engineering rather than vanity metrics. We construct server-side tracking pipelines, sculpt negative keyword filters to block irrelevance, and align Smart Bidding strictly with confirmed first-party business revenue.
+      </p>
+      <div class="mt-4 pt-3 border-t border-brand-border/60">
+        <a href="/work" class="text-xs font-semibold text-brand-accent hover:underline inline-flex items-center gap-1">
+          <span>Explore active verified case studies</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+    </section>
+
+
+
+    <!-- 7. Short FAQ (3-5 Questions) -->
+    <section>
+      <FaqAccordion client:visible items={faqItems} title="Google Ads Optimization FAQs" />
+    </section>
+
+    <!-- 8. Primary CTA -->
+    <section class="minimal-card p-8 sm:p-10 text-center">
+      <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-brand-text">
+        Ready to eliminate wasted ad spend and scale ROAS?
+      </h2>
+      <p class="mt-3 text-xs sm:text-sm text-brand-text-muted max-w-lg mx-auto">
+        Schedule a PPC diagnostic to review search term waste, conversion tracking health, and immediate Quality Score opportunities.
+      </p>
+      <div class="mt-6">
+        <a href="/contact" class="btn-primary">
+          <span>Request PPC Audit</span>
+          <span class="ml-1.5">&rarr;</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</PageLayout>

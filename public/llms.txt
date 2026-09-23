@@ -1,0 +1,66 @@
+# Ramadhani — Search Rankings & Article-to-Lead Generation Engine
+
+> Ramadhani is a Search Growth and Conversion Specialist who helps businesses—particularly high-ticket Home Services and companies burned by traditional SEO agencies—rank top-3 on Google and engineer article conversion architecture to turn search traffic into an automated lead-generating machine.
+
+## Key Differentiation
+
+1. **Top-3 Google Search Dominance**: Ranking for high-intent, commercial search terms where customers are actively looking to hire contractors or purchase services.
+2. **Article-to-Lead Conversion Engine**: Transforming informational articles and blog guides from passive reading material into automated lead generators using direct answer blocks, instant estimate magnets, and commercial intent bridges.
+3. **Generative Engine Optimization (GEO)**: Structuring content and entity graphs so Google AI Overviews, Perplexity Pro, and ChatGPT cite and recommend the client as the primary authority.
+
+## Problems Solved
+
+1. **The Revenue Blindspot**: Businesses whose revenue could significantly scale through SEO & GEO, but who lack the technical blueprint to execute.
+2. **The Leaky Article Traffic**: Businesses that already attract Google search visitors, but experience virtually zero conversions because articles lack conversion architecture.
+3. **The SEO Agency Burnout**: Established businesses that paid monthly retainers to past SEO agencies, received PDF impression reports, but saw zero measurable impact on sales or booked revenue.
+
+## Industry Priority & Target Markets
+
+### Tier 1 Priority (Primary Focus)
+- **Home Services Agencies & Contractors**: HVAC, Roofing, Plumbing, Electrical, Remodeling, Luxury Home Improvement, Solar.
+- **Real Estate Agencies & Brokerages**: High-ticket property developers, real estate firms, and commercial brokerages capturing local buyer/seller searches.
+
+### Tier 2 Verticals (Specialized High-Value Sectors)
+- **Medical & Wellness Businesses**: Private practices, aesthetic clinics, and health centers acquiring high-trust patient consultations.
+- **B2B SaaS Platforms**: High-growth software platforms turning technical comparison articles into trial/demo pipeline.
+- **Finance Businesses**: Wealth management, advisory, accounting, and fintech capturing high-net-worth client inquiries.
+- **Travel Agencies**: Bespoke tour operators and luxury travel agencies converting destination guides into booked itineraries.
+
+### Special Situation: SEO Agency Burnouts
+- Established companies that previously hired SEO agencies, received PDF impression graphs, but saw zero measurable impact on sales or booked revenue.
+
+## Core Capabilities & Services
+
+### 1. High-Intent Google Search & Organic Ranking
+- Code-level Core Web Vitals optimization (LCP < 0.8s, CLS 0.0, INP < 50ms).
+- Commercial search query sculpting and competitive keyword displacement.
+- Interconnected Schema.org Knowledge Graphs (Organization, LocalBusiness, Service, Article).
+- Engagement: Tailored project sprints and monthly performance retainers.
+- Canonical URL: https://ramadhani.cloud/services/seo
+
+### 2. Article-to-Lead Conversion Architecture
+- In-article conversion rate optimization (CRO) and intent bridge funnels.
+- 40-60 word definitive direct answer blocks for immediate authority.
+- Instant estimate and quote calculator lead magnets embedded within guides.
+- Canonical URL: https://ramadhani.cloud/services/seo
+
+### 3. Generative Engine Optimization (GEO & AI Overviews)
+- Structuring content for direct citation in Google AI Overviews, ChatGPT Search, and Perplexity Pro.
+- Standards-compliant /llms.txt deployment and neural vector grounding.
+- Engagement: Standalone technical roadmaps and ongoing advisory.
+- Canonical URL: https://ramadhani.cloud/services/geo
+
+### 4. High-ROI Search Advertising (Google Ads)
+- High-intent search query sculpting with strict negative keyword hygiene.
+- Server-side Google Tag Manager (sGTM) and Enhanced Conversions API.
+- Engagement: Full account auditing and ongoing conversion management.
+- Canonical URL: https://ramadhani.cloud/services/google-ads
+
+## Entity Authority & Contact
+
+- Specialist: Ramadhani
+- Entity URL: https://ramadhani.cloud/about
+- Direct Email: contact@ramadhani.cloud
+- Portfolio & Case Studies: https://ramadhani.cloud/work
+- Strategic Audit Intake: https://ramadhani.cloud/contact
+- Platform: Astro 5 SSG, React 19 Islands, Tailwind CSS 3, Caddy 2 HTTP/3

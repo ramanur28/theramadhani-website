@@ -1,0 +1,254 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import FaqAccordion from '@/components/islands/FaqAccordion.tsx';
+import QuickAnswer from '@/components/common/QuickAnswer.astro';
+import type { ServiceSchemaData, FAQItem, BreadcrumbItem } from '@/types/schema';
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { name: 'Services', url: '/services/geo' },
+  { name: 'Generative Engine Optimization (GEO)', url: '/services/geo' },
+];
+
+const serviceData: ServiceSchemaData = {
+  name: 'Generative Engine Optimization (GEO)',
+  serviceType: 'GenerativeEngineOptimization',
+  description: 'Strategic optimization of digital architecture and entity data to position technology brands as the definitive cited source in ChatGPT, Perplexity, Claude, and Google AI Overviews.',
+  url: 'https://ramadhani.dev/services/geo',
+  areaServed: 'Global',
+
+};
+
+const faqItems: FAQItem[] = [
+
+  {
+    question: 'What is Generative Engine Optimization (GEO) and how does it work?',
+    answer: 'GEO is the technical practice of structuring website content, entity schemas, and data density so that large language models (LLMs) and AI answer engines (ChatGPT Search, Perplexity Pro, Google AI Overviews, Claude) extract, synthesize, and cite your brand as the primary authority for user queries.',
+  },
+  {
+    question: 'How do AI engines decide which sources to cite in their answers?',
+    answer: 'AI engines use semantic vector search (RAG) combined with authority weighting algorithms. They prioritize sources that feature concise direct answer blocks (40-60 words), verified Schema.org entity graphs, machine-readable /llms.txt indexes, and empirical benchmark data.',
+  },
+  {
+    question: 'How do you measure ROI from conversational AI search engines?',
+    answer: 'We track three core metrics: Grounding Citation Share (how frequently your domain appears in Perplexity and ChatGPT source carousels), AI Overviews Share of Voice, and Assisted Referral Traffic using dedicated UTM telemetry.',
+  },
+  {
+    question: 'Does optimizing for GEO hurt traditional Google organic rankings?',
+    answer: 'No. GEO enhances traditional SEO because both Google algorithms and AI models reward high-information density, clean semantic HTML, sub-second Core Web Vitals, and authoritative structured data.',
+  },
+];
+---
+
+<PageLayout
+  title="Generative Engine Optimization (GEO) | The Ramadhani"
+  description="Ground your brand as the primary cited source in ChatGPT, Perplexity, Claude, and Google AI Overviews with technical GEO frameworks."
+  headline="Generative Engine Optimization (GEO)."
+  subheadline="When buyers ask conversational AI models for recommendations, ensure your brand is the primary cited source."
+  badge="Service /02"
+  breadcrumbs={breadcrumbs}
+  service={serviceData}
+  faq={faqItems}
+  type="service"
+>
+  <div class="space-y-16">
+    
+    <!-- 1. 40-60 Word Plain-Language Answer Block (GEO Grounding) -->
+    <QuickAnswer
+      answer="Generative Engine Optimization (GEO) is the strategic engineering of website content, entity schemas, and information density to ensure large language models (ChatGPT, Perplexity, Claude, Google AI Overviews) retrieve, synthesize, and cite your brand in generated answers, capturing high-intent conversational buyers."
+    />
+
+    <!-- 2. Who It's For & What Problem It Solves -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="minimal-card p-8">
+        <span class="font-mono text-xs font-semibold text-brand-accent uppercase tracking-wider block mb-2">
+          Target ICP
+        </span>
+        <h2 class="font-display text-xl font-bold text-brand-text mb-4">
+          Who This Service Is For
+        </h2>
+        <ul class="space-y-2.5 text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Home Services &amp; High-Ticket Contractors:</strong> Businesses whose local customers ask AI Overviews or ChatGPT for the best local service providers.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Businesses Losing Traffic to AI Answers:</strong> Companies seeing traditional clicks drop as Google AI Overviews answers user questions directly.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Companies Burned by Traditional SEO:</strong> Teams seeking 2026-ready search authority instead of outdated 2018 keyword stuffing.</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="minimal-card p-8">
+        <span class="font-mono text-xs font-semibold text-brand-accent uppercase tracking-wider block mb-2">
+          Root Problems
+        </span>
+        <h2 class="font-display text-xl font-bold text-brand-text mb-4">
+          What Problems This Solves
+        </h2>
+        <ul class="space-y-2.5 text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>AI Citation Exclusion:</strong> Competitors being recommended and cited in ChatGPT / Perplexity while your brand is ignored.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Zero-Click Cannibalization:</strong> Google AI Overviews answering user queries without driving traditional search clicks.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-brand-accent font-bold">&bull;</span>
+            <span><strong>Crawler Inefficiency:</strong> Bloated client-side JavaScript preventing headless AI bots (GPTBot, ClaudeBot) from indexing your content.</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. What's Included: Concrete Deliverables -->
+    <section class="minimal-card p-8 sm:p-10">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        Execution &bull; Deliverables
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-6">
+        What Is Included (Concrete Deliverables)
+      </h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-5">
+          <span class="font-mono text-xs font-bold text-brand-accent block mb-1">01. Direct Answer (TL;DR) Extract Formatting</span>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Structuring 40-60 word high-density answer blocks beneath primary headings across all cornerstone product and documentation pages.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-5">
+          <span class="font-mono text-xs font-bold text-brand-accent block mb-1">02. Standards-Compliant /llms.txt Architecture</span>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Deployment of clean, machine-readable Markdown indexes optimized for direct LLM ingestion and context-window grounding.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-5">
+          <span class="font-mono text-xs font-bold text-brand-accent block mb-1">03. Neural Entity Linking &amp; Fact Extraction</span>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Structuring proprietary statistics, benchmark studies, and named author credentials for unambiguous vector search retrieval.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-5">
+          <span class="font-mono text-xs font-bold text-brand-accent block mb-1">04. AI Answer Engine Telemetry &amp; Auditing</span>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Continuous tracking of citation inclusion across Perplexity, ChatGPT Search, and Google AI Overviews with monthly share-of-voice reports.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. How It Works (Process & Timeline) -->
+    <section class="minimal-card p-8 sm:p-10">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        Roadmap &bull; Timeline
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-6">
+        How It Works (90-Day Implementation Process)
+      </h2>
+
+      <div class="space-y-6">
+        <div class="flex gap-4 items-start">
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-accent font-mono text-xs font-bold text-white">
+            W1
+          </span>
+          <div>
+            <h3 class="text-sm font-bold text-brand-text">Weeks 1–2: AI Citation Gap &amp; Entity Audit</h3>
+            <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mt-1">
+              Analyze where your brand is currently cited vs. competitors across 100+ prompt intents in ChatGPT, Perplexity, and Claude.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start">
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-accent font-mono text-xs font-bold text-white">
+            W3
+          </span>
+          <div>
+            <h3 class="text-sm font-bold text-brand-text">Weeks 3–5: Answer Extraction &amp; llms.txt Deployment</h3>
+            <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mt-1">
+              Restructure key commercial content with definitive answer blocks, deploy `/llms.txt`, and update Schema.org knowledge graphs.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start">
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-accent font-mono text-xs font-bold text-white">
+            W6
+          </span>
+          <div>
+            <h3 class="text-sm font-bold text-brand-text">Weeks 6–12: Vector Grounding &amp; Citation Telemetry</h3>
+            <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mt-1">
+              Track real-time grounding rates in AI answer carousels, optimize high-intent query answers, and measure assisted pipeline.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Architecture: Standards-Compliant GEO Framework -->
+    <section class="rounded-2xl border border-brand-accent/30 bg-brand-surface p-8 sm:p-10">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        Technical Standard &bull; Verified Implementation
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-4">
+        Engineered Architecture for AI Answer Engines &amp; RAG Systems
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
+        <div class="rounded-xl bg-brand-card p-4 border border-brand-border">
+          <div class="font-mono text-xl font-bold text-brand-text">Schema Graphs</div>
+          <div class="text-xs text-brand-text-muted font-medium mt-1">Entity Grounding &amp; Relationships</div>
+        </div>
+        <div class="rounded-xl bg-brand-card p-4 border border-brand-border">
+          <div class="font-mono text-xl font-bold text-brand-text">/llms.txt</div>
+          <div class="text-xs text-brand-text-muted font-medium mt-1">Standards-Compliant LLM Index</div>
+        </div>
+        <div class="rounded-xl bg-brand-card p-4 border border-brand-border">
+          <div class="font-mono text-xl font-bold text-brand-accent">Direct Answers</div>
+          <div class="text-xs text-brand-text-muted font-medium mt-1">High-Density Synthesis Blocks</div>
+        </div>
+      </div>
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+        Rather than relying on unverified claims or vanity AI counts, our Generative Engine Optimization architecture is grounded in deterministic machine-readability: connected JSON-LD knowledge graphs, structured direct-answer blocks, and sub-second crawlable DOMs that AI search crawlers can index without hallucination.
+      </p>
+      <div class="mt-4 pt-3 border-t border-brand-border/60">
+        <a href="/work" class="text-xs font-semibold text-brand-accent hover:underline inline-flex items-center gap-1">
+          <span>Explore active verified case studies</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+    </section>
+
+
+
+    <!-- 7. Short FAQ (3-5 Questions) -->
+    <section>
+      <FaqAccordion client:visible items={faqItems} title="Generative Engine Optimization FAQs" />
+    </section>
+
+    <!-- 8. Primary CTA -->
+    <section class="minimal-card p-8 sm:p-10 text-center">
+      <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-brand-text">
+        Ready to make your brand the #1 cited answer?
+      </h2>
+      <p class="mt-3 text-xs sm:text-sm text-brand-text-muted max-w-lg mx-auto">
+        Request an AI Citation Diagnostic to discover if ChatGPT, Perplexity, and Google AI Overviews cite your brand or your competitors.
+      </p>
+      <div class="mt-6">
+        <a href="/contact" class="btn-primary">
+          <span>Request GEO Audit</span>
+          <span class="ml-1.5">&rarr;</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</PageLayout>

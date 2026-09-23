@@ -1,0 +1,307 @@
+---
+const pathname = new URL(Astro.request.url).pathname;
+
+const services = [
+  {
+    name: 'Technical & Organic SEO',
+    href: '/services/seo',
+    desc: 'Architecture, schema graphs, rendering & indexing.',
+    badge: 'Code-First'
+  },
+  {
+    name: 'Generative Engine Optimization (GEO)',
+    href: '/services/geo',
+    desc: 'Answer engine visibility (Perplexity, ChatGPT, AI Overviews).',
+    badge: 'AI Search'
+  },
+  {
+    name: 'Google Ads & Paid Search',
+    href: '/services/google-ads',
+    desc: 'High-intent search capture & ROAS turnaround.',
+    badge: 'High ROAS'
+  }
+];
+
+const otherLinks = [
+  { name: 'Proof / Work', href: '/work' },
+  { name: 'Articles', href: '/articles' },
+  { name: 'About', href: '/about' },
+];
+
+const isServicesActive = services.some(s => pathname.startsWith(s.href));
+---
+
+<header class="sticky top-0 z-50 w-full border-b border-brand-border bg-brand-bg/95 backdrop-blur-md">
+  <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <!-- Brand Logo / Monogram -->
+    <a href="/" class="group flex items-center gap-2 focus:outline-none" aria-label="The Ramadhani - Technical SEO & GEO Consultant">
+      <img
+        src="/images/brand-logo.webp"
+        alt="The Ramadhani monogram"
+        width="32"
+        height="32"
+        class="h-7 w-7 sm:h-8 sm:w-8 object-contain group-hover:scale-105 transition-transform duration-200"
+      />
+      <span class="font-script text-[28px] sm:text-[32px] font-normal text-brand-text group-hover:text-brand-accent transition-colors leading-none tracking-normal pt-1.5">
+        The Ramadhani
+      </span>
+    </a>
+
+    <!-- Desktop Navigation -->
+    <nav class="hidden items-center gap-6 md:flex" aria-label="Main Navigation">
+      
+      <!-- Services Dropdown Item -->
+      <div class="relative group" id="services-dropdown-container">
+        <button
+          type="button"
+          id="services-menu-button"
+          class:list={[
+            "inline-flex items-center gap-1 text-xs font-medium transition-colors py-2 focus:outline-none cursor-pointer",
+            isServicesActive
+              ? "text-brand-accent font-semibold"
+              : "text-brand-text-muted hover:text-brand-text"
+          ]}
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-label="Services menu"
+        >
+          <span>Services</span>
+          <svg class="h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180 text-brand-text-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <!-- Dropdown Menu Box -->
+        <div
+          id="services-dropdown-menu"
+          class="invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 absolute left-0 top-full pt-2 w-80 transition-all duration-150 z-50"
+        >
+          <div class="rounded-xl border border-brand-border bg-brand-card p-2 shadow-xl">
+            {services.map((item) => {
+              const isCurrent = pathname === item.href;
+              return (
+                <a
+                  href={item.href}
+                  aria-label={`${item.name} - ${item.desc}`}
+                  class:list={[
+                    "flex flex-col gap-0.5 rounded-lg p-2.5 transition-colors",
+                    isCurrent
+                      ? "bg-brand-surface text-brand-accent"
+                      : "hover:bg-brand-surface text-brand-text"
+                  ]}
+                >
+                  <div class="flex items-center justify-between text-xs font-semibold">
+                    <span>{item.name}</span>
+                    <span class="font-mono text-[10px] text-brand-accent bg-brand-accent/10 px-1.5 py-0.5 rounded">
+                      {item.badge}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-brand-text-muted leading-snug">
+                    {item.desc}
+                  </p>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <!-- Other Links -->
+      {otherLinks.map((link) => {
+        const isActive = pathname.startsWith(link.href);
+        return (
+          <a
+            href={link.href}
+            aria-label={link.name}
+            class:list={[
+              "text-xs font-medium transition-colors",
+              isActive
+                ? "text-brand-accent font-semibold"
+                : "text-brand-text-muted hover:text-brand-text"
+            ]}
+          >
+            {link.name}
+          </a>
+        );
+      })}
+
+      <!-- Primary CTA -->
+      <a
+        href="/contact"
+        aria-label="Book Strategic Performance Audit"
+        class="ml-2 inline-flex items-center justify-center rounded-lg bg-brand-accent px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-accent-hover transition-colors focus-visible:ring-2 focus-visible:ring-brand-accent"
+      >
+        Book Audit
+      </a>
+    </nav>
+
+    <!-- Mobile Menu Toggle Button with Morphing Icon Animation -->
+    <div class="flex items-center md:hidden">
+      <button
+        type="button"
+        id="mobile-menu-btn"
+        class="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-brand-text hover:bg-brand-surface hover:text-brand-accent focus:outline-none cursor-pointer transition-colors"
+        aria-controls="mobile-menu"
+        aria-expanded="false"
+        aria-label="Toggle navigation menu"
+      >
+        <!-- Hamburger Bars Icon -->
+        <svg
+          id="menu-icon-open"
+          class="h-5 w-5 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] transform opacity-100 scale-100 rotate-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+
+        <!-- Close (X) Icon -->
+        <svg
+          id="menu-icon-close"
+          class="absolute h-5 w-5 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] transform opacity-0 scale-75 rotate-90 pointer-events-none"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Absolute Positioned Mobile Menu Dropdown (Zero Impact on Navbar Height) -->
+  <div
+    id="mobile-menu"
+    class="absolute top-full left-0 w-full grid grid-rows-[0fr] opacity-0 pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] md:hidden border-b border-brand-border bg-brand-bg/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+  >
+    <div id="mobile-menu-inner" class="min-h-0 px-4 py-4 space-y-3 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] -translate-y-2">
+      <!-- Services Group -->
+      <div class="space-y-1">
+        <div class="font-mono text-[11px] font-bold uppercase tracking-wider text-brand-accent px-3 py-1">
+          Services
+        </div>
+        {services.map((item) => (
+          <a
+            href={item.href}
+            aria-label={`${item.name} - ${item.desc}`}
+            class="block rounded-lg px-3 py-2 text-xs font-medium text-brand-text hover:bg-brand-surface hover:text-brand-accent transition-colors"
+          >
+            {item.name}
+          </a>
+        ))}
+      </div>
+
+      <!-- Other Links -->
+      <div class="border-t border-brand-border pt-2 space-y-1">
+        {otherLinks.map((link) => (
+          <a
+            href={link.href}
+            aria-label={link.name}
+            class="block rounded-lg px-3 py-2 text-sm text-brand-text hover:bg-brand-surface hover:text-brand-accent transition-colors"
+          >
+            {link.name}
+          </a>
+        ))}
+      </div>
+
+      <!-- CTA -->
+      <div class="pt-2">
+        <a
+          href="/contact"
+          aria-label="Book Strategic Performance Audit"
+          class="block w-full rounded-lg bg-brand-accent py-2.5 text-center text-xs font-semibold text-white hover:bg-brand-accent-hover transition-colors shadow-sm"
+        >
+          Book Strategic Audit
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  function initMobileMenu() {
+    const btn = document.getElementById('mobile-menu-btn');
+    const menu = document.getElementById('mobile-menu');
+    const innerMenu = document.getElementById('mobile-menu-inner');
+    const iconOpen = document.getElementById('menu-icon-open');
+    const iconClose = document.getElementById('menu-icon-close');
+
+    if (!btn || !menu || !iconOpen || !iconClose) return;
+
+    if (btn.dataset.menuReady === 'true') return;
+    btn.dataset.menuReady = 'true';
+
+    const menuEl = menu;
+    const btnEl = btn;
+    const openEl = iconOpen;
+    const closeEl = iconClose;
+    const innerEl = innerMenu;
+
+    const setMenuState = (isOpen: boolean) => {
+      btnEl.setAttribute('aria-expanded', isOpen.toString());
+      if (isOpen) {
+        // Expand menu smoothly
+        menuEl.classList.remove('grid-rows-[0fr]', 'opacity-0', 'pointer-events-none');
+        menuEl.classList.add('grid-rows-[1fr]', 'opacity-100', 'pointer-events-auto');
+        if (innerEl) {
+          innerEl.classList.remove('-translate-y-2');
+          innerEl.classList.add('translate-y-0');
+        }
+
+        // Morph icon to Close state
+        openEl.classList.remove('opacity-100', 'scale-100', 'rotate-0');
+        openEl.classList.add('opacity-0', 'scale-75', '-rotate-90');
+        closeEl.classList.remove('opacity-0', 'scale-75', 'rotate-90', 'pointer-events-none');
+        closeEl.classList.add('opacity-100', 'scale-100', 'rotate-0');
+      } else {
+        // Collapse menu smoothly
+        menuEl.classList.remove('grid-rows-[1fr]', 'opacity-100', 'pointer-events-auto');
+        menuEl.classList.add('grid-rows-[0fr]', 'opacity-0', 'pointer-events-none');
+        if (innerEl) {
+          innerEl.classList.remove('translate-y-0');
+          innerEl.classList.add('-translate-y-2');
+        }
+
+        // Morph icon to Hamburger state
+        openEl.classList.remove('opacity-0', 'scale-75', '-rotate-90');
+        openEl.classList.add('opacity-100', 'scale-100', 'rotate-0');
+        closeEl.classList.remove('opacity-100', 'scale-100', 'rotate-0');
+        closeEl.classList.add('opacity-0', 'scale-75', 'rotate-90', 'pointer-events-none');
+      }
+    };
+
+    btnEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isCurrentlyOpen = btnEl.getAttribute('aria-expanded') === 'true';
+      setMenuState(!isCurrentlyOpen);
+    });
+
+    // Close when clicking any nav link inside mobile menu
+    menuEl.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        setMenuState(false);
+      });
+    });
+
+    // Close when clicking outside of header/menu
+    document.addEventListener('click', (e) => {
+      const target = e.target as Node;
+      if (!menuEl.contains(target) && !btnEl.contains(target)) {
+        setMenuState(false);
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        setMenuState(false);
+      }
+    });
+  }
+
+  initMobileMenu();
+  document.addEventListener('astro:page-load', initMobileMenu);
+</script>

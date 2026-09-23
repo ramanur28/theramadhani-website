@@ -1,0 +1,53 @@
+# ==============================================================================
+# Robots.txt for Ramadhani Personal Brand & Authority Website
+# Optimized for traditional search engines and AI generative answer engines.
+# ==============================================================================
+
+# User-Agent Wildcard: Allow standard web crawlers
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# ------------------------------------------------------------------------------
+# Dedicated AI & Search Engine Crawler Directives
+# All AI answer engine crawlers are explicitly ALLOWED to maximize citation
+# grounding in ChatGPT, Perplexity, Claude, and Google AI Overviews.
+# ------------------------------------------------------------------------------
+
+# OpenAI Training Crawler (Used to build GPT training data)
+User-agent: GPTBot
+Allow: /
+
+# OpenAI Real-Time Search Crawler (Used for ChatGPT Search live answers)
+User-agent: OAI-SearchBot
+Allow: /
+
+# Anthropic Web Crawler (Used for Claude model retrieval & training)
+User-agent: ClaudeBot
+Allow: /
+
+# Anthropic Real-Time Search Crawler (Used for Claude live search citations)
+User-agent: Claude-SearchBot
+Allow: /
+
+# Perplexity AI Live Search Crawler (Used for Perplexity Pro answer grounding)
+User-agent: PerplexityBot
+Allow: /
+
+# Google AI Extended Crawler (Used for Google AI Overviews and Gemini training)
+User-agent: Google-Extended
+Allow: /
+
+# Microsoft Bing Search Crawler (Used for Bing & Microsoft Copilot grounding)
+User-agent: Bingbot
+Allow: /
+
+# Common Crawl (Open web dataset leveraged by various foundational models)
+User-agent: CCBot
+Allow: /
+
+# ------------------------------------------------------------------------------
+# Sitemap Index & Discovery
+# ------------------------------------------------------------------------------
+Sitemap: https://ramadhani.cloud/sitemap-index.xml

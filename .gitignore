@@ -1,0 +1,64 @@
+# ==============================================================================
+# Git Ignore Configuration for The Ramadhani Portfolio & Platform
+# ==============================================================================
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production Build Outputs & Astro Generated Types/Cache
+dist/
+dist-ssr/
+.astro/
+
+# Environment Variables & Local Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+*.pem
+*.key
+
+# Runtime Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Operating System Artifacts
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+*Zone.Identifier
+*.Zone.Identifier
+
+# IDE & Editor Configs
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# Testing, Performance & CI Artifacts
+coverage/
+.nyc_output/
+.lighthouseci/
+
+# Scratch / Temporary Files
+/scratch/
+*.tmp
+*.bak
+/Hero-bg-video.mp4

@@ -1,0 +1,324 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import FaqAccordion from '@/components/islands/FaqAccordion.tsx';
+import QuickAnswer from '@/components/common/QuickAnswer.astro';
+import type { ServiceSchemaData, FAQItem, BreadcrumbItem } from '@/types/schema';
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { name: 'Services', url: '/services/seo' },
+  { name: 'Search Rankings & Article Conversion', url: '/services/seo' },
+];
+
+const serviceData: ServiceSchemaData = {
+  name: 'Search Rankings & Article-to-Lead Conversion Engineering',
+  serviceType: 'SearchEngineOptimization',
+  description: 'Dual-focus search strategy: Rank top of Google for high-intent queries and engineer article conversion architecture that turns search traffic into paying leads.',
+  url: 'https://ramadhani.cloud/services/seo',
+  areaServed: 'Worldwide',
+
+};
+
+const faqItems: FAQItem[] = [
+  {
+    question: 'Why does our current search traffic produce almost zero leads?',
+    answer: 'Most SEO agencies write articles purely for search engines, attracting passive informational readers who scan and leave. Without intentional conversion architecture—such as commercial bridge blocks, dynamic estimate calculators, direct answer callouts, and multi-tier CTAs—99% of your traffic leaks away without ever contacting your business.',
+  },
+  {
+    question: 'How does this specifically benefit Home Services and contractors?',
+    answer: 'Home Services (HVAC, Roofing, Plumbing, Remodeling, Solar) rely on customers who have immediate, high-ticket needs. When a homeowner searches for solutions, they need instant clarity, local trust proof, and effortless quote submission. We rank you for emergency and commercial intent keywords, while converting guide readers into scheduled inspections and job estimates.',
+  },
+  {
+    question: 'We were burned by a previous SEO agency. How is your approach different?',
+    answer: 'Traditional agencies celebrate vanity metrics like impression counts, ranking for irrelevant low-intent keywords, and sending monthly PDF reports. We operate on revenue accountability: every keyword targeted must have commercial value, and every article published is engineered with conversion mechanisms to generate measurable inbound calls and form submissions.',
+  },
+  {
+    question: 'How quickly will we see performance improvements and leads?',
+    answer: 'Conversion architecture changes on existing search traffic can start generating additional leads within 7 to 14 days of deployment. Technical Core Web Vitals fixes and indexing improvements register with Googlebot within 2 to 4 weeks, with competitive top-3 keyword rankings compounding over 60 to 90 days.',
+  },
+  {
+    question: 'Do you implement the changes directly or just deliver audit documents?',
+    answer: 'We provide hands-on implementation: writing engineered article content, structuring JSON-LD schema graphs, optimizing frontend performance, and setting up conversion tracking directly in your codebase or CMS.',
+  },
+];
+---
+
+<PageLayout
+  title="Search Rankings & Article-to-Lead Conversion Engine | The Ramadhani"
+  description="I help high-intent businesses and Home Services rank top-3 on Google and engineer article conversion funnels that turn searchers into booked calls."
+  headline="Rank Top of Google. Turn Searchers & Articles Into Paying Leads."
+  subheadline="Engineered specifically for Home Services and businesses burned by traditional agencies. I combine top-3 Google rankings with in-article conversion architecture that transforms passive readers into booked estimates."
+  badge="Service /01 &bull; Rank + Convert"
+  breadcrumbs={breadcrumbs}
+  service={serviceData}
+  faq={faqItems}
+  type="service"
+>
+  <div class="space-y-16">
+    
+    <!-- 1. Executive Quick Answer (AI Overviews & Summary) -->
+    <QuickAnswer
+      answer="Search Rankings & Article-to-Lead Conversion Engineering is a dual-focus organic growth system: First, we rank your website in Google's Top 3 for commercial-intent keywords where customers are actively looking to hire. Second, we engineer your articles and blog posts with high-converting bridge architecture—turning passive search readers into qualified inbound phone calls, quote requests, and booked jobs."
+    />
+
+    <!-- 2. The Core Problem: Why Most SEO Fails To Generate Revenue -->
+    <section class="minimal-card p-8 sm:p-10 border-l-4 border-l-brand-accent">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        The Industry Problem &bull; The Leaky Bucket
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-4">
+        Why Most Businesses Get Traffic But No Sales
+      </h2>
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mb-6">
+        Most SEO agencies operate with an outdated mindset: they churn out generic 800-word blog posts, target high-volume informational keywords with zero commercial intent, and send monthly PDFs highlighting "impression growth." 
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 border-t border-brand-border">
+        <div class="p-4 rounded-xl bg-brand-surface border border-brand-border">
+          <span class="font-mono text-xs font-bold text-rose-500 block mb-1">✕ The Traditional Agency Trap</span>
+          <p class="text-xs text-brand-text-muted leading-relaxed">
+            Chasing vanity keywords, buying toxic backlinks, and writing informational fluff that attracts college students rather than customers ready to hire your services.
+          </p>
+        </div>
+        <div class="p-4 rounded-xl bg-brand-surface border border-brand-accent/40">
+          <span class="font-mono text-xs font-bold text-emerald-500 block mb-1">✓ The Revenue &amp; Lead Engine</span>
+          <p class="text-xs text-brand-text-muted leading-relaxed">
+            Targeting commercial buyer-intent queries, optimizing Core Web Vitals to <strong class="text-brand-text">outrank competitors</strong>, and building in-article conversion bridges that capture real customer inquiries.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Technical & Conversion Deliverables -->
+    <section>
+      <div class="max-w-xl mb-8">
+        <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+          Methodology &bull; The 4 Core Pillars
+        </div>
+        <h2 class="font-display text-2xl font-bold tracking-tight text-brand-text">
+          How We Turn Google Search Into A Lead Machine
+        </h2>
+        <p class="mt-2 text-xs sm:text-sm text-brand-text-muted">
+          A systematic framework designed for high-ticket Home Services and businesses requiring dependable inbound acquisition:
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-6">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="h-2 w-2 rounded-full bg-brand-accent"></span>
+            <span class="font-mono text-xs font-bold text-brand-text">01. Commercial-Intent Google Rankings</span>
+          </div>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            We target the exact high-value keywords customers type when ready to hire (e.g. emergency repairs, cost guides, replacement services). We eliminate wasted effort on zero-intent vanity queries.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-6">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="h-2 w-2 rounded-full bg-brand-accent"></span>
+            <span class="font-mono text-xs font-bold text-brand-text">02. Article-to-Lead Conversion Funnels</span>
+          </div>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            We transform articles from passive reading into interactive lead magnets: embedding instant project cost calculators, direct answer summary blocks, and frictionless quote forms directly within the text.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-6">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="h-2 w-2 rounded-full bg-brand-accent"></span>
+            <span class="font-mono text-xs font-bold text-brand-text">03. Sub-Second Performance &amp; CWV</span>
+          </div>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Mobile homeowners bounce if a website takes more than 2 seconds to load. We optimize Core Web Vitals (LCP &lt; 0.8s, CLS 0.0) so your site ranks higher and visitors never drop off.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-6">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="h-2 w-2 rounded-full bg-brand-accent"></span>
+            <span class="font-mono text-xs font-bold text-brand-text">04. Local &amp; Entity Schema Architecture</span>
+          </div>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Interconnected Schema.org JSON-LD graphs linking Organization, LocalBusiness, Service, and E-E-A-T credentials so Google and AI engines recognize you as the verified local authority.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. How It Works (Process & Roadmap Options) -->
+    <section class="minimal-card p-8 sm:p-10">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-border pb-5 mb-8">
+        <div>
+          <div class="font-mono text-xs font-semibold text-brand-accent mb-1">
+            Execution &bull; Dual Roadmap Options
+          </div>
+          <h2 class="font-display text-2xl font-bold text-brand-text">
+            SEO Execution Roadmap: 30-Day Sprint &amp; 3-Month Growth Engine
+          </h2>
+        </div>
+        <a
+          href="/services/seo/workflow"
+          class="btn-primary text-xs py-2 px-3.5 inline-flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+        >
+          <span>View Full Workflow Details</span>
+          <span aria-hidden="true">&rarr;</span>
+        </a>
+      </div>
+
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mb-8">
+        We provide two structured execution pathways tailored to your growth objectives—whether you need rapid foundational remediation (30-Day Sprint) or a continuous acquisition engine (90-Day Cycle).
+      </p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Option A: 30-Day Sprint -->
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-6 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-mono text-xs font-bold text-brand-accent">Option A &bull; Intensive Sprint</span>
+              <span class="font-mono text-[11px] text-brand-text-dim bg-brand-card px-2 py-0.5 rounded border border-brand-border">Days 1–30</span>
+            </div>
+            <h3 class="font-display text-lg font-bold text-brand-text mb-3">
+              30-Day Sprint: Foundation &amp; Quick-Wins
+            </h3>
+            <p class="text-xs text-brand-text-muted leading-relaxed mb-4">
+              Focuses on resolving critical technical bottlenecks, mapping the conversion funnel, and securing immediate quick wins on pages with existing organic traffic.
+            </p>
+
+            <ul class="space-y-2.5 text-xs text-brand-text-muted border-t border-brand-border/60 pt-4">
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-mono font-bold">01</span>
+                <span><strong>Days 1–3 (Onboarding &amp; Setup):</strong> Commercial KPI alignment (qualified leads), baseline funnel audit, and GTM/GA4 tracking setup.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-mono font-bold">02</span>
+                <span><strong>Days 3–10 (In-Depth Audit):</strong> Crawlability, Core Web Vitals, commercial vs. blog intent gap, and UX friction audit.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-mono font-bold">03</span>
+                <span><strong>Days 10–15 (Strategy &amp; Funnel):</strong> Intent-to-funnel mapping (ToFu to lead magnets, BoFu to money pages) &amp; CTA blueprint.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-mono font-bold">04</span>
+                <span><strong>Days 15–30 (Quick-Wins Execution):</strong> Rapid technical fixes, headline restructuring, sticky WhatsApp triggers, and monthly reporting.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-brand-border/60">
+            <span class="font-mono text-[11px] text-brand-accent font-semibold block">Deliverables: Full Audit Document &amp; Optimization of 5 Key Pages</span>
+          </div>
+        </div>
+
+        <!-- Option B: 90-Day / 3-Month Growth Engine -->
+        <div class="rounded-xl border border-brand-accent/40 bg-brand-surface p-6 flex flex-col justify-between shadow-xs">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-mono text-xs font-bold text-brand-accent">Option B &bull; Growth Engine</span>
+              <span class="font-mono text-[11px] text-brand-accent bg-brand-accent/10 px-2 py-0.5 rounded border border-brand-accent/20 font-semibold">Full 90 Days</span>
+            </div>
+            <h3 class="font-display text-lg font-bold text-brand-text mb-3">
+              3-Month Workflow: Hypothesis Validation &amp; Scaling
+            </h3>
+            <p class="text-xs text-brand-text-muted leading-relaxed mb-4">
+              A complete hypothesis validation cycle: deep technical remediation, recurring lead-generating content, and iterative CRO A/B testing.
+            </p>
+
+            <ul class="space-y-2.5 text-xs text-brand-text-muted border-t border-brand-border/60 pt-4">
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-mono font-bold">M1</span>
+                <span><strong>Month 1 (Foundation &amp; Research):</strong> Comprehensive audit, 90-day funnel architecture, critical technical fixes &amp; 3–5 priority pages.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-mono font-bold">M2</span>
+                <span><strong>Month 2 (Content &amp; Authority):</strong> 4–8 high-converting E-E-A-T articles, money page redesign, internal siloing, and digital PR.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-brand-accent font-mono font-bold">M3</span>
+                <span><strong>Month 3 (A/B Testing &amp; GEO):</strong> CTA copy testing, AI Overview citation optimization, sales team alignment, and final handover.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-brand-border/60">
+            <span class="font-mono text-[11px] text-brand-accent font-semibold block">Deliverables: Conversion Content Engine, Authority Backlinks, &amp; 90-Day ROI Report</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Execution Delivery Model Strip -->
+      <div class="mt-8 rounded-xl border border-brand-border bg-brand-card p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <span class="font-mono text-xs font-bold text-brand-text block mb-1">
+            Flexible Execution Models (Hybrid Delivery)
+          </span>
+          <p class="text-xs text-brand-text-muted leading-relaxed max-w-xl">
+            Available as <strong>Full Hands-On Execution</strong> (fully executed by The Ramadhani) or <strong>Technical Advisory Blueprint</strong> (SOP guidelines &amp; technical wireframes for client internal/developer teams).
+          </p>
+        </div>
+        <a
+          href="/services/seo/workflow"
+          class="text-xs font-semibold text-brand-accent hover:underline inline-flex items-center gap-1 shrink-0"
+        >
+          <span>Explore Full Workflow</span>
+          <span aria-hidden="true">&rarr;</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- 5. Proof: Concrete Results -->
+    <section class="rounded-2xl border border-brand-accent/30 bg-brand-surface p-8 sm:p-10">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        Verified Case Outcome &bull; Adventure Travel &amp; Tour Operator
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-4">
+        Panorama Lens Trip: 3.39K Organic Clicks, 95 Mobile CWV &amp; Top-3 Rankings
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
+        <div class="rounded-xl bg-brand-card p-4 border border-brand-border">
+          <div class="font-mono text-3xl font-bold text-brand-text">3.39K</div>
+          <div class="text-xs text-brand-text-muted font-medium mt-1">Organic Search Clicks (231K Impr)</div>
+        </div>
+        <div class="rounded-xl bg-brand-card p-4 border border-brand-border">
+          <div class="font-mono text-3xl font-bold text-brand-text">#2–#3</div>
+          <div class="text-xs text-brand-text-muted font-medium mt-1">Top Rankings (240 Keywords)</div>
+        </div>
+        <div class="rounded-xl bg-brand-card p-4 border border-brand-border">
+          <div class="font-mono text-3xl font-bold text-brand-accent">95/100</div>
+          <div class="text-xs text-brand-text-muted font-medium mt-1">Mobile Performance (100 Best Practices)</div>
+        </div>
+      </div>
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+        By re-architecting tour itineraries with sub-second mobile Core Web Vitals, targeting high-intent commercial keywords (#2 for "bromo volcano tour", #3 for "ring of fire indonesia"), and introducing high-converting WhatsApp "Click to Chat" lead funnels, casual travelers transformed into direct booked tour inquiries.
+      </p>
+      <div class="mt-4 pt-3 border-t border-brand-border/60">
+        <a href="/work/panoramalenstrip-seo-performance-conversion" class="text-xs font-semibold text-brand-accent hover:underline inline-flex items-center gap-1">
+          <span>Read the full Panorama Lens Trip case study</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+    </section>
+
+
+
+    <!-- 7. Short FAQ -->
+    <section>
+      <FaqAccordion client:visible items={faqItems} title="Search & Lead Generation FAQs" />
+    </section>
+
+    <!-- 8. Primary CTA -->
+    <section class="minimal-card p-8 sm:p-10 text-center">
+      <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-brand-text">
+        Ready to turn your search traffic into booked jobs?
+      </h2>
+      <p class="mt-3 text-xs sm:text-sm text-brand-text-muted max-w-lg mx-auto">
+        Schedule a preliminary diagnostic review to discover where your website is leaking leads and how to capture top-3 rankings for commercial search terms.
+      </p>
+      <div class="mt-6">
+        <a href="/contact" class="btn-primary">
+          <span>Get Your Free Traffic &amp; Lead Audit</span>
+          <span class="ml-1.5">&rarr;</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</PageLayout>

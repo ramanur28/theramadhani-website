@@ -1,0 +1,559 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import type { BreadcrumbItem } from '@/types/schema';
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { name: 'Services', url: '/services/seo' },
+  { name: 'Technical & Organic SEO', url: '/services/seo' },
+  { name: 'SEO Service Workflow', url: '/services/seo/workflow' },
+];
+
+const deliverables = [
+  {
+    period: 'Month 1',
+    duration: 'Days 1–30',
+    focus: 'Research, Audit & Quick-Wins',
+    deliverables: [
+      'Comprehensive Technical & Core Web Vitals Audit Report',
+      'Search Intent-to-Funnel Keyword Architecture (ToFu, MoFu, BoFu)',
+      'Homepage & Money Page UX/CRO Friction Audit Document',
+      'Verified GA4 / GTM Event Tracking Setup (WhatsApp & Lead Forms)',
+      'On-Page & CRO Optimization deployed across 3–5 Priority Commercial Pages',
+    ],
+  },
+  {
+    period: 'Month 2',
+    duration: 'Days 31–60',
+    focus: 'Content & Conversion Architecture',
+    deliverables: [
+      '4–8 High-Converting E-E-A-T Articles with built-in Lead Hooks',
+      'Redesigned Core Service Pages with High-Converting CRO Layouts',
+      'Internal Silo Architecture & Equity Distribution Blueprint',
+      'Verified GA4 Conversion Tracking & Attribution Telemetry',
+      'White-Hat Digital PR Campaign & Authority Editorial Backlinks',
+    ],
+  },
+  {
+    period: 'Month 3',
+    duration: 'Days 61–90',
+    focus: 'CRO Testing & Scalability',
+    deliverables: [
+      'CTA Copy A/B Testing & Form Field Pruning Performance Report',
+      'Generative Engine Optimization (GEO) & AI Overview Citation Report',
+      'Inbound Lead Quality & Sales Team Feedback Reconciliation Report',
+      '90-Day Executive ROI Summary & Next Quarter Maintenance Roadmap',
+    ],
+  },
+];
+---
+
+<PageLayout
+  title="SEO Service Workflow: 30-Day Sprint & 3-Month Growth Engine | The Ramadhani"
+  description="Explore The Ramadhani's structured SEO service workflow: technical audits, intent-to-funnel keyword mapping, Core Web Vitals optimization, and high-converting lead generation architecture."
+  headline="SEO Service Workflow"
+  subheadline="A structured execution framework aligning in-depth technical audits, commercial intent keyword architecture, Core Web Vitals performance engineering, and measurable lead conversion funnels."
+  breadcrumbs={breadcrumbs}
+>
+  <div class="space-y-16">
+
+    <!-- EXECUTIVE SUMMARY / OVERVIEW BOX -->
+    <section class="rounded-2xl border border-brand-accent/30 bg-brand-surface p-8 sm:p-10 shadow-sm">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="h-2 w-2 rounded-full bg-brand-accent animate-pulse"></span>
+        <span class="font-mono text-xs font-semibold text-brand-accent uppercase tracking-wider">
+          Standard Operating Procedure &bull; Execution Framework
+        </span>
+      </div>
+      <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-brand-text mb-4">
+        Connecting Organic Search Visibility Directly to Commercial Lead Funnels
+      </h2>
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed max-w-3xl mb-4">
+        Many SEO campaigns stall because they chase vanity metrics—such as raw impressions or non-commercial blog clicks—without establishing clear conversion pathways into sales pipelines.
+      </p>
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed max-w-3xl mb-8">
+        The Ramadhani's SEO workflow is designed as a precision engineering system: combining technical crawling hygiene, Core Web Vitals speed acceleration, commercial intent architecture, and conversion rate optimization (CRO) so that every organic search visitor is guided toward becoming an active lead.
+      </p>
+
+      <!-- Quick Navigation Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-brand-border">
+        <a
+          href="#workflow-30-day"
+          class="rounded-xl border border-brand-border bg-brand-card p-5 hover:border-brand-accent transition-all group block"
+        >
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-xs font-bold text-brand-accent">Option 1 &bull; Intensive Sprint</span>
+            <span class="text-xs text-brand-text-dim group-hover:text-brand-accent group-hover:translate-x-1 transition-transform">&rarr;</span>
+          </div>
+          <h3 class="font-display text-lg font-bold text-brand-text mt-1">30-Day Sprint (Days 1–30)</h3>
+          <p class="text-xs text-brand-text-muted mt-1.5 leading-relaxed">
+            In-depth technical audit, conversion drop-off resolution, critical Core Web Vitals remediations, and immediate quick-win optimizations on existing traffic pages.
+          </p>
+        </a>
+
+        <a
+          href="#workflow-90-day"
+          class="rounded-xl border border-brand-border bg-brand-card p-5 hover:border-brand-accent transition-all group block"
+        >
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-xs font-bold text-brand-accent">Option 2 &bull; Growth Engine</span>
+            <span class="text-xs text-brand-text-dim group-hover:text-brand-accent group-hover:translate-x-1 transition-transform">&rarr;</span>
+          </div>
+          <h3 class="font-display text-lg font-bold text-brand-text mt-1">3-Month Roadmap (90-Day Full Cycle)</h3>
+          <p class="text-xs text-brand-text-muted mt-1.5 leading-relaxed">
+            A comprehensive hypothesis validation cycle: rebuilding the technical foundation, publishing lead-generating content, iterative A/B CRO testing, and building domain authority.
+          </p>
+        </a>
+      </div>
+    </section>
+
+    <!-- SECTION 1: WORKFLOW 30-DAY -->
+    <section id="workflow-30-day" class="minimal-card p-8 sm:p-10 scroll-mt-20">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-border pb-5 mb-8">
+        <div>
+          <span class="font-mono text-xs font-bold text-brand-accent uppercase tracking-wider block mb-1">
+            Intensive Sprint &bull; 30-Day Roadmap
+          </span>
+          <h2 class="font-display text-2xl sm:text-3xl font-bold text-brand-text">
+            30-Day Workflow: Foundation, In-Depth Audit &amp; Quick-Wins
+          </h2>
+        </div>
+        <span class="font-mono text-xs bg-brand-surface border border-brand-border px-3 py-1.5 rounded-lg text-brand-text-muted font-semibold self-start sm:self-auto">
+          Duration: Days 1–30
+        </span>
+      </div>
+
+      <div class="space-y-10">
+
+        <!-- 1. Onboarding & Discovery -->
+        <div class="relative pl-8 border-l-2 border-brand-border space-y-3">
+          <div class="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-brand-accent border-2 border-brand-bg"></div>
+          <div class="font-mono text-xs font-bold text-brand-accent">Phase 1 &bull; Days 1–3</div>
+          <h3 class="font-display text-lg font-bold text-brand-text">1. Onboarding &amp; Discovery</h3>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Aligning on commercial business objectives and establishing the baseline conversion architecture.
+          </p>
+          <ul class="space-y-2.5 text-xs sm:text-sm text-brand-text-muted mt-3">
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Commercial KPI &amp; Qualified Lead Definition:</strong> Establishing clear lead qualification criteria (e.g., demo requests, WhatsApp inquiry clicks, consultation bookings, inbound calls) rather than superficial vanity traffic metrics.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Baseline Funnel &amp; Friction Audit:</strong> Calculating initial conversion rates, average deal size, and pinpointing major drop-off points along the visitor journey.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Technical Asset &amp; Telemetry Access:</strong> Securing access to Google Search Console (GSC), Google Analytics 4 (GA4), site CMS, Google Tag Manager (GTM), and CRM/WhatsApp APIs.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 2. In-Depth SEO & CRO Audit -->
+        <div class="relative pl-8 border-l-2 border-brand-border space-y-3">
+          <div class="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-brand-accent border-2 border-brand-bg"></div>
+          <div class="font-mono text-xs font-bold text-brand-accent">Phase 2 &bull; Days 3–10</div>
+          <h3 class="font-display text-lg font-bold text-brand-text">2. In-Depth Technical &amp; CRO Audit</h3>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Diagnosing technical bottlenecks and eliminating conversion friction points that impede active lead generation.
+          </p>
+          <ul class="space-y-2.5 text-xs sm:text-sm text-brand-text-muted mt-3">
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Technical &amp; Performance Engineering:</strong> Comprehensive crawlability analysis, indexing validation, Core Web Vitals remediation (sub-second mobile rendering directly boosts form completions), and structured data (Schema.org) architecture.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Commercial Intent vs. Informational Gap Analysis:</strong> Auditing whether high-value commercial queries point to dedicated conversion pages or get lost in top-of-funnel blog posts without calls-to-action.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <div>
+                <strong>Friction &amp; UX/CRO Assessment:</strong>
+                <ul class="ml-4 mt-1.5 space-y-1.5 list-disc text-brand-text-dim">
+                  <li>Evaluating mobile Call-to-Action (CTA) placement (above-the-fold visibility, sticky/floating WhatsApp buttons).</li>
+                  <li>Reviewing lead form length and field friction to eliminate drop-off.</li>
+                  <li>Assessing value proposition clarity and social proof (case studies, reviews, client proof) on primary money pages.</li>
+                </ul>
+              </div>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Competitor Funnel Intelligence:</strong> Analyzing competitor lead acquisition funnels (pricing calculators, free audits, instant consultations) to uncover strategic advantages.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3. Strategy Formulation & Roadmap -->
+        <div class="relative pl-8 border-l-2 border-brand-border space-y-3">
+          <div class="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-brand-accent border-2 border-brand-bg"></div>
+          <div class="font-mono text-xs font-bold text-brand-accent">Phase 3 &bull; Days 10–15</div>
+          <h3 class="font-display text-lg font-bold text-brand-text">3. Strategy Formulation, Funnel Mapping &amp; Roadmap</h3>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Developing an intent-driven content strategy wired directly into conversion triggers.
+          </p>
+          <ul class="space-y-2.5 text-xs sm:text-sm text-brand-text-muted mt-3">
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <div>
+                <strong>Search Intent to Funnel Mapping:</strong>
+                <ul class="ml-4 mt-1.5 space-y-1.5 list-disc text-brand-text-dim">
+                  <li><strong>Top-of-Funnel (Informational):</strong> Answers initial research questions, immediately bridged to high-value lead magnets (calculators, guides, free audits).</li>
+                  <li><strong>Bottom-of-Funnel (Transactional &amp; Commercial):</strong> Directs high-intent searchers straight to conversion-optimized service and pricing pages.</li>
+                </ul>
+              </div>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <div>
+                <strong>CTA &amp; Conversion Bridge Blueprint:</strong>
+                <ul class="ml-4 mt-1.5 space-y-1.5 list-disc text-brand-text-dim">
+                  <li>Designing page-specific CTA copy and positioning (avoiding generic "Contact Us" labels).</li>
+                  <li>Deploying micro-conversion triggers (lead magnets, exit-intent prompts, floating chat widgets).</li>
+                </ul>
+              </div>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Quick-Win Prioritization Matrix:</strong> Pinpointing pages with established organic impressions currently ranking in positions 4–15 that can be pushed to page one with immediate on-page and metadata refinements.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 4. Execution of Quick-Wins -->
+        <div class="relative pl-8 border-l-2 border-brand-border space-y-3">
+          <div class="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-brand-accent border-2 border-brand-bg"></div>
+          <div class="font-mono text-xs font-bold text-brand-accent">Phase 4 &bull; Days 15–30</div>
+          <h3 class="font-display text-lg font-bold text-brand-text">4. Execution of Quick-Wins &amp; Initial Optimization</h3>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Executing simultaneous technical hygiene and conversion rate optimization across 4 integrated pillars:
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <div class="rounded-lg border border-brand-border bg-brand-surface p-4">
+              <span class="font-mono text-xs font-bold text-brand-accent block mb-1">Pillar 1: Technical &amp; Core Web Vitals Fixes</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Resolving 404 errors, eliminating slow 301 redirect chains, validating XML sitemaps, and minimizing render-blocking resources.
+              </p>
+            </div>
+            <div class="rounded-lg border border-brand-border bg-brand-surface p-4">
+              <span class="font-mono text-xs font-bold text-brand-accent block mb-1">Pillar 2: Mobile Speed &amp; Usability Refinement</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Accelerating commercial landing page load times and optimizing touch targets and form responsiveness on mobile devices.
+              </p>
+            </div>
+            <div class="rounded-lg border border-brand-border bg-brand-surface p-4">
+              <span class="font-mono text-xs font-bold text-brand-accent block mb-1">Pillar 3: On-Page &amp; CRO Priority Deployment</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Upgrading title tags and meta descriptions on top 3–5 commercial pages to maximize CTR, restructuring headlines, and deploying sticky WhatsApp/CTA buttons.
+              </p>
+            </div>
+            <div class="rounded-lg border border-brand-border bg-brand-surface p-4">
+              <span class="font-mono text-xs font-bold text-brand-accent block mb-1">Pillar 4: Telemetry &amp; Tracking Setup</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Configuring GTM and GA4 event tracking for form submissions, consultation requests, and WhatsApp click-to-chat interactions.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Reporting & Iteration -->
+        <div class="relative pl-8 border-l-2 border-brand-border space-y-3">
+          <div class="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-brand-accent border-2 border-brand-bg"></div>
+          <div class="font-mono text-xs font-bold text-brand-accent">Phase 5 &bull; Reporting &amp; Review</div>
+          <h3 class="font-display text-lg font-bold text-brand-text">5. Reporting &amp; Iterative Review (Monthly)</h3>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Delivering executive reporting focused on pipeline growth and commercial metrics rather than vanity traffic:
+          </p>
+          <ul class="space-y-2 text-xs sm:text-sm text-brand-text-muted mt-3">
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Lead Growth Telemetry:</strong> Correlating organic traffic volume directly with verified inbound lead submissions (organic traffic-to-lead conversion rate).</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Lead Quality Alignment:</strong> Reviewing lead qualification with the client's sales team to verify lead quality, sales velocity, and deal readiness.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand-accent font-bold">&bull;</span>
+              <span><strong>Iterative CRO Enhancements:</strong> Testing CTA copy variants, form layout adjustments, and headline refinements on key commercial landing pages.</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 2: WORKFLOW 90-DAY (3 MONTHS) -->
+    <section id="workflow-90-day" class="minimal-card p-8 sm:p-10 scroll-mt-20">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-border pb-5 mb-8">
+        <div>
+          <span class="font-mono text-xs font-bold text-brand-accent uppercase tracking-wider block mb-1">
+            Growth Engine &bull; 90-Day Full Cycle
+          </span>
+          <h2 class="font-display text-2xl sm:text-3xl font-bold text-brand-text">
+            3-Month Workflow: Hypothesis Validation &amp; Lead Scalability
+          </h2>
+        </div>
+        <span class="font-mono text-xs bg-brand-surface border border-brand-border px-3 py-1.5 rounded-lg text-brand-text-muted font-semibold self-start sm:self-auto">
+          Duration: 90 Full Days
+        </span>
+      </div>
+
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mb-8">
+        Over a 90-day engagement, the operating rhythm transitions from rapid diagnostics into a <strong>continuous hypothesis validation cycle</strong>: establishing a bulletproof foundation, driving high-intent commercial organic traffic, and systematically refining contact and form conversions. Audits and strategy are finalized in the initial 15–20 days, unlocking the remaining duration for relentless execution, content scaling, and CRO validation.
+      </p>
+
+      <div class="space-y-10">
+
+        <!-- Month 1 -->
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-6 sm:p-8 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-border/80 pb-3">
+            <div>
+              <span class="font-mono text-xs font-bold text-brand-accent">Month 1 (Days 1–30)</span>
+              <h3 class="font-display text-lg font-bold text-brand-text mt-0.5">
+                Foundation, In-Depth Research &amp; Quick-Wins
+              </h3>
+            </div>
+            <span class="font-mono text-[11px] text-brand-text-dim bg-brand-card px-2.5 py-1 rounded border border-brand-border">
+              Focus: Audit &amp; Quick-Wins
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            The first month resolves core technical bottlenecks, maps out the end-to-end conversion funnel, and captures immediate quick wins on pages with existing search volume.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4 space-y-2">
+              <span class="font-mono text-xs font-bold text-brand-text block">
+                Phase 1: Onboarding, Audit &amp; Strategy (Days 1–18)
+              </span>
+              <ul class="text-xs text-brand-text-muted space-y-2">
+                <li>&bull; <strong>Days 1–3:</strong> Commercial KPI definitions (qualified leads, CR, deal size) &amp; GTM/GA4 event tracking setup (WhatsApp clicks, form submits).</li>
+                <li>&bull; <strong>Days 4–12:</strong> Technical SEO (crawlability, indexability, Core Web Vitals), commercial vs. blog intent gap, and UX friction analysis.</li>
+                <li>&bull; <strong>Days 13–18:</strong> ToFu/MoFu/BoFu keyword mapping, CTA conversion blueprint, and 90-day prioritized action matrix.</li>
+              </ul>
+            </div>
+
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4 space-y-2">
+              <span class="font-mono text-xs font-bold text-brand-text block">
+                Phase 2: Quick-Wins Execution (Days 19–30)
+              </span>
+              <ul class="text-xs text-brand-text-muted space-y-2">
+                <li>&bull; <strong>Critical Technical Fixes:</strong> Resolving crawl errors, optimizing slow redirect hops, and verifying sitemap configurations.</li>
+                <li>&bull; <strong>On-Page &amp; CRO Deployment across 3–5 Priority Pages:</strong> Refining title tags to drive CTR, rewriting value propositions, and implementing sticky WhatsApp inquiry buttons on money pages.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Month 2 -->
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-6 sm:p-8 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-border/80 pb-3">
+            <div>
+              <span class="font-mono text-xs font-bold text-brand-accent">Month 2 (Days 31–60)</span>
+              <h3 class="font-display text-lg font-bold text-brand-text mt-0.5">
+                Lead-Centric Content Production &amp; Authority Building
+              </h3>
+            </div>
+            <span class="font-mono text-xs text-brand-accent bg-brand-accent/10 px-2.5 py-1 rounded border border-brand-accent/20 font-semibold">
+              Focus: Content &amp; Conversion Architecture
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            Momentum shifts into systematic lead-capturing content production, service landing page overhauls, and external domain authority development.
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm pt-2">
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4">
+              <span class="font-mono font-bold text-brand-text block mb-1">1. Bottom-of-Funnel (BoFu) Money Page Optimization</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Launching or redesigning service/offering pages with strict CRO architecture: customer pain points, solutions, social proof (case studies/testimonials), feature comparisons, and concise lead forms.
+              </p>
+            </div>
+
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4">
+              <span class="font-mono font-bold text-brand-text block mb-1">2. E-E-A-T High-Converting Content Production</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Publishing 4–8 in-depth informational articles that solve buyer dilemmas and feature clear conversion bridges (calculators, templates, or free audits).
+              </p>
+            </div>
+
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4">
+              <span class="font-mono font-bold text-brand-text block mb-1">3. Internal Siloing &amp; Equity Distribution</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Structuring internal linking hierarchies to channel link equity from top-performing informational articles into primary commercial service pages.
+              </p>
+            </div>
+
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4">
+              <span class="font-mono font-bold text-brand-text block mb-1">4. White-Hat Authority Building &amp; Digital PR</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Initiating targeted digital PR and link acquisition campaigns securing citations and editorial links to commercial landing pages and the homepage.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Month 3 -->
+        <div class="rounded-xl border border-brand-border bg-brand-surface p-6 sm:p-8 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-border/80 pb-3">
+            <div>
+              <span class="font-mono text-xs font-bold text-brand-accent">Month 3 (Days 61–90)</span>
+              <h3 class="font-display text-lg font-bold text-brand-text mt-0.5">
+                A/B Testing, GEO Scalability &amp; ROI Evaluation
+              </h3>
+            </div>
+            <span class="font-mono text-xs text-brand-accent bg-brand-accent/10 px-2.5 py-1 rounded border border-brand-accent/20 font-semibold">
+              Focus: CRO Testing &amp; Scalability
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed">
+            With technical remediations live and content indexing, data telemetry provides clear validation signals. Focus shifts to A/B testing conversion triggers and setting long-term growth roadmaps.
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm pt-2">
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4">
+              <span class="font-mono font-bold text-brand-text block mb-1">1. Micro-Conversion A/B Testing</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Testing CTA copy variations (e.g., "Book 15-Min Free Consultation" vs. "Get Instant Project Estimate") and streamlining form fields using session recording insights.
+              </p>
+            </div>
+
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4">
+              <span class="font-mono font-bold text-brand-text block mb-1">2. Generative Engine Optimization (GEO)</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Ensuring content architecture, citation data, and brand entities are authoritative and frequently cited in AI Overviews and LLM summaries.
+              </p>
+            </div>
+
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4">
+              <span class="font-mono font-bold text-brand-text block mb-1">3. Client Sales Quality Synchronization</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Reviewing inbound lead telemetry with the client's sales team to validate deal readiness, lead quality, and customer acquisition cost (CAC).
+              </p>
+            </div>
+
+            <div class="rounded-lg border border-brand-border bg-brand-card p-4">
+              <span class="font-mono font-bold text-brand-text block mb-1">4. 90-Day Final ROI Report &amp; Handover</span>
+              <p class="text-xs text-brand-text-muted leading-relaxed">
+                Presenting an executive summary of organic search growth, commercial keyword impressions, total inbound qualified leads, and the ongoing maintenance roadmap.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 3: DELIVERABLES ROADMAP TABLE -->
+    <section class="minimal-card p-8 sm:p-10">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        Deliverables Roadmap &bull; Transparency Matrix
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-4">
+        Client Deliverables &amp; Tangible Outputs Matrix
+      </h2>
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mb-6">
+        Every project milestone provides tangible deliverables submitted directly to the client's team, ensuring complete transparency and outcome accountability:
+      </p>
+
+      <div class="overflow-x-auto rounded-xl border border-brand-border">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="border-b border-brand-border bg-brand-surface">
+              <th class="p-4 font-mono font-bold text-brand-text uppercase tracking-wider w-1/5">Milestone Period</th>
+              <th class="p-4 font-mono font-bold text-brand-text uppercase tracking-wider w-1/4">Strategic Focus</th>
+              <th class="p-4 font-mono font-bold text-brand-text uppercase tracking-wider">Tangible Client Deliverables</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-brand-border bg-brand-card">
+            {deliverables.map((item) => (
+              <tr class="hover:bg-brand-surface/40 transition-colors">
+                <td class="p-4 align-top">
+                  <span class="font-mono font-bold text-brand-text text-sm block">{item.period}</span>
+                  <span class="font-mono text-[11px] text-brand-text-dim block mt-0.5">{item.duration}</span>
+                </td>
+                <td class="p-4 align-top">
+                  <span class="font-mono text-xs font-semibold text-brand-accent bg-brand-accent/10 px-2 py-0.5 rounded inline-block mb-1">
+                    {item.focus}
+                  </span>
+                </td>
+                <td class="p-4 align-top">
+                  <ul class="space-y-1.5 text-xs text-brand-text-muted">
+                    {item.deliverables.map((d) => (
+                      <li class="flex items-start gap-1.5">
+                        <span class="text-brand-accent font-bold">&check;</span>
+                        <span>{d}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 4: DELIVERY MODEL (FLEXIBLE / HYBRID) -->
+    <section class="rounded-2xl border border-brand-accent/40 bg-brand-surface p-8 sm:p-10 shadow-sm">
+      <div class="font-mono text-xs font-semibold text-brand-accent mb-2">
+        Delivery Partnership &bull; Execution Alignment
+      </div>
+      <h2 class="font-display text-2xl font-bold text-brand-text mb-4">
+        Flexible Execution Models (Hands-On vs. Technical Advisory)
+      </h2>
+      <p class="text-xs sm:text-sm text-brand-text-muted leading-relaxed mb-6">
+        To accommodate varying internal capabilities and technical workflows, The Ramadhani offers flexible delivery models tailored to your organization's structure:
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="rounded-xl border border-brand-border bg-brand-card p-6 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-brand-accent"></span>
+            <span class="font-mono text-xs font-bold text-brand-text uppercase">Option A: Full Hands-On Execution</span>
+          </div>
+          <p class="text-xs text-brand-text-muted leading-relaxed">
+            Ideal for organizations seeking end-to-end turnkey delivery without consuming internal team bandwidth. The Ramadhani directly manages article copywriting, Core Web Vitals technical refactoring, GTM/GA4 tracking deployment, and CMS conversion design.
+          </p>
+          <div class="pt-2 text-[11px] font-mono text-brand-accent font-semibold">
+            &check; Turnkey execution &bull; Direct implementation by senior specialists
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-brand-border bg-brand-card p-6 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-brand-accent"></span>
+            <span class="font-mono text-xs font-bold text-brand-text uppercase">Option B: Technical Advisory &amp; SOP Blueprint</span>
+          </div>
+          <p class="text-xs text-brand-text-muted leading-relaxed">
+            Tailored for companies with in-house web developers or dedicated copywriters. We deliver deep audit documentation, E-E-A-T content briefs, CTA wireframes, and production-ready technical SOPs for your team to execute under our direct supervision.
+          </p>
+          <div class="pt-2 text-[11px] font-mono text-brand-accent font-semibold">
+            &check; Collaborative delivery &bull; Seamless integration with your internal developers
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: CTA -->
+    <section class="minimal-card p-8 sm:p-10 text-center">
+      <h2 class="font-display text-2xl sm:text-3xl font-bold tracking-tight text-brand-text">
+        Ready to Implement This Workflow for Your Business?
+      </h2>
+      <p class="mt-3 text-xs sm:text-sm text-brand-text-muted max-w-lg mx-auto leading-relaxed">
+        Schedule an initial 15-minute consultation to evaluate your website's conversion funnels, quantify high-intent search potential, and select the optimal execution roadmap.
+      </p>
+      <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <a href="/contact" class="btn-primary">
+          <span>Schedule Workflow Consultation</span>
+          <span class="ml-1.5">&rarr;</span>
+        </a>
+        <a href="/services/seo" class="btn-secondary">
+          <span>Back to SEO Services</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</PageLayout>

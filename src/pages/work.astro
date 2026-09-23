@@ -1,0 +1,48 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import WorkFilter from '@/components/islands/WorkFilter.tsx';
+import { getCollection } from 'astro:content';
+import type { BreadcrumbItem } from '@/types/schema';
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { name: 'Work / Proof', url: '/work' },
+];
+
+const workEntries = await getCollection('work');
+
+const formattedWork = workEntries
+  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime())
+  .map((entry) => ({
+    id: entry.id,
+    slug: entry.data.slug || entry.id,
+    title: entry.data.title,
+    client: entry.data.client,
+    industry: entry.data.industry,
+    service: entry.data.service,
+    description: entry.data.description,
+    publishDate: entry.data.publishDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }),
+    metrics: entry.data.metrics,
+    quickAnswer: entry.data.quickAnswer,
+    techStack: entry.data.techStack,
+    coverImage: entry.data.coverImage,
+    coverAlt: entry.data.coverAlt,
+  }));
+
+const allServices = ['Technical SEO', 'Conversion Rate Optimization', 'Core Web Vitals'];
+---
+
+<PageLayout
+  title="Case Studies & Proof of Performance | The Ramadhani"
+  description="Verified case study and proof of performance in Technical SEO, Core Web Vitals, and Conversion Rate Optimization (CRO) for high-intent business growth."
+  headline="Engineered Results: Real-World Case Studies."
+  subheadline="Explore how full-stack Technical SEO, sub-second Core Web Vitals, and Article-to-Lead conversion frameworks drive measurable commercial revenue."
+  badge="Proof &bull; Performance"
+  breadcrumbs={breadcrumbs}
+  type="website"
+>
+  <WorkFilter client:visible workItems={formattedWork} allServices={allServices} />
+</PageLayout>

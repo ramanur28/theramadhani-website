@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#FAFAF8"/>
+  <rect x="40" y="40" width="1120" height="550" rx="16" fill="#FFFFFF" stroke="rgba(0,0,0,0.08)" stroke-width="1.5"/>
+  
+  <rect x="90" y="90" width="48" height="48" rx="10" fill="#F4F4F0" stroke="#D97706" stroke-width="1.5" stroke-opacity="0.5"/>
+  <text x="114" y="122" fill="#D97706" font-family="JetBrains Mono, monospace" font-size="22" font-weight="700" text-anchor="middle">R</text>
+  <text x="154" y="122" fill="#111317" font-family="Inter, sans-serif" font-size="22" font-weight="700">Ramadhani</text>
+
+  <text x="90" y="210" fill="#D97706" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700" letter-spacing="1">SEO • GENERATIVE ENGINE OPTIMIZATION • GOOGLE ADS</text>
+
+  <text x="90" y="300" fill="#111317" font-family="Plus Jakarta Sans, Inter, sans-serif" font-size="52" font-weight="800">Precision search visibility for</text>
+  <text x="90" y="365" fill="#D97706" font-family="Newsreader, Georgia, serif" font-size="56" font-weight="400" font-style="italic">organic &amp; AI answer engines.</text>
+
+  <text x="90" y="450" fill="#475063" font-family="Inter, sans-serif" font-size="20" font-weight="400">Technical SEO Architecture • Schema Knowledge Graphs • Sub-Second Core Web Vitals</text>
+
+  <line x1="90" y1="500" x2="1110" y2="500" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>
+  <text x="90" y="535" fill="#6B7280" font-family="JetBrains Mono, monospace" font-size="13">ramadhani.cloud • 100% Core Web Vitals • Verified Entity Schema</text>
+</svg>
