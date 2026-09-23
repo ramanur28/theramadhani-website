@@ -6,7 +6,7 @@ import tailwind from '@astrojs/tailwind';
 
 // https://astro.build/config
 export default defineConfig({
-  site: process.env.SITE_URL || 'https://ramadhani.cloud',
+  site: process.env.SITE_URL || 'https://theramadhani.com',
   trailingSlash: 'ignore',
   integrations: [
     mdx(),

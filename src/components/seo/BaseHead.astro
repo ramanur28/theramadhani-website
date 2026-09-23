@@ -33,8 +33,8 @@ const ogImageURL = image.startsWith('http') ? image : new URL(image, siteUrl).to
 const siteName = 'The Ramadhani | SEO, GEO & Google Ads Specialist';
 const fullTitle = title.includes('The Ramadhani') ? title : `${title} | The Ramadhani`;
 
-const umamiWebsiteId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID || '1caa2dcc-1a6e-4727-be26-0f3e6dc7c05b';
-const umamiHostUrl = import.meta.env.PUBLIC_UMAMI_HOST_URL || 'https://analytics.ramadhani.cloud';
+const umamiWebsiteId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID;
+const umamiHostUrl = import.meta.env.PUBLIC_UMAMI_HOST_URL;
 ---
 
 <!-- High Priority Charset & Viewport -->
@@ -106,14 +106,17 @@ const umamiHostUrl = import.meta.env.PUBLIC_UMAMI_HOST_URL || 'https://analytics
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
-  rel="preload"
-  as="style"
-  href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
-/>
-<link
   rel="stylesheet"
   href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+  media="print"
+  onload="this.media='all'"
 />
+<noscript>
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+  />
+</noscript>
 
 <!-- View Transitions API -->
 <ClientRouter />

@@ -1,0 +1,46 @@
+name: Deploy to Shared Hosting via FTP/FTPS
+
+on:
+  push:
+    branches:
+      - main # Workflow otomatis berjalan setiap kali ada artikel baru atau perubahan di branch main
+  workflow_dispatch: # Memungkinkan trigger manual dari tab Actions di GitHub
+
+concurrency:
+  group: shared-hosting-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    name: Build Astro & Sync to Shared Hosting via FTP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: 3. Install Dependencies
+        run: npm ci
+
+      - name: 4. Build Static Site
+        run: npm run build
+        env:
+          SITE_URL: ${{ secrets.SITE_URL || 'https://theramadhani.com' }}
+
+      - name: 5. Sync to Shared Hosting via FTP / FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT || 21 }}
+          protocol: ${{ secrets.FTP_PROTOCOL || 'ftps' }} # Gunakan 'ftps' (aman/terenkripsi) atau 'ftp'
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_DESTINATION || 'public_html/' }}
+          dangerous-clean-slate: false

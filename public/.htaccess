@@ -1,0 +1,130 @@
+# ==============================================================================
+# The Ramadhani - Shared Hosting Production Apache / LiteSpeed Configuration
+# Optimized for Astro Static Generation + Decap CMS PHP OAuth
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Core Engine & Rewrite Settings
+# ------------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Force HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Remove www (canonicalize to apex domain, or adjust if prefer www)
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+    # Clean URLs & Directory Slashing for Astro Static Files
+    # If request is a directory and missing trailing slash, redirect to trailing slash
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^(.+[^/])$ /$1/ [R=301,L]
+
+    # Rewrite /auth and /callback to PHP OAuth handlers if accessed without trailing slash
+    RewriteRule ^auth$ /auth/index.php [L,QSA]
+    RewriteRule ^auth/$ /auth/index.php [L,QSA]
+    RewriteRule ^callback$ /callback/index.php [L,QSA]
+    RewriteRule ^callback/$ /callback/index.php [L,QSA]
+
+    # Serve index.html inside directory if exists
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME}/index.html -f
+    RewriteRule ^(.*)$ $1/index.html [L]
+
+    # Fallback 404 handler (if 404.html exists)
+    ErrorDocument 404 /404.html
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 2. Production Security Headers
+# ------------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    # HTTP Strict Transport Security (HSTS)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Prevent MIME Sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Clickjacking Protection
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Feature & Permissions Policy
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+    # Fast Revalidation for HTML, Machine Directives, XML & Decap CMS Config
+    <FilesMatch "\.(html|htm|xml|txt|yml|yaml|json)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+
+    # Immutable Caching for Fingerprinted / Hashed Assets (Astro /_astro/, fonts, images)
+    <FilesMatch "\.(css|js|woff|woff2|ttf|eot|webp|avif|png|jpg|jpeg|svg|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 3. Leverage Browser Caching (mod_expires)
+# ------------------------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 month"
+
+    # Dynamic & Content Directives (Always revalidate)
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType application/xhtml+xml "access plus 0 seconds"
+    ExpiresByType text/plain "access plus 0 seconds"
+    ExpiresByType text/yaml "access plus 0 seconds"
+    ExpiresByType application/xml "access plus 0 seconds"
+    ExpiresByType application/json "access plus 0 seconds"
+
+    # Static Fingerprinted Assets (1 Year)
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/avif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 4. Gzip / Deflate Compression
+# ------------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 5. Security & Sensitive Files Protection
+# ------------------------------------------------------------------------------
+# Prevent access to dotfiles, environment configs, and git metadata
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent directory browsing
+Options -Indexes

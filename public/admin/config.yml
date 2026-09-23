@@ -1,8 +1,8 @@
 backend:
   name: github
-  repo: ramanur28/ramadhani-profile
+  repo: ramanur28/theramadhani-website
   branch: main
-  base_url: https://ramadhani.cloud
+  base_url: https://theramadhani.com
   auth_endpoint: auth
 
 # Enable automatic local backend for seamless local development

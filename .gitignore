@@ -62,3 +62,8 @@ coverage/
 *.tmp
 *.bak
 /Hero-bg-video.mp4
+
+# Decap CMS OAuth Secrets
+.env.oauth
+*.oauth
+*.zip

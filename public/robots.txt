@@ -50,4 +50,4 @@ Allow: /
 # ------------------------------------------------------------------------------
 # Sitemap Index & Discovery
 # ------------------------------------------------------------------------------
-Sitemap: https://ramadhani.cloud/sitemap-index.xml
+Sitemap: https://theramadhani.com/sitemap-index.xml
