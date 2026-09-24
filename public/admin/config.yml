@@ -45,7 +45,7 @@ collections:
       - label: "Key Impact Metrics"
         name: "metrics"
         widget: "list"
-        summary: "{{fields.value}} — {{fields.label}}"
+        summary: "{{fields.value}} - {{fields.label}}"
         fields:
           - { label: "Value (e.g. +310%, 5.2x, 0.8s, 100/100)", name: "value", widget: "string" }
           - { label: "Metric Label (e.g. AI Answer Citations, ROAS, LCP)", name: "label", widget: "string" }
@@ -56,7 +56,10 @@ collections:
         required: false
         default: []
       - { label: "Featured on Homepage", name: "featured", widget: "boolean", default: false }
-      - { label: "Case Study Body", name: "body", widget: "markdown" }
+      - label: "Case Study Body"
+        name: "body"
+        widget: "markdown"
+        modes: ["rich_text", "raw"]
 
   - name: "articles"
     label: "Articles & Guides"
@@ -66,18 +69,67 @@ collections:
     slug: "{{slug}}"
     extension: "mdx"
     format: "frontmatter"
+    summary: "{{title}} ({{status}} - {{publishDate}})"
+    view_filters:
+      - label: "Published"
+        field: status
+        pattern: "published"
+      - label: "Scheduled"
+        field: status
+        pattern: "scheduled"
+      - label: "Drafts"
+        field: status
+        pattern: "draft"
+    view_groups:
+      - label: "Status"
+        field: status
     editor:
       preview: true
     fields:
       - { label: "Title", name: "title", widget: "string" }
+      - label: "Publication Status"
+        name: "status"
+        widget: "select"
+        options:
+          - { label: "🚀 Published (Live)", value: "published" }
+          - { label: "⏰ Scheduled (Publish on date & time)", value: "scheduled" }
+          - { label: "📝 Draft (Work in progress / Hidden)", value: "draft" }
+        default: "published"
+        hint: "Select 'Scheduled' to schedule this article for automatic release on the Publish Date & Time below."
+      - label: "Publish Date & Time"
+        name: "publishDate"
+        widget: "datetime"
+        format: "YYYY-MM-DDTHH:mm:ssZ"
+        date_format: "YYYY-MM-DD"
+        time_format: "HH:mm"
+        picker_utc: false
+        hint: "Date and time for publication. If scheduled in the future, the article will automatically publish when this time is reached."
+      - label: "Updated Date"
+        name: "updatedDate"
+        widget: "datetime"
+        format: "YYYY-MM-DD"
+        date_format: "YYYY-MM-DD"
+        time_format: false
+        required: false
       - { label: "Description (140-160 chars)", name: "description", widget: "string", hint: "Used as meta description and snippet" }
       - { label: "Slug", name: "slug", widget: "string", required: false }
-      - { label: "Publish Date", name: "publishDate", widget: "datetime", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false }
-      - { label: "Updated Date", name: "updatedDate", widget: "datetime", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, required: false }
       - { label: "Author", name: "author", widget: "string", default: "Ramadhani" }
       - { label: "Tags", name: "tags", widget: "list" }
       - { label: "Cover Image", name: "coverImage", widget: "image", default: "/images/uploads/geo-blueprint.svg", choose_url: true }
       - { label: "Cover Alt Text", name: "coverAlt", widget: "string", default: "Article cover image" }
       - { label: "Quick Answer Block (40-60 words)", name: "quickAnswer", widget: "text", hint: "Definitive summary block rendered under H1 for AI and readers" }
       - { label: "Featured on Homepage", name: "featured", widget: "boolean", default: false }
-      - { label: "Body", name: "body", widget: "markdown" }
+      - label: "Frequently Asked Questions (Expandable Q&A)"
+        name: "faq"
+        widget: "list"
+        required: false
+        summary: "{{fields.question}}"
+        hint: "Article FAQ items rendered as expandable Q&A and indexed in Google FAQ Schema. If left empty, 3 smart defaults will be generated."
+        fields:
+          - { label: "Question", name: "question", widget: "string" }
+          - { label: "Answer", name: "answer", widget: "text" }
+      - label: "Body"
+        name: "body"
+        widget: "markdown"
+        modes: ["rich_text", "raw"]
+        hint: "Article content. Use the + button in the toolbar to insert Expandable Q&A accordions or custom components."

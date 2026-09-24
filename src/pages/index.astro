@@ -4,8 +4,9 @@ import PerformanceAudit from '@/components/islands/PerformanceAudit.tsx';
 import ServiceCard from '@/components/cards/ServiceCard.astro';
 import ArticleCard from '@/components/cards/ArticleCard.astro';
 import { getCollection } from 'astro:content';
+import { isArticlePublished } from '@/utils/articles';
 
-const articles = await getCollection('articles');
+const articles = await getCollection('articles', isArticlePublished);
 const recentArticles = articles
   .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime())
   .slice(0, 3);

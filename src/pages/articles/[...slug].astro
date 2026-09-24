@@ -1,10 +1,11 @@
 ---
 import { getCollection, render } from 'astro:content';
 import ArticleLayout from '@/layouts/ArticleLayout.astro';
+import { isArticlePublished } from '@/utils/articles';
 import type { FAQItem } from '@/types/schema';
 
 export async function getStaticPaths() {
-  const articles = await getCollection('articles');
+  const articles = await getCollection('articles', isArticlePublished);
   return articles.map((article) => ({
     params: { slug: article.data.slug || article.id },
     props: { article },
@@ -14,8 +15,8 @@ export async function getStaticPaths() {
 const { article } = Astro.props;
 const { Content, headings } = await render(article);
 
-// FAQ Schema extract for articles
-const faqData: FAQItem[] = [
+// Custom FAQ from frontmatter if provided, otherwise fallback to smart default FAQs
+const defaultFaqData: FAQItem[] = [
   {
     question: `What is the core takeaway of "${article.data.title}"?`,
     answer: article.data.quickAnswer,
@@ -29,6 +30,10 @@ const faqData: FAQItem[] = [
     answer: `${article.data.author} is a Senior Digital Marketing Specialist with expertise in Technical SEO, Generative Engine Optimization (GEO), and Google Ads acquisition funnels.`,
   },
 ];
+
+const faqData: FAQItem[] = article.data.faq && article.data.faq.length > 0
+  ? article.data.faq
+  : defaultFaqData;
 ---
 
 <ArticleLayout

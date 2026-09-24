@@ -7,6 +7,8 @@ const articles = defineCollection({
     title: z.string(),
     description: z.string().min(100).max(200),
     slug: z.string().optional(),
+    status: z.enum(['published', 'scheduled', 'draft']).default('published'),
+    draft: z.boolean().default(false),
     publishDate: z.coerce.date(),
     updatedDate: z.coerce.date().optional(),
     author: z.string().default('Ramadhani'),
@@ -15,6 +17,10 @@ const articles = defineCollection({
     coverAlt: z.string().default('Article cover image'),
     quickAnswer: z.string().min(30),
     featured: z.boolean().default(false),
+    faq: z.array(z.object({
+      question: z.string(),
+      answer: z.string(),
+    })).optional(),
   }),
 });
 

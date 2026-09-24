@@ -368,3 +368,81 @@
     display: none;
   }
 }
+
+/* ==========================================================================
+   Inline Expandable Q&A (Accordion) Component for Markdown & MDX
+   Matches the design system of FaqAccordion.tsx
+   ========================================================================== */
+details.faq-accordion-item {
+  margin: 1.5rem 0;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #FFFFFF;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+details.faq-accordion-item:hover {
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+details.faq-accordion-item[open] {
+  border-color: rgba(217, 119, 6, 0.5);
+  background-color: #F4F4F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+details.faq-accordion-item > summary.faq-accordion-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111317;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  outline: none;
+}
+
+/* Hide native disclosure triangle in WebKit and standard browsers */
+details.faq-accordion-item > summary.faq-accordion-question::-webkit-details-marker {
+  display: none;
+}
+details.faq-accordion-item > summary.faq-accordion-question::marker {
+  display: none;
+}
+
+details.faq-accordion-item > summary.faq-accordion-question::after {
+  content: "+";
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #6B7280;
+  transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
+  margin-left: 0.75rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+details.faq-accordion-item[open] > summary.faq-accordion-question::after {
+  transform: rotate(45deg);
+  color: #D97706;
+}
+
+details.faq-accordion-item > .faq-accordion-answer {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 0.875rem 1.25rem 1.25rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: #475063;
+}
+
+details.faq-accordion-item > .faq-accordion-answer p:first-child {
+  margin-top: 0;
+}
+
+details.faq-accordion-item > .faq-accordion-answer p:last-child {
+  margin-bottom: 0;
+}

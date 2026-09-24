@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main # Workflow otomatis berjalan setiap kali ada artikel baru atau perubahan di branch main
+  schedule:
+    # Run every 6 hours (00:00, 06:00, 12:00, 18:00 UTC) to automatically publish any scheduled articles
+    - cron: '0 0,6,12,18 * * *'
   workflow_dispatch: # Memungkinkan trigger manual dari tab Actions di GitHub
 
 concurrency:

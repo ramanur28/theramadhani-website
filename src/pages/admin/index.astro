@@ -7,12 +7,39 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Content Manager | The Ramadhani</title>
+    <title>Content Manager | Ramadhani</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- Explicit CMS Config Link -->
     <link href="/admin/config.yml" type="text/yaml" rel="cms-config-url" />
+    <style is:inline>
+      /* Decap CMS Modern UI Enhancements */
+      :root {
+        --decap-accent: #D97706;
+      }
+      body {
+        -webkit-font-smoothing: antialiased;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #F4F4F0;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #D1D5DB;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #9CA3AF;
+      }
+    </style>
   </head>
   <body>
     <!-- Decap CMS Application Bundle -->
     <script is:inline src="https://unpkg.com/decap-cms@^3.1.2/dist/decap-cms.js"></script>
+    <!-- Preview Styling & Editor Component Registration -->
+    <script is:inline src="/admin/preview.js"></script>
   </body>
 </html>
