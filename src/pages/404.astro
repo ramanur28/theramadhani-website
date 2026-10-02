@@ -1,0 +1,83 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const title = '404 - Page Not Found | Ramadhani';
+const description = 'The page you are looking for does not exist or has been moved. Explore articles, case studies, and digital marketing insights.';
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  type="website"
+>
+  <div class="relative py-20 sm:py-32 overflow-hidden">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 rounded-full border border-brand-accent/30 bg-brand-surface px-4 py-1.5 font-mono text-xs font-semibold text-brand-accent mb-6 shadow-xs animate-hero-entrance">
+        <span class="h-2 w-2 rounded-full bg-brand-accent animate-pulse"></span>
+        HTTP Status 404 ? Resource Not Found
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="font-display text-4xl font-extrabold tracking-tight text-brand-text sm:text-6xl lg:text-7xl leading-tight mb-6 animate-hero-stagger-1">
+        Page Not Found
+      </h1>
+
+      <p class="mx-auto max-w-xl text-base sm:text-lg text-brand-text-muted leading-relaxed mb-10 animate-hero-stagger-2">
+        The URL you requested could not be located on this server. It may have been relocated during site architecture optimization or generative engine updates.
+      </p>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center justify-center gap-4 animate-hero-stagger-3 mb-16">
+        <a
+          href="/"
+          class="inline-flex items-center gap-2 rounded-xl bg-brand-accent px-6 py-3.5 font-mono text-xs font-bold text-brand-bg transition-all hover:bg-brand-accent-hover shadow-sm"
+        >
+          <span>&larr; Return to Homepage</span>
+        </a>
+        <a
+          href="/articles"
+          class="inline-flex items-center gap-2 rounded-xl border border-brand-border bg-brand-card px-6 py-3.5 font-mono text-xs font-semibold text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface"
+        >
+          <span>Browse Articles &rarr;</span>
+        </a>
+        <a
+          href="/work"
+          class="inline-flex items-center gap-2 rounded-xl border border-brand-border bg-brand-card px-6 py-3.5 font-mono text-xs font-semibold text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface"
+        >
+          <span>Case Studies</span>
+        </a>
+      </div>
+
+      <!-- Quick Directory Cards -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 text-left border-t border-brand-border/60 pt-12 animate-hero-stagger-3">
+        <a
+          href="/services/seo"
+          class="group rounded-xl border border-brand-border bg-brand-card p-5 transition-all hover:border-brand-accent/50 hover:bg-brand-surface"
+        >
+          <div class="font-mono text-[11px] font-bold text-brand-accent uppercase mb-1">Service</div>
+          <div class="font-display text-sm font-bold text-brand-text group-hover:text-brand-accent transition-colors">Technical SEO Architecture &rarr;</div>
+          <p class="mt-1 text-xs text-brand-text-dim">Sub-second Core Web Vitals and Schema knowledge graphs.</p>
+        </a>
+
+        <a
+          href="/services/geo"
+          class="group rounded-xl border border-brand-border bg-brand-card p-5 transition-all hover:border-brand-accent/50 hover:bg-brand-surface"
+        >
+          <div class="font-mono text-[11px] font-bold text-brand-accent uppercase mb-1">Service</div>
+          <div class="font-display text-sm font-bold text-brand-text group-hover:text-brand-accent transition-colors">Generative Engine Optimization &rarr;</div>
+          <p class="mt-1 text-xs text-brand-text-dim">Answer engine synthesis in ChatGPT, Perplexity, and Claude.</p>
+        </a>
+
+        <a
+          href="/contact"
+          class="group rounded-xl border border-brand-border bg-brand-card p-5 transition-all hover:border-brand-accent/50 hover:bg-brand-surface"
+        >
+          <div class="font-mono text-[11px] font-bold text-brand-accent uppercase mb-1">Direct Contact</div>
+          <div class="font-display text-sm font-bold text-brand-text group-hover:text-brand-accent transition-colors">Consultation & Inquiries &rarr;</div>
+          <p class="mt-1 text-xs text-brand-text-dim">Discuss organic growth and high-conversion paid acquisition.</p>
+        </a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

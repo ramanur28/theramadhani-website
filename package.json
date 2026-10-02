@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev --host",
+    "dev": "concurrently \"astro dev --host\" \"npx decap-server\"",
     "cms": "npx decap-server",
-    "dev:all": "npx concurrently \"astro dev --host\" \"npx decap-server\"",
+    "dev:all": "concurrently \"astro dev --host\" \"npx decap-server\"",
     "start": "astro dev --host",
     "build": "astro check && astro build",
     "preview": "astro preview",

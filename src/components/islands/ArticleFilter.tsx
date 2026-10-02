@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 export interface ArticleItem {
   id: string;
@@ -18,36 +18,129 @@ interface Props {
   allTags: string[];
 }
 
+const ITEMS_PER_PAGE = 9;
+
 export default function ArticleFilter({ articles, allTags }: Props) {
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
+  // Sync state from URL parameters on initial client mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const tagParam = params.get('tag');
+    const qParam = params.get('q');
+    const pageParam = params.get('page');
+
+    if (tagParam && (tagParam === 'all' || allTags.includes(tagParam))) {
+      setSelectedTag(tagParam);
+    }
+    if (qParam) {
+      setSearchQuery(qParam);
+    }
+    if (pageParam) {
+      const p = parseInt(pageParam, 10);
+      if (!isNaN(p) && p > 0) {
+        setCurrentPage(p);
+      }
+    }
+  }, [allTags]);
+
+  // 1. Search runs across the ENTIRE corpus of articles
   const filteredArticles = useMemo(() => {
     return articles.filter((art) => {
       const matchesTag = selectedTag === 'all' || art.tags.includes(selectedTag);
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         q === '' ||
         art.title.toLowerCase().includes(q) ||
         art.description.toLowerCase().includes(q) ||
-        art.tags.some((t) => t.toLowerCase().includes(q));
+        art.tags.some((t) => t.toLowerCase().includes(q)) ||
+        art.quickAnswer.toLowerCase().includes(q);
       return matchesTag && matchesSearch;
     });
   }, [articles, selectedTag, searchQuery]);
 
+  // 2. Pagination calculations
+  const totalItems = filteredArticles.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedArticles = useMemo(() => {
+    const startIndex = (validCurrentPage - 1) * ITEMS_PER_PAGE;
+    return filteredArticles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredArticles, validCurrentPage]);
+
+  // Sync URL query string when filters or page change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams();
+    if (selectedTag !== 'all') params.set('tag', selectedTag);
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+    if (validCurrentPage > 1) params.set('page', validCurrentPage.toString());
+
+    const queryString = params.toString();
+    const newUrl = `${window.location.pathname}${queryString ? '?' + queryString : ''}`;
+    window.history.replaceState(null, '', newUrl);
+  }, [selectedTag, searchQuery, validCurrentPage]);
+
+  // Reset to page 1 whenever filters change
+  const handleTagChange = (tag: string) => {
+    setSelectedTag(tag);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSelectedTag('all');
+    setSearchQuery('');
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages || page === validCurrentPage) return;
+    setCurrentPage(page);
+    const container = document.getElementById('articles-list-top');
+    if (container) {
+      container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Generate pagination numbers with ellipsis (e.g. [1, '...', 4, 5, 6, '...', 12])
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (validCurrentPage <= 4) {
+      return [1, 2, 3, 4, 5, '...', totalPages];
+    }
+    if (validCurrentPage >= totalPages - 3) {
+      return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', validCurrentPage - 1, validCurrentPage, validCurrentPage + 1, '...', totalPages];
+  }, [totalPages, validCurrentPage]);
+
+  const startItem = totalItems === 0 ? 0 : (validCurrentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endItem = Math.min(validCurrentPage * ITEMS_PER_PAGE, totalItems);
+
   return (
-    <div>
+    <div id="articles-list-top">
       {/* Search & Tag Filter Controls */}
-      <div className="mb-12 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         {/* Search Input */}
         <div className="relative w-full sm:max-w-xs">
           <input
             type="text"
-            placeholder="Filter publications..."
+            placeholder="Search all articles & topics..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-brand-border bg-brand-card px-3.5 py-2 pl-9 text-xs text-brand-text placeholder-brand-text-dim focus:border-brand-accent focus:outline-none"
-            aria-label="Filter guides"
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="w-full rounded-lg border border-brand-border bg-brand-card px-3.5 py-2 pl-9 pr-8 text-xs text-brand-text placeholder-brand-text-dim focus:border-brand-accent focus:outline-none transition-colors"
+            aria-label="Search all publications"
           />
           <svg
             className="absolute left-3 top-2.5 h-3.5 w-3.5 text-brand-text-dim"
@@ -62,16 +155,26 @@ export default function ArticleFilter({ articles, allTags }: Props) {
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => handleSearchChange('')}
+              className="absolute right-2.5 top-2 text-brand-text-dim hover:text-brand-text text-xs p-0.5"
+              aria-label="Clear search"
+            >
+              &times;
+            </button>
+          )}
         </div>
 
         {/* Tag Pills */}
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            onClick={() => setSelectedTag('all')}
+            onClick={() => handleTagChange('all')}
             className={`rounded-md px-3 py-1.5 font-mono text-[11px] transition-colors border ${
               selectedTag === 'all'
-                ? 'bg-brand-accent text-brand-bg font-semibold border-brand-accent shadow-sm'
+                ? 'bg-brand-accent text-brand-bg font-semibold border-brand-accent shadow-xs'
                 : 'bg-brand-surface text-brand-text-muted hover:text-brand-text border-brand-border'
             }`}
           >
@@ -81,10 +184,10 @@ export default function ArticleFilter({ articles, allTags }: Props) {
             <button
               key={tag}
               type="button"
-              onClick={() => setSelectedTag(tag)}
+              onClick={() => handleTagChange(tag)}
               className={`rounded-md px-3 py-1.5 font-mono text-[11px] transition-colors border ${
                 selectedTag === tag
-                  ? 'bg-brand-accent text-brand-bg font-semibold border-brand-accent shadow-sm'
+                  ? 'bg-brand-accent text-brand-bg font-semibold border-brand-accent shadow-xs'
                   : 'bg-brand-surface text-brand-text-muted hover:text-brand-text border-brand-border'
               }`}
             >
@@ -94,14 +197,47 @@ export default function ArticleFilter({ articles, allTags }: Props) {
         </div>
       </div>
 
+      {/* Result Status & Counter Header */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-xs text-brand-text-dim border-b border-brand-border/60 pb-3 font-mono">
+        <div>
+          {totalItems > 0 ? (
+            <span>
+              Showing <strong className="text-brand-text">{startItem}–{endItem}</strong> of{' '}
+              <strong className="text-brand-text">{totalItems}</strong> publications
+              {selectedTag !== 'all' && <span> in <span className="text-brand-accent">#{selectedTag}</span></span>}
+              {searchQuery && <span> matching "<span className="text-brand-accent">{searchQuery}</span>"</span>}
+            </span>
+          ) : (
+            <span>No publications found</span>
+          )}
+        </div>
+        {(searchQuery || selectedTag !== 'all') && (
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="text-[11px] text-brand-accent hover:underline font-semibold"
+          >
+            Clear all filters &rarr;
+          </button>
+        )}
+      </div>
+
       {/* Articles Grid */}
-      {filteredArticles.length === 0 ? (
+      {paginatedArticles.length === 0 ? (
         <div className="rounded-xl border border-dashed border-brand-border bg-brand-surface p-12 text-center text-xs text-brand-text-muted">
-          No publications match the selected query.
+          <p className="font-semibold text-brand-text mb-2 text-sm">No publications match your criteria.</p>
+          <p className="mb-4 text-brand-text-dim">Try adjusting your search terms or clearing the active tag filter.</p>
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="rounded-md bg-brand-accent px-4 py-2 text-xs font-semibold text-brand-bg shadow-xs hover:bg-brand-accent-hover transition-colors"
+          >
+            Reset Filters
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredArticles.map((art) => {
+          {paginatedArticles.map((art) => {
             const safeImg = art.coverImage
               ? art.coverImage.startsWith('http') || art.coverImage.startsWith('/')
                 ? art.coverImage
@@ -182,6 +318,70 @@ export default function ArticleFilter({ articles, allTags }: Props) {
             );
           })}
         </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <nav
+          className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-brand-border pt-8 sm:flex-row"
+          aria-label="Pagination Navigation"
+        >
+          {/* Previous Page Button */}
+          <button
+            type="button"
+            onClick={() => handlePageChange(validCurrentPage - 1)}
+            disabled={validCurrentPage === 1}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface disabled:opacity-30 disabled:pointer-events-none"
+            aria-label="Go to previous page"
+          >
+            <span>&larr;</span>
+            <span>Previous</span>
+          </button>
+
+          {/* Page Numbers */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {pageNumbers.map((num, i) => {
+              if (num === '...') {
+                return (
+                  <span
+                    key={`ellipsis-${i}`}
+                    className="flex h-9 w-7 items-center justify-center font-mono text-xs text-brand-text-dim select-none"
+                  >
+                    &hellip;
+                  </span>
+                );
+              }
+              const isCurrent = num === validCurrentPage;
+              return (
+                <button
+                  key={`page-${num}`}
+                  type="button"
+                  onClick={() => handlePageChange(num as number)}
+                  aria-current={isCurrent ? 'page' : undefined}
+                  className={`h-9 min-w-[2.25rem] px-2.5 rounded-lg font-mono text-xs font-semibold transition-all border ${
+                    isCurrent
+                      ? 'border-brand-accent bg-brand-accent text-brand-bg shadow-xs'
+                      : 'border-brand-border bg-brand-card text-brand-text-muted hover:border-brand-border-hover hover:bg-brand-surface hover:text-brand-text'
+                  }`}
+                >
+                  {num}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Next Page Button */}
+          <button
+            type="button"
+            onClick={() => handlePageChange(validCurrentPage + 1)}
+            disabled={validCurrentPage === totalPages}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface disabled:opacity-30 disabled:pointer-events-none"
+            aria-label="Go to next page"
+          >
+            <span>Next</span>
+            <span>&rarr;</span>
+          </button>
+        </nav>
       )}
     </div>
   );

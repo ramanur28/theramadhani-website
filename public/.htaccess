@@ -1,45 +1,69 @@
 # ==============================================================================
 # The Ramadhani - Shared Hosting Production Apache / LiteSpeed Configuration
-# Optimized for Astro Static Generation + Decap CMS PHP OAuth
+# Optimized for Astro Static Generation + Decap CMS PHP OAuth (cPanel / LiteSpeed)
 # ==============================================================================
 
+# Ensure index.html takes precedence over index.php for static routes
+DirectoryIndex index.html index.php
+
+# Prevent MultiViews conflicts (cPanel default) and directory browsing
+Options -MultiViews -Indexes +FollowSymLinks
+
 # ------------------------------------------------------------------------------
-# 1. Core Engine & Rewrite Settings
+# 1. Explicit MIME Types (Ensures correct headers on all shared hosting setups)
+# ------------------------------------------------------------------------------
+<IfModule mod_mime.c>
+    AddType text/html .html .htm
+    AddType text/css .css
+    AddType application/javascript .js .mjs
+    AddType application/json .json
+    AddType image/svg+xml .svg .svgz
+    AddType image/webp .webp
+    AddType image/avif .avif
+    AddType font/woff2 .woff2
+    AddType font/woff .woff
+    AddType application/xml .xml
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 2. Core Engine & Rewrite Settings
 # ------------------------------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
-    # Force HTTPS
+    # Exclude cPanel AutoSSL & Let's Encrypt challenges from rewrites
+    RewriteCond %{REQUEST_URI} ^/\.well-known/acme-challenge/ [NC]
+    RewriteRule ^ - [L]
+
+    # Force HTTPS (Preserve SSL)
     RewriteCond %{HTTPS} off
     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-    # Remove www (canonicalize to apex domain, or adjust if prefer www)
+    # Remove www (canonicalize to apex domain)
     RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
     RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
 
+    # Direct OAuth Handlers for Decap CMS (Route immediately without redirect hop)
+    RewriteRule ^auth/?$ /auth/index.php [L,QSA]
+    RewriteRule ^callback/?$ /callback/index.php [L,QSA]
+
     # Clean URLs & Directory Slashing for Astro Static Files
-    # If request is a directory and missing trailing slash, redirect to trailing slash
+    # If request is an existing directory and missing trailing slash, redirect with slash
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^(.+[^/])$ /$1/ [R=301,L]
-
-    # Rewrite /auth and /callback to PHP OAuth handlers if accessed without trailing slash
-    RewriteRule ^auth$ /auth/index.php [L,QSA]
-    RewriteRule ^auth/$ /auth/index.php [L,QSA]
-    RewriteRule ^callback$ /callback/index.php [L,QSA]
-    RewriteRule ^callback/$ /callback/index.php [L,QSA]
 
     # Serve index.html inside directory if exists
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME}/index.html -f
     RewriteRule ^(.*)$ $1/index.html [L]
 
-    # Fallback 404 handler (if 404.html exists)
+    # Custom Branded 404 Error Document
     ErrorDocument 404 /404.html
 </IfModule>
 
 # ------------------------------------------------------------------------------
-# 2. Production Security Headers
+# 3. Production Security Headers
 # ------------------------------------------------------------------------------
 <IfModule mod_headers.c>
     # HTTP Strict Transport Security (HSTS)
@@ -48,7 +72,7 @@
     # Prevent MIME Sniffing
     Header always set X-Content-Type-Options "nosniff"
 
-    # Clickjacking Protection
+    # Clickjacking Protection (Allow Decap CMS popups / same origin iframes)
     Header always set X-Frame-Options "SAMEORIGIN"
 
     # Referrer Policy
@@ -71,13 +95,13 @@
 </IfModule>
 
 # ------------------------------------------------------------------------------
-# 3. Leverage Browser Caching (mod_expires)
+# 4. Leverage Browser Caching (mod_expires)
 # ------------------------------------------------------------------------------
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresDefault "access plus 1 month"
 
-    # Dynamic & Content Directives (Always revalidate)
+    # Dynamic & Content Directives (Always revalidate HTML/XML/YAML)
     ExpiresByType text/html "access plus 0 seconds"
     ExpiresByType application/xhtml+xml "access plus 0 seconds"
     ExpiresByType text/plain "access plus 0 seconds"
@@ -100,7 +124,7 @@
 </IfModule>
 
 # ------------------------------------------------------------------------------
-# 4. Gzip / Deflate Compression
+# 5. Gzip / Deflate Compression
 # ------------------------------------------------------------------------------
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/plain
@@ -118,13 +142,26 @@
 </IfModule>
 
 # ------------------------------------------------------------------------------
-# 5. Security & Sensitive Files Protection
+# 6. Security & Sensitive Files Protection (Apache 2.4 & 2.2 Dual Compatible)
 # ------------------------------------------------------------------------------
-# Prevent access to dotfiles, environment configs, and git metadata
+# Prevent access to dotfiles (.env, .git, .htaccess, .env.oauth, etc.)
 <FilesMatch "^\.">
-    Order allow,deny
-    Deny from all
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
 
-# Prevent directory browsing
-Options -Indexes
+# Prevent direct web access to internal PHP configuration file
+<Files "config.php">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>

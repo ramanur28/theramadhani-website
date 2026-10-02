@@ -561,3 +561,34 @@ details.faq-accordion-item > .faq-accordion-answer p:last-child,
   border: 1px solid #10B981;
   color: #065F46;
 }
+
+
+/* Article Body Image & Caption Enhancement */
+figure.article-image-figure {
+  margin: 2rem 0;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  border: 1px solid var(--border-main);
+  background-color: var(--surface-main);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+figure.article-image-figure img.article-body-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  object-fit: cover;
+}
+
+figcaption.article-image-caption {
+  padding: 0.625rem 1rem;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border-main);
+  background-color: var(--card-bg);
+}
