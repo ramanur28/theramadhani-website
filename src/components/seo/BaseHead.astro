@@ -27,7 +27,7 @@ const {
   type = 'website',
 } = Astro.props;
 
-const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : 'https://ramadhani.cloud';
+const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : 'https://theramadhani.com';
 const canonicalURL = new URL(Astro.url.pathname, siteUrl);
 const ogImageURL = image.startsWith('http') ? image : new URL(image, siteUrl).toString();
 const siteName = 'The Ramadhani | SEO, GEO & Google Ads Specialist';

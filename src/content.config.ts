@@ -5,7 +5,7 @@ const articles = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/articles' }),
   schema: z.object({
     title: z.string(),
-    description: z.string().min(100).max(200),
+    description: z.string().min(20).max(350),
     slug: z.string().optional(),
     status: z.enum(['published', 'scheduled', 'draft']).default('published'),
     draft: z.boolean().default(false),
@@ -15,7 +15,7 @@ const articles = defineCollection({
     tags: z.array(z.string()).default([]),
     coverImage: z.string().default('/images/uploads/default-cover.svg'),
     coverAlt: z.string().default('Article cover image'),
-    quickAnswer: z.string().min(30),
+    quickAnswer: z.string().min(20),
     featured: z.boolean().default(false),
     faq: z.array(z.object({
       question: z.string(),

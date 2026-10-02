@@ -16,7 +16,7 @@ export function isArticlePublished(article: CollectionEntry<'articles'>): boolea
   }
 
   // Check explicit draft flag or status
-  if (article.data.status === 'draft') {
+  if (article.data.status === 'draft' || article.data.draft === true) {
     return false;
   }
 

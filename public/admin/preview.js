@@ -122,7 +122,7 @@
 
       if (res.ok) {
         console.log('[Decap Auto-Persist] Saved to disk: public/images/uploads/' + cleanName);
-        showUploadToast('? Image saved to disk: /images/uploads/' + cleanName, true);
+        showUploadToast('✓ Image saved to disk: /images/uploads/' + cleanName, true);
       } else {
         const errJson = await res.json().catch(() => ({}));
         console.warn('[Decap Auto-Persist] Server returned error:', errJson);
@@ -366,9 +366,9 @@
         statusBanner = h(
           'div',
           { className: 'preview-status-banner preview-status-draft' },
-          h('span', { className: 'preview-status-icon' }, '??'),
+          h('span', { className: 'preview-status-icon' }, '📝'),
           h('div', null,
-            h('strong', null, 'DRAFT ARTICLE ? HIDDEN FROM PUBLIC'),
+            h('strong', null, 'DRAFT ARTICLE — HIDDEN FROM PUBLIC'),
             h('div', { className: 'preview-status-desc' }, 'This article is saved as a draft and will not appear on the live site.')
           )
         );
@@ -376,7 +376,7 @@
         statusBanner = h(
           'div',
           { className: 'preview-status-banner preview-status-scheduled' },
-          h('span', { className: 'preview-status-icon' }, '?'),
+          h('span', { className: 'preview-status-icon' }, '⏰'),
           h('div', null,
             h('strong', null, 'SCHEDULED PUBLICATION'),
             h('div', { className: 'preview-status-desc' }, 'Scheduled for release on ' + formattedDate + '. It will automatically go live when this time arrives.')
@@ -394,7 +394,7 @@
           'nav',
           { className: 'preview-breadcrumbs', 'aria-label': 'Breadcrumbs' },
           h('span', null, 'Articles'),
-          h('span', { className: 'sep' }, '?'),
+          h('span', { className: 'sep' }, '›'),
           h('span', { className: 'current' }, title)
         ),
 
@@ -403,7 +403,7 @@
           'div',
           { className: 'preview-meta' },
           h('time', null, formattedDate),
-          h('span', null, '?'),
+          h('span', null, '•'),
           h('span', { className: 'preview-tag' }, '#' + primaryTag)
         ),
 
@@ -488,7 +488,7 @@
               'div',
               { className: 'preview-author-header' },
               h('span', { className: 'preview-author-name' }, 'Written by ' + author),
-              h('span', { className: 'preview-author-link' }, 'Profile ?')
+              h('span', { className: 'preview-author-link' }, 'Profile →')
             ),
             h(
               'p',
@@ -547,7 +547,7 @@
           'div',
           { className: 'preview-meta' },
           h('span', null, client),
-          h('span', null, '?'),
+          h('span', null, '•'),
           h('span', { className: 'preview-tag' }, industry)
         ),
         h('h1', { className: 'preview-title' }, title),

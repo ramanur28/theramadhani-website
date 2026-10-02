@@ -63,4 +63,4 @@
 - Direct Email: contact@theramadhani.com
 - Portfolio & Case Studies: https://theramadhani.com/work
 - Strategic Audit Intake: https://theramadhani.com/contact
-- Platform: Astro 5 SSG, React 19 Islands, Tailwind CSS 3, Caddy 2 HTTP/3
+- Platform: Astro 5 SSG, React 19 Islands, Tailwind CSS 3, Apache/LiteSpeed PHP Shared Hosting

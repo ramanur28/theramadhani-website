@@ -28,11 +28,16 @@ const breadcrumbs: BreadcrumbItem[] = [
         </p>
 
         <form
-          action="/api/contact"
+          action="/api/contact.php"
           method="POST"
-          class="space-y-5"
+          class="space-y-5 transition-opacity duration-300"
           id="contact-form"
         >
+          <!-- Honeypot anti-spam (hidden from real users) -->
+          <div style="display:none !important;" aria-hidden="true">
+            <input type="text" name="website_hp" tabindex="-1" autocomplete="off" />
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label for="name" class="block text-xs font-medium text-brand-text-muted mb-1.5 font-mono">
@@ -140,12 +145,16 @@ const breadcrumbs: BreadcrumbItem[] = [
           <button
             type="submit"
             id="submit-btn"
-            class="btn-primary w-full text-xs py-3"
+            class="btn-primary w-full text-xs py-3 cursor-pointer"
           >
             <span>Request Free Search &amp; Lead Audit</span>
             <span class="ml-1.5">&rarr;</span>
           </button>
         </form>
+
+        <div id="form-error" class="hidden mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-xs text-red-200 text-center">
+          <p id="form-error-msg" class="font-medium"></p>
+        </div>
 
         <div id="form-success" class="hidden mt-6 rounded-xl border border-brand-accent/40 bg-brand-accent/10 p-5 text-center text-xs text-brand-text">
           <p class="font-bold text-brand-accent">Audit Request Received</p>
@@ -200,15 +209,52 @@ const breadcrumbs: BreadcrumbItem[] = [
     function setupForm() {
       const form = document.getElementById('contact-form') as HTMLFormElement;
       const success = document.getElementById('form-success');
+      const errorDiv = document.getElementById('form-error');
+      const errorMsg = document.getElementById('form-error-msg');
+      const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
       if (!form || !success) return;
 
-      form.addEventListener('submit', (e) => {
+      if (form.dataset.ready === 'true') return;
+      form.dataset.ready = 'true';
+
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        form.classList.add('opacity-40', 'pointer-events-none');
-        setTimeout(() => {
-          form.classList.add('hidden');
-          success.classList.remove('hidden');
-        }, 400);
+        if (errorDiv) errorDiv.classList.add('hidden');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+          submitBtn.innerHTML = '<span>Transmitting Audit Request...</span>';
+        }
+
+        try {
+          const formData = new FormData(form);
+          const response = await fetch('/api/contact.php', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const data = await response.json().catch(() => ({}));
+
+          if (response.ok && data.success) {
+            form.classList.add('opacity-40', 'pointer-events-none');
+            setTimeout(() => {
+              form.classList.add('hidden');
+              success.classList.remove('hidden');
+            }, 300);
+          } else {
+            throw new Error(data.error || 'Server encountered an issue processing your request.');
+          }
+        } catch (err: any) {
+          if (errorDiv && errorMsg) {
+            errorMsg.textContent = err.message || 'Unable to submit audit request. Please email directly to contact@theramadhani.com';
+            errorDiv.classList.remove('hidden');
+          }
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            submitBtn.innerHTML = '<span>Request Free Search &amp; Lead Audit</span><span class="ml-1.5">&rarr;</span>';
+          }
+        }
       });
     }
 

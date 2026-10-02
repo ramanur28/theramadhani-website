@@ -24,7 +24,7 @@ const {
   customSchema = [],
 } = Astro.props;
 
-const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : 'https://ramadhani.dev';
+const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : 'https://theramadhani.com';
 const personId = `${siteUrl}/#person`;
 const orgId = `${siteUrl}/#organization`;
 const websiteId = `${siteUrl}/#website`;
@@ -64,7 +64,7 @@ const organizationSchema: Record<string, any> = {
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'sales & consulting',
-    email: 'contact@ramadhani.dev',
+    email: 'contact@theramadhani.com',
     url: `${siteUrl}/contact`,
   },
 };
