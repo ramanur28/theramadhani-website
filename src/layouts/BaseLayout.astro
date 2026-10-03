@@ -93,12 +93,20 @@ const {
               });
             },
             {
-              threshold: 0.08,
-              rootMargin: '0px 0px -40px 0px',
+              threshold: 0.01,
+              rootMargin: '0px 0px 80px 0px',
             }
           );
 
-          revealElements.forEach((el) => observer.observe(el));
+          revealElements.forEach((el) => {
+            const rect = el.getBoundingClientRect();
+            // If already in viewport on load or on mobile, show immediately
+            if (rect.top < window.innerHeight + 100 || window.innerWidth <= 768) {
+              el.classList.add('is-visible');
+            } else {
+              observer.observe(el);
+            }
+          });
         } else {
           // Fallback for older browsers
           revealElements.forEach((el) => el.classList.add('is-visible'));

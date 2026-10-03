@@ -477,3 +477,15 @@ figcaption.article-image-caption {
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   background-color: #F4F4F0;
 }
+
+/* Mobile Viewport Safeguard: Ensure content is immediately visible on mobile devices */
+@media (max-width: 768px) {
+  .reveal-on-scroll,
+  .reveal-fade-left,
+  .reveal-fade-right,
+  .reveal-scale {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
