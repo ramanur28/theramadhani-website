@@ -3,6 +3,8 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
+import fs from 'node:fs';
+import path from 'node:path';
 
 function decapServerIntegration() {
   return {
@@ -108,6 +110,93 @@ function decapServerIntegration() {
   };
 }
 
+/**
+ * Builds metadata (lastmod, changefreq, priority) for sitemap serialization.
+ */
+function getSitemapMetadataMap() {
+  const metaMap = new Map();
+
+  function parseFrontmatter(filePath) {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const slugMatch = content.match(/^slug:\s*["']?([^"'\r\n]+)["']?/m);
+      const pubMatch = content.match(/^publishDate:\s*["']?([^"'\r\n]+)["']?/m);
+      const updMatch = content.match(/^updatedDate:\s*["']?([^"'\r\n]+)["']?/m);
+      const dateStr = updMatch ? updMatch[1].trim() : (pubMatch ? pubMatch[1].trim() : null);
+      const fileSlug = path.basename(filePath, path.extname(filePath));
+      const slug = slugMatch ? slugMatch[1].trim() : fileSlug;
+      const date = dateStr ? new Date(dateStr) : fs.statSync(filePath).mtime;
+      return { slug, date };
+    } catch {
+      return null;
+    }
+  }
+
+  // 1. Articles collection
+  const articlesDir = path.resolve('src/content/articles');
+  if (fs.existsSync(articlesDir)) {
+    for (const file of fs.readdirSync(articlesDir)) {
+      if (file.endsWith('.md') || file.endsWith('.mdx')) {
+        const parsed = parseFrontmatter(path.join(articlesDir, file));
+        if (parsed) {
+          metaMap.set(`/articles/${parsed.slug}/`, {
+            lastmod: parsed.date,
+            changefreq: 'monthly',
+            priority: 0.7,
+          });
+        }
+      }
+    }
+  }
+
+  // 2. Work collection
+  const workDir = path.resolve('src/content/work');
+  if (fs.existsSync(workDir)) {
+    for (const file of fs.readdirSync(workDir)) {
+      if (file.endsWith('.md') || file.endsWith('.mdx')) {
+        const parsed = parseFrontmatter(path.join(workDir, file));
+        if (parsed) {
+          metaMap.set(`/work/${parsed.slug}/`, {
+            lastmod: parsed.date,
+            changefreq: 'monthly',
+            priority: 0.7,
+          });
+        }
+      }
+    }
+  }
+
+  // 3. Static pages
+  const staticPages = [
+    { route: '/', file: 'src/pages/index.astro', changefreq: 'weekly', priority: 1.0 },
+    { route: '/services/seo/', file: 'src/pages/services/seo.astro', changefreq: 'monthly', priority: 0.9 },
+    { route: '/services/geo/', file: 'src/pages/services/geo.astro', changefreq: 'monthly', priority: 0.9 },
+    { route: '/services/google-ads/', file: 'src/pages/services/google-ads.astro', changefreq: 'monthly', priority: 0.9 },
+    { route: '/services/seo/workflow/', file: 'src/pages/services/seo/workflow.astro', changefreq: 'monthly', priority: 0.8 },
+    { route: '/articles/', file: 'src/pages/articles/index.astro', changefreq: 'daily', priority: 0.8 },
+    { route: '/work/', file: 'src/pages/work.astro', changefreq: 'monthly', priority: 0.7 },
+    { route: '/about/', file: 'src/pages/about.astro', changefreq: 'monthly', priority: 0.7 },
+    { route: '/contact/', file: 'src/pages/contact.astro', changefreq: 'monthly', priority: 0.6 },
+  ];
+
+  for (const page of staticPages) {
+    const fullPath = path.resolve(page.file);
+    let mtime = new Date();
+    if (fs.existsSync(fullPath)) {
+      mtime = fs.statSync(fullPath).mtime;
+    }
+    metaMap.set(page.route, {
+      lastmod: mtime,
+      changefreq: page.changefreq,
+      priority: page.priority,
+    });
+  }
+
+  return metaMap;
+}
+
+const sitemapMetaMap = getSitemapMetadataMap();
+
 // https://astro.build/config
 export default defineConfig({
   site: process.env.SITE_URL || 'https://theramadhani.com',
@@ -115,7 +204,38 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
-      filter: (page) => !page.includes('/admin'),
+      filter: (page) => {
+        try {
+          const { pathname } = new URL(page);
+          return (
+            !pathname.startsWith('/admin') &&
+            !pathname.startsWith('/api') &&
+            !pathname.startsWith('/auth') &&
+            !pathname.startsWith('/callback')
+          );
+        } catch {
+          return !/\/admin(\/|$)/.test(page) && !/\/api(\/|$)/.test(page);
+        }
+      },
+      serialize(item) {
+        try {
+          const { pathname } = new URL(item.url);
+          const normalizedPath = pathname.endsWith('/') ? pathname : `${pathname}/`;
+          const meta = sitemapMetaMap.get(normalizedPath);
+          if (meta) {
+            if (meta.lastmod && !isNaN(meta.lastmod.getTime())) {
+              item.lastmod = meta.lastmod.toISOString();
+            }
+            if (meta.changefreq) {
+              item.changefreq = meta.changefreq;
+            }
+            if (typeof meta.priority === 'number') {
+              item.priority = meta.priority;
+            }
+          }
+        } catch {}
+        return item;
+      },
     }),
     react(),
     tailwind({

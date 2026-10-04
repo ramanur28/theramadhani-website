@@ -8,6 +8,8 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /api/
+Disallow: /auth/
+Disallow: /callback/
 
 # ------------------------------------------------------------------------------
 # Dedicated AI & Search Engine Crawler Directives
