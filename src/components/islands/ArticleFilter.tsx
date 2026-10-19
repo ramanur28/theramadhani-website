@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+﻿import { useState, useMemo, useEffect } from 'react';
 
 export interface ArticleItem {
   id: string;
@@ -20,6 +20,62 @@ interface Props {
 
 const ITEMS_PER_PAGE = 9;
 
+export const CORE_TOPICS = [
+  {
+    id: 'all',
+    label: 'All Publications',
+    match: () => true,
+  },
+  {
+    id: 'technical-seo',
+    label: 'Technical SEO',
+    match: (art: ArticleItem) =>
+      art.tags.some((t) =>
+        /technical seo|site architecture|crawl|javascript seo|schema/i.test(t)
+      ) || /technical seo/i.test(art.title),
+  },
+  {
+    id: 'geo',
+    label: 'GEO & AI Search',
+    match: (art: ArticleItem) =>
+      art.tags.some((t) => /geo|ai search|llm|ai overviews/i.test(t)) ||
+      /geo|generative engine|ai overviews/i.test(art.title),
+  },
+  {
+    id: 'google-ads',
+    label: 'Google Ads & PPC',
+    match: (art: ArticleItem) =>
+      art.tags.some((t) => /google ads|ppc|conversion tracking|smart bidding/i.test(t)) ||
+      /google ads/i.test(art.title),
+  },
+  {
+    id: 'seo-audit',
+    label: 'SEO Audit',
+    match: (art: ArticleItem) =>
+      art.tags.some((t) => /audit/i.test(t)) || /audit/i.test(art.title),
+  },
+  {
+    id: 'core-web-vitals',
+    label: 'Core Web Vitals',
+    match: (art: ArticleItem) =>
+      art.tags.some((t) => /core web vitals/i.test(t)) || /core web vitals/i.test(art.title),
+  },
+  {
+    id: 'metrics-kpis',
+    label: 'Metrics & KPIs',
+    match: (art: ArticleItem) =>
+      art.tags.some((t) => /metrics|kpis|roi|measur/i.test(t)) ||
+      /metrics|measuring/i.test(art.title),
+  },
+  {
+    id: 'b2b-growth',
+    label: 'B2B & Tech',
+    match: (art: ArticleItem) =>
+      art.tags.some((t) => /b2b|saas|technology companies|startup|pipeline/i.test(t)) ||
+      /b2b|technology companies/i.test(art.title),
+  },
+];
+
 export default function ArticleFilter({ articles, allTags }: Props) {
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -33,8 +89,12 @@ export default function ArticleFilter({ articles, allTags }: Props) {
     const qParam = params.get('q');
     const pageParam = params.get('page');
 
-    if (tagParam && (tagParam === 'all' || allTags.includes(tagParam))) {
-      setSelectedTag(tagParam);
+    if (tagParam) {
+      const isValidCore = CORE_TOPICS.some((t) => t.id === tagParam);
+      const isValidTag = allTags.some((t) => t.toLowerCase() === tagParam.toLowerCase());
+      if (tagParam === 'all' || isValidCore || isValidTag) {
+        setSelectedTag(tagParam);
+      }
     }
     if (qParam) {
       setSearchQuery(qParam);
@@ -47,10 +107,26 @@ export default function ArticleFilter({ articles, allTags }: Props) {
     }
   }, [allTags]);
 
-  // 1. Search runs across the ENTIRE corpus of articles
+  const isSpecificTag =
+    selectedTag !== 'all' && !CORE_TOPICS.some((t) => t.id === selectedTag);
+
+  // 1. Filter articles based on core topics or specific granular tags + text query
   const filteredArticles = useMemo(() => {
     return articles.filter((art) => {
-      const matchesTag = selectedTag === 'all' || art.tags.includes(selectedTag);
+      let matchesTag = true;
+      if (selectedTag === 'all') {
+        matchesTag = true;
+      } else {
+        const topic = CORE_TOPICS.find((t) => t.id === selectedTag);
+        if (topic) {
+          matchesTag = topic.match(art);
+        } else {
+          matchesTag = art.tags.some(
+            (t) => t.toLowerCase() === selectedTag.toLowerCase()
+          );
+        }
+      }
+
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         q === '' ||
@@ -58,6 +134,7 @@ export default function ArticleFilter({ articles, allTags }: Props) {
         art.description.toLowerCase().includes(q) ||
         art.tags.some((t) => t.toLowerCase().includes(q)) ||
         art.quickAnswer.toLowerCase().includes(q);
+
       return matchesTag && matchesSearch;
     });
   }, [articles, selectedTag, searchQuery]);
@@ -131,69 +208,117 @@ export default function ArticleFilter({ articles, allTags }: Props) {
   return (
     <div id="articles-list-top">
       {/* Search & Tag Filter Controls */}
-      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        {/* Search Input */}
-        <div className="relative w-full sm:max-w-xs">
-          <input
-            type="text"
-            placeholder="Search all articles & topics..."
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full rounded-lg border border-brand-border bg-brand-card px-3.5 py-2 pl-9 pr-8 text-xs text-brand-text placeholder-brand-text-dim focus:border-brand-accent focus:outline-none transition-colors"
-            aria-label="Search all publications"
-          />
-          <svg
-            className="absolute left-3 top-2.5 h-3.5 w-3.5 text-brand-text-dim"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      <div className="mb-8 space-y-4">
+        {/* Row 1: Search Input & Granular Specific Tag Dropdown */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Prominent Search Input */}
+          <div className="relative w-full sm:max-w-md">
+            <input
+              type="text"
+              placeholder="Search publications, topics, or keywords..."
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full rounded-xl border border-brand-border bg-brand-card px-4 py-2.5 pl-10 pr-9 text-xs sm:text-sm text-brand-text placeholder-brand-text-dim focus:border-brand-accent focus:ring-1 focus:ring-brand-accent focus:outline-none transition-all shadow-xs"
+              aria-label="Search all publications"
             />
-          </svg>
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => handleSearchChange('')}
-              className="absolute right-2.5 top-2 text-brand-text-dim hover:text-brand-text text-xs p-0.5"
-              aria-label="Clear search"
+            <svg
+              className="absolute left-3.5 top-3 h-4 w-4 text-brand-text-dim"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              &times;
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange('')}
+                className="absolute right-3 top-2.5 text-brand-text-dim hover:text-brand-text text-sm p-0.5 rounded cursor-pointer transition-colors"
+                aria-label="Clear search"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+
+          {/* Granular Tag Selector & Reset */}
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <div className="relative">
+              <select
+                aria-label="Filter by granular topic tag"
+                value={isSpecificTag ? selectedTag : ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleTagChange(e.target.value);
+                  }
+                }}
+                className="rounded-lg border border-brand-border bg-brand-surface py-2 pl-3 pr-7 text-xs text-brand-text-muted hover:text-brand-text hover:border-brand-border-hover focus:border-brand-accent focus:outline-none cursor-pointer transition-colors"
+              >
+                <option value="">Specific Tag / Keyword ({allTags.length})...</option>
+                {allTags.slice().sort().map((t) => (
+                  <option key={t} value={t}>
+                    #{t}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {(selectedTag !== 'all' || searchQuery) && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1 rounded-lg border border-brand-border bg-brand-card px-3 py-2 text-xs font-semibold text-brand-accent hover:bg-brand-surface hover:border-brand-border-hover transition-colors shadow-xs cursor-pointer"
+              >
+                <span>Reset</span>
+                <span>&times;</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Tag Pills */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => handleTagChange('all')}
-            className={`rounded-md px-3 py-1.5 font-mono text-[11px] transition-colors border ${
-              selectedTag === 'all'
-                ? 'bg-brand-accent text-brand-bg font-semibold border-brand-accent shadow-xs'
-                : 'bg-brand-surface text-brand-text-muted hover:text-brand-text border-brand-border'
-            }`}
-          >
-            All ({articles.length})
-          </button>
-          {allTags.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => handleTagChange(tag)}
-              className={`rounded-md px-3 py-1.5 font-mono text-[11px] transition-colors border ${
-                selectedTag === tag
-                  ? 'bg-brand-accent text-brand-bg font-semibold border-brand-accent shadow-xs'
-                  : 'bg-brand-surface text-brand-text-muted hover:text-brand-text border-brand-border'
-              }`}
-            >
-              #{tag}
-            </button>
-          ))}
+        {/* Row 2: Clean Core Topic Pills */}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1">
+          {CORE_TOPICS.map((topic) => {
+            const isCurrent = selectedTag === topic.id;
+            const count = topic.id === 'all'
+              ? articles.length
+              : articles.filter(topic.match).length;
+
+            return (
+              <button
+                key={topic.id}
+                type="button"
+                onClick={() => handleTagChange(topic.id)}
+                className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all border cursor-pointer ${
+                  isCurrent
+                    ? 'bg-brand-accent text-white font-semibold border-brand-accent shadow-xs'
+                    : 'bg-brand-surface text-brand-text-muted hover:text-brand-text hover:bg-brand-panel border-brand-border'
+                }`}
+              >
+                {topic.label} <span className="text-[10px] ml-1 opacity-75">({count})</span>
+              </button>
+            );
+          })}
+
+          {/* Active Specific Tag Pill (if picked from select dropdown or tag click) */}
+          {isSpecificTag && (
+            <div className="inline-flex items-center gap-1.5 rounded-lg bg-brand-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs">
+              <span>#{selectedTag}</span>
+              <button
+                type="button"
+                onClick={() => handleTagChange('all')}
+                className="hover:opacity-75 text-sm leading-none cursor-pointer"
+                aria-label="Remove active tag filter"
+              >
+                &times;
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -204,7 +329,14 @@ export default function ArticleFilter({ articles, allTags }: Props) {
             <span>
               Showing <strong className="text-brand-text">{startItem}–{endItem}</strong> of{' '}
               <strong className="text-brand-text">{totalItems}</strong> publications
-              {selectedTag !== 'all' && <span> in <span className="text-brand-accent">#{selectedTag}</span></span>}
+              {selectedTag !== 'all' && (
+                <span>
+                  {' '}in{' '}
+                  <span className="text-brand-accent font-semibold">
+                    {CORE_TOPICS.find((t) => t.id === selectedTag)?.label || `#${selectedTag}`}
+                  </span>
+                </span>
+              )}
               {searchQuery && <span> matching "<span className="text-brand-accent">{searchQuery}</span>"</span>}
             </span>
           ) : (
@@ -215,7 +347,7 @@ export default function ArticleFilter({ articles, allTags }: Props) {
           <button
             type="button"
             onClick={handleResetFilters}
-            className="text-[11px] text-brand-accent hover:underline font-semibold"
+            className="text-[11px] text-brand-accent hover:underline font-semibold cursor-pointer"
           >
             Clear all filters &rarr;
           </button>
@@ -230,7 +362,7 @@ export default function ArticleFilter({ articles, allTags }: Props) {
           <button
             type="button"
             onClick={handleResetFilters}
-            className="rounded-md bg-brand-accent px-4 py-2 text-xs font-semibold text-brand-bg shadow-xs hover:bg-brand-accent-hover transition-colors"
+            className="rounded-md bg-brand-accent px-4 py-2 text-xs font-semibold text-brand-bg shadow-xs hover:bg-brand-accent-hover transition-colors cursor-pointer"
           >
             Reset Filters
           </button>
@@ -260,9 +392,18 @@ export default function ArticleFilter({ articles, allTags }: Props) {
                       loading="lazy"
                     />
                     <div className="absolute top-3 right-3">
-                      <span className="font-mono text-[10px] text-brand-accent bg-brand-bg/90 backdrop-blur-xs px-2 py-0.5 rounded border border-brand-border font-semibold shadow-xs">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleTagChange(art.tags[0]);
+                        }}
+                        className="font-mono text-[10px] text-brand-accent bg-brand-bg/90 backdrop-blur-xs px-2 py-0.5 rounded border border-brand-border font-semibold shadow-xs hover:border-brand-accent hover:bg-brand-bg transition-colors cursor-pointer"
+                        title={`Filter by #${art.tags[0]}`}
+                      >
                         #{art.tags[0] || 'Guide'}
-                      </span>
+                      </button>
                     </div>
                   </a>
                 )}
@@ -273,7 +414,18 @@ export default function ArticleFilter({ articles, allTags }: Props) {
                       <div className="flex items-center gap-2 text-xs text-brand-text-dim mb-3 font-mono">
                         <time>{art.publishDate}</time>
                         <span>&bull;</span>
-                        <span className="text-brand-accent font-semibold">#{art.tags[0] || 'Guide'}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleTagChange(art.tags[0]);
+                          }}
+                          className="text-brand-accent font-semibold hover:underline cursor-pointer"
+                          title={`Filter by #${art.tags[0]}`}
+                        >
+                          #{art.tags[0] || 'Guide'}
+                        </button>
                       </div>
                     )}
 
@@ -331,7 +483,7 @@ export default function ArticleFilter({ articles, allTags }: Props) {
             type="button"
             onClick={() => handlePageChange(validCurrentPage - 1)}
             disabled={validCurrentPage === 1}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface disabled:opacity-30 disabled:pointer-events-none"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
             aria-label="Go to previous page"
           >
             <span>&larr;</span>
@@ -358,7 +510,7 @@ export default function ArticleFilter({ articles, allTags }: Props) {
                   type="button"
                   onClick={() => handlePageChange(num as number)}
                   aria-current={isCurrent ? 'page' : undefined}
-                  className={`h-9 min-w-[2.25rem] px-2.5 rounded-lg font-mono text-xs font-semibold transition-all border ${
+                  className={`h-9 min-w-[2.25rem] px-2.5 rounded-lg font-mono text-xs font-semibold transition-all border cursor-pointer ${
                     isCurrent
                       ? 'border-brand-accent bg-brand-accent text-brand-bg shadow-xs'
                       : 'border-brand-border bg-brand-card text-brand-text-muted hover:border-brand-border-hover hover:bg-brand-surface hover:text-brand-text'
@@ -375,7 +527,7 @@ export default function ArticleFilter({ articles, allTags }: Props) {
             type="button"
             onClick={() => handlePageChange(validCurrentPage + 1)}
             disabled={validCurrentPage === totalPages}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface disabled:opacity-30 disabled:pointer-events-none"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
             aria-label="Go to next page"
           >
             <span>Next</span>

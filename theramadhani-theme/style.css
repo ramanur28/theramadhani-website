@@ -1,0 +1,31 @@
+﻿/*
+Theme Name: The Ramadhani
+Theme URI: https://theramadhani.com/
+Author: Ramadhani
+Author URI: https://theramadhani.com/about/
+Description: Ultra-performance WordPress Theme engineered for Search Rankings, Generative Engine Optimization (GEO), and Article-to-Lead Conversion Architecture.
+Version: 1.0.0
+Requires at least: 6.0
+Tested up to: 6.6
+Requires PHP: 7.4
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: theramadhani
+Tags: custom-background, custom-logo, custom-menu, featured-images, full-width-template, theme-options, translation-ready
+*/
+
+/* Core Theme Base Variables */
+:root {
+  --bg-main: #FAFAF8;
+  --surface-main: #F4F4F0;
+  --panel-main: #ECECE6;
+  --card-bg: #FFFFFF;
+  --border-main: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.18);
+  --text-primary: #111317;
+  --text-secondary: #475063;
+  --text-dim: #6B7280;
+  --accent: #D97706;
+  --accent-hover: #B45309;
+  --accent-dim: rgba(217, 119, 6, 0.08);
+}
