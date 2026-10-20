@@ -265,6 +265,23 @@
     return state.siteCatalog;
   }
 
+  
+  function addManualInternalLink(url, anchor, title) {
+    if (!url) return false;
+    if (!url.startsWith('/') && !url.startsWith('http')) url = '/' + url;
+    if (!anchor) anchor = title || url;
+    state.selectedLinks = state.selectedLinks || [];
+    const existing = state.selectedLinks.find((l) => l.url === url);
+    if (existing) {
+      existing.anchor = anchor;
+      if (title) existing.title = title;
+    } else {
+      state.selectedLinks.push({ title: title || anchor, url, anchor });
+    }
+    renderInternalLinksTable();
+    return true;
+  }
+
   function autoSuggestInternalLinks() {
     if (!state.siteCatalog || state.siteCatalog.length === 0) return;
     const keywords = state.focusKeyphrases.map((k) => k.toLowerCase().trim()).filter(Boolean);
@@ -846,8 +863,8 @@ ${art.body}`;
           </div>
         </div>
         <div class="ai-studio-header-actions">
-          <button class="ai-studio-icon-btn" id="ai-btn-config" title="Konfigurasi API Key">⚙️</button>
-          <button class="ai-studio-icon-btn" id="ai-btn-close" title="Tutup Studio">✕</button>
+          <button type="button" class="ai-studio-icon-btn" id="ai-btn-config" title="Konfigurasi API Key">⚙️</button>
+          <button type="button" class="ai-studio-icon-btn" id="ai-btn-close" title="Tutup Studio">✕</button>
         </div>
       </div>
 
@@ -931,9 +948,42 @@ ${art.body}`;
           <div class="ai-form-group">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <label class="ai-form-label" style="margin:0;">Internal Links Hub</label>
-              <button class="ai-btn ai-btn-secondary" id="ai-btn-add-link" style="padding:4px 10px; font-size:11px;">+ Tambah Link</button>
+              <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-add-link" style="padding:4px 10px; font-size:11px;">+ Tambah Link</button>
             </div>
             <div class="ai-form-hint">Internal link yang terpilih akan disisipkan secara kontekstual ke dalam paragraf artikel. Anda dapat mengedit anchor text-nya secara langsung.</div>
+
+            <!-- Dedicated Add Link Form Card (Inline, No prompt blocking) -->
+            <div id="ai-add-link-box" class="ai-add-link-box" style="display:none; margin:10px 0; padding:12px; background:var(--ai-bg-card); border:1px solid var(--ai-border); border-radius:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:11px; font-weight:700; color:var(--ai-text-primary);">Tambah Internal Link Baru</span>
+                <button type="button" id="ai-btn-close-add-link" class="ai-studio-icon-btn" title="Tutup" style="width:20px; height:20px; font-size:10px;">✕</button>
+              </div>
+
+              <!-- Quick catalog dropdown -->
+              <div style="margin-bottom:8px;">
+                <label style="font-size:10px; color:var(--ai-text-muted); display:block; margin-bottom:4px;">Pilih Cepat dari Halaman / Artikel Website:</label>
+                <select id="ai-link-preset-select" class="ai-select" style="font-size:11px; padding:6px 8px; width:100%;">
+                  <option value="">-- Pilih Halaman atau Artikel Tersedia --</option>
+                </select>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                <div>
+                  <label style="font-size:10px; color:var(--ai-text-muted); display:block; margin-bottom:4px;">URL Tujuan:</label>
+                  <input type="text" id="ai-manual-link-url" class="ai-input" placeholder="/services/seo/ atau /articles/..." style="font-size:11px; padding:6px 8px;" />
+                </div>
+                <div>
+                  <label style="font-size:10px; color:var(--ai-text-muted); display:block; margin-bottom:4px;">Anchor Text (Teks Tautan):</label>
+                  <input type="text" id="ai-manual-link-anchor" class="ai-input" placeholder="e.g. Layanan SEO Profesional" style="font-size:11px; padding:6px 8px;" />
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:flex-end; gap:6px;">
+                <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-cancel-link" style="padding:4px 10px; font-size:11px;">Batal</button>
+                <button type="button" class="ai-btn ai-btn-primary" id="ai-btn-confirm-link" style="padding:4px 12px; font-size:11px;">+ Tambahkan Link</button>
+              </div>
+            </div>
+
             <div class="ai-links-table-wrap" id="ai-links-table-wrap">
               <div style="padding:16px; text-align:center; color:var(--ai-text-muted); font-size:12px;">Memuat katalog artikel website...</div>
             </div>
@@ -963,7 +1013,7 @@ ${art.body}`;
         <div class="ai-step-pane" id="ai-pane-3">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
             <label class="ai-form-label" style="margin:0;">Struktur Outline Artikel</label>
-            <button class="ai-btn ai-btn-secondary" id="ai-btn-regen-outline" style="padding:4px 10px; font-size:11px;">🔄 Buat Ulang Outline</button>
+            <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-regen-outline" style="padding:4px 10px; font-size:11px;">🔄 Buat Ulang Outline</button>
           </div>
 
           <!-- Vision Insights Banner if analyzed -->
@@ -1036,7 +1086,7 @@ ${art.body}`;
         <div class="ai-step-pane" id="ai-pane-config">
           <div style="margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--ai-border); display:flex; justify-content:space-between; align-items:center;">
             <h4 style="margin:0; font-size:14px;">⚙️ Pengaturan Provider & Kunci API</h4>
-            <button class="ai-btn ai-btn-secondary" id="ai-btn-config-back" style="padding:4px 10px; font-size:11px;">Kembali</button>
+            <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-config-back" style="padding:4px 10px; font-size:11px;">Kembali</button>
           </div>
 
           <div class="ai-form-group">
@@ -1106,8 +1156,8 @@ ${art.body}`;
           </div>
 
           <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="ai-btn ai-btn-primary" id="ai-btn-save-config" style="flex:1;">Simpan Pengaturan</button>
-            <button class="ai-btn ai-btn-secondary" id="ai-btn-test-config">Uji Koneksi</button>
+            <button type="button" class="ai-btn ai-btn-primary" id="ai-btn-save-config" style="flex:1;">Simpan Pengaturan</button>
+            <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-test-config">Uji Koneksi</button>
           </div>
         </div>
 
@@ -1115,10 +1165,10 @@ ${art.body}`;
 
       <!-- Drawer Footer Action Bar -->
       <div class="ai-studio-footer" id="ai-studio-footer">
-        <button class="ai-btn ai-btn-secondary" id="ai-btn-prev">Kembali</button>
+        <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-prev">Kembali</button>
         <div style="display:flex; gap:10px;">
-          <button class="ai-btn ai-btn-secondary" id="ai-btn-copy-mdx" style="display:none;">📋 Salin MDX</button>
-          <button class="ai-btn ai-btn-primary" id="ai-btn-next">Lanjut ke Media & Link ➔</button>
+          <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-copy-mdx" style="display:none;">📋 Salin MDX</button>
+          <button type="button" class="ai-btn ai-btn-primary" id="ai-btn-next">Lanjut ke Media & Link ➔</button>
         </div>
       </div>
     `;
@@ -1277,15 +1327,128 @@ ${art.body}`;
       if (e.target?.files?.[0]) handleUploadedImage(e.target.files[0]);
     });
 
-    // Add Manual Internal Link
-    document.getElementById('ai-btn-add-link')?.addEventListener('click', () => {
-      const title = prompt('Masukkan Judul atau Target Halaman:');
-      const url = prompt('Masukkan URL internal (misal /services/seo/ atau /articles/slug/):');
-      const anchor = prompt('Masukkan Anchor Text:') || title;
-      if (title && url) {
-        state.selectedLinks.push({ title, url, anchor: anchor || title });
-        renderInternalLinksTable();
+    // Add Manual Internal Link - Clean Inline UI
+    const addLinkBtn = document.getElementById('ai-btn-add-link');
+    const addLinkBox = document.getElementById('ai-add-link-box');
+    const closeAddLinkBtn = document.getElementById('ai-btn-close-add-link');
+    const cancelAddLinkBtn = document.getElementById('ai-btn-cancel-link');
+    const confirmAddLinkBtn = document.getElementById('ai-btn-confirm-link');
+    const presetSelect = document.getElementById('ai-link-preset-select');
+    const manualUrlInput = document.getElementById('ai-manual-link-url');
+    const manualAnchorInput = document.getElementById('ai-manual-link-anchor');
+
+    function populateLinkCatalogDropdown() {
+      if (!presetSelect) return;
+      presetSelect.innerHTML = '<option value="">-- Pilih Halaman atau Artikel Tersedia --</option>';
+
+      // Standard core pages
+      const corePages = [
+        { title: 'Beranda (Homepage)', url: '/' },
+        { title: 'Layanan Technical SEO', url: '/services/seo/' },
+        { title: 'Alur Kerja SEO (Workflow)', url: '/services/seo/workflow/' },
+        { title: 'Generative Engine Optimization (GEO)', url: '/services/geo/' },
+        { title: 'Google Ads & Tracking', url: '/services/google-ads/' },
+        { title: 'Studi Kasus / Portfolio (Work)', url: '/work/' },
+        { title: 'Tentang Saya (About)', url: '/about/' },
+        { title: 'Kontak / Konsultasi', url: '/contact/' },
+      ];
+
+      const optGroupCore = document.createElement('optgroup');
+      optGroupCore.label = 'Halaman Utama & Layanan';
+      corePages.forEach((p) => {
+        const opt = document.createElement('option');
+        opt.value = p.url;
+        opt.textContent = `${p.title} (${p.url})`;
+        opt.dataset.title = p.title;
+        optGroupCore.appendChild(opt);
+      });
+      presetSelect.appendChild(optGroupCore);
+
+      // Articles catalog from API
+      if (state.siteCatalog && state.siteCatalog.length > 0) {
+        const optGroupArticles = document.createElement('optgroup');
+        optGroupArticles.label = 'Koleksi Artikel & Panduan';
+        state.siteCatalog.forEach((art) => {
+          const opt = document.createElement('option');
+          opt.value = art.url;
+          opt.textContent = `${art.title} (${art.url})`;
+          opt.dataset.title = art.title;
+          optGroupArticles.appendChild(opt);
+        });
+        presetSelect.appendChild(optGroupArticles);
       }
+    }
+
+    addLinkBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!addLinkBox) return;
+      const isOpen = addLinkBox.style.display !== 'none';
+      if (isOpen) {
+        addLinkBox.style.display = 'none';
+      } else {
+        populateLinkCatalogDropdown();
+        addLinkBox.style.display = 'block';
+        manualUrlInput?.focus();
+      }
+    });
+
+    closeAddLinkBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (addLinkBox) addLinkBox.style.display = 'none';
+    });
+
+    cancelAddLinkBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (addLinkBox) addLinkBox.style.display = 'none';
+    });
+
+    presetSelect?.addEventListener('change', (e) => {
+      const selectedUrl = e.target.value;
+      if (!selectedUrl) return;
+      const selectedOption = e.target.options[e.target.selectedIndex];
+      const pageTitle = selectedOption?.dataset?.title || '';
+
+      if (manualUrlInput) manualUrlInput.value = selectedUrl;
+      if (manualAnchorInput) {
+        manualAnchorInput.value = pageTitle.split(':')[0].trim();
+      }
+    });
+
+    confirmAddLinkBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      let url = manualUrlInput?.value.trim() || '';
+      let anchor = manualAnchorInput?.value.trim() || '';
+
+      if (!url) {
+        showStudioToast('Harap masukkan URL internal (misal: /services/seo/).', false);
+        manualUrlInput?.focus();
+        return;
+      }
+
+      // Normalize URL
+      if (!url.startsWith('/') && !url.startsWith('http://') && !url.startsWith('https://')) {
+        url = '/' + url;
+      }
+      if (!url.endsWith('/') && !url.includes('#') && !url.includes('?') && !url.includes('.')) {
+        url = url + '/';
+      }
+
+      if (!anchor) {
+        anchor = url;
+      }
+
+      addManualInternalLink(url, anchor, anchor);
+      showStudioToast(`✓ Internal link berhasil ditambahkan: ${anchor}`, true);
+
+      // Reset and close form
+      if (manualUrlInput) manualUrlInput.value = '';
+      if (manualAnchorInput) manualAnchorInput.value = '';
+      if (presetSelect) presetSelect.value = '';
+      if (addLinkBox) addLinkBox.style.display = 'none';
     });
 
     // Custom Model dropdown toggle
@@ -1458,7 +1621,7 @@ ${state.synthesizedArticle.body}`;
           <div class="ai-image-preview-name">${state.uploadedImage.name}</div>
           <div class="ai-image-preview-meta">URL: ${state.uploadedImage.url}</div>
         </div>
-        <button class="ai-studio-icon-btn" id="ai-btn-remove-image" title="Hapus Gambar" style="color:var(--ai-error);">✕</button>
+        <button type="button" class="ai-studio-icon-btn" id="ai-btn-remove-image" title="Hapus Gambar" style="color:var(--ai-error);">✕</button>
       </div>
     `;
 
@@ -1496,6 +1659,16 @@ ${state.synthesizedArticle.body}`;
     });
   }
 
+  
+  function escapeHtmlAttr(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   function renderInternalLinksTable() {
     const container = document.getElementById('ai-links-table-wrap');
     if (!container) return;
@@ -1515,16 +1688,18 @@ ${state.synthesizedArticle.body}`;
       row.className = 'ai-link-row';
       row.innerHTML = `
         <span style="color:var(--ai-primary); font-family:var(--ai-font-mono); font-size:10px;">#${idx + 1}</span>
-        <input type="text" class="ai-input ai-link-anchor" value="${link.anchor}" title="Edit Anchor Text" style="padding:4px 8px; font-size:11px;" />
-        <span class="ai-link-url" title="${link.url}">${link.url}</span>
-        <button class="ai-studio-icon-btn" data-del-link="${idx}" title="Hapus" style="width:24px; height:24px; font-size:11px; color:var(--ai-error);">✕</button>
+        <input type="text" class="ai-input ai-link-anchor" value="${escapeHtmlAttr(link.anchor)}" title="Edit Anchor Text" style="padding:4px 8px; font-size:11px;" />
+        <span class="ai-link-url" title="${escapeHtmlAttr(link.url)}">${escapeHtmlAttr(link.url)}</span>
+        <button type="button" class="ai-studio-icon-btn" data-del-link="${idx}" title="Hapus" style="width:24px; height:24px; font-size:11px; color:var(--ai-error);">✕</button>
       `;
 
       row.querySelector('.ai-link-anchor')?.addEventListener('input', (e) => {
         state.selectedLinks[idx].anchor = e.target.value;
       });
 
-      row.querySelector('[data-del-link]')?.addEventListener('click', () => {
+      row.querySelector('[data-del-link]')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         state.selectedLinks.splice(idx, 1);
         renderInternalLinksTable();
       });
@@ -1583,7 +1758,7 @@ ${state.synthesizedArticle.body}`;
         <span class="ai-outline-num">H2.${idx + 1}</span>
         <input type="text" class="ai-outline-input" value="${sec.heading}" data-sec-idx="${idx}" />
         ${sec.includesImage ? '<span style="font-size:10px; background:rgba(99,102,241,0.2); color:#A5B4FC; padding:2px 6px; border-radius:4px;">🖼️ Gambar</span>' : ''}
-        <button class="ai-studio-icon-btn" data-del-sec="${idx}" title="Hapus Section" style="width:24px; height:24px; font-size:11px; color:var(--ai-error);">✕</button>
+        <button type="button" class="ai-studio-icon-btn" data-del-sec="${idx}" title="Hapus Section" style="width:24px; height:24px; font-size:11px; color:var(--ai-error);">✕</button>
       `;
 
       item.querySelector('.ai-outline-input')?.addEventListener('input', (e) => {
@@ -1731,6 +1906,7 @@ ${state.synthesizedArticle.body}`;
     getActiveModelName: getActiveModelName,
     loadSiteCatalog: loadSiteCatalog,
     autoSuggestInternalLinks: autoSuggestInternalLinks,
+    addManualInternalLink: addManualInternalLink,
     runStage1ImageAnalysis: runStage1ImageAnalysis,
     runStage2OutlineGeneration: runStage2OutlineGeneration,
     runStage3ChunkedBodyGeneration: runStage3ChunkedBodyGeneration,

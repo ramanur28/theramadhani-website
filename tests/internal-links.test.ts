@@ -99,4 +99,21 @@ describe('Internal Links Hub & Relevance Algorithm', () => {
     expect(studio.state.selectedLinks).toHaveLength(1);
     expect(studio.state.selectedLinks[0].title).toBe('Article 2');
   });
+  it('programmatically adds manual internal link via addManualInternalLink and normalizes URL', () => {
+    studio.state.selectedLinks = [];
+    const success = studio.addManualInternalLink('services/seo', 'Konsultan SEO Jakarta', 'Layanan SEO');
+    expect(success).toBe(true);
+    expect(studio.state.selectedLinks).toHaveLength(1);
+    expect(studio.state.selectedLinks[0].url).toBe('/services/seo');
+    expect(studio.state.selectedLinks[0].anchor).toBe('Konsultan SEO Jakarta');
+  });
+
+  it('updates existing link anchor if addManualInternalLink is called with duplicate URL', () => {
+    studio.state.selectedLinks = [
+      { title: 'Layanan SEO', url: '/services/seo/', anchor: 'Anchor Lama' },
+    ];
+    studio.addManualInternalLink('/services/seo/', 'Anchor Baru Terupdate');
+    expect(studio.state.selectedLinks).toHaveLength(1);
+    expect(studio.state.selectedLinks[0].anchor).toBe('Anchor Baru Terupdate');
+  });
 });

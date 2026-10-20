@@ -1,0 +1,26 @@
+{
+    "hooks": [
+        {
+            "event": "PreToolUse",
+            "matcher": "write_to_file|replace_file_content",
+            "command": "python3 scripts/guard_protected_files.py \"$TOOL_INPUT\"",
+            "on_fail": "deny"
+        },
+        {
+            "event": "PreToolUse",
+            "matcher": "run_command",
+            "pattern": ".*(rm -rf|DROP TABLE|prisma migrate deploy|--no-verify).*",
+            "action": "force_ask"
+        },
+        {
+            "event": "PostToolUse",
+            "matcher": "write_to_file|replace_file_content",
+            "command": "npx prettier --write \"$FILE_PATH\" && npx eslint --fix \"$FILE_PATH\""
+        },
+        {
+            "event": "Stop",
+            "command": "bash scripts/verify_qa_sync.sh && npm run typecheck && npm run test",
+            "on_fail": "continue_agent"
+        }
+    ]
+}
