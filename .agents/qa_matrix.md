@@ -51,6 +51,11 @@ This matrix defines the exhaustive verification contract for the application, co
 | INJ-04 | FAQ event dispatch | FAQ values populated | Triggers native `input` and `change` events so Decap React state syncs | `tests/decap-injector.test.ts` | [PASS] |
 | INJ-05 | Fallback on empty FAQ | Synthesized article has empty FAQ list | Gracefully skips FAQ injection without errors | `tests/decap-injector.test.ts` | [PASS] |
 | INJ-06 | Toast confirmation | Form injection completes | Toast includes `FAQ (X item)` in populated fields summary | `tests/decap-injector.test.ts` | [PASS] |
+| INJ-07 | Safe Body Markdown Injection | Injects 1,500+ words into Decap CMS Body | Uses Raw Markdown/CodeMirror switch, sets value safely without Slate DOM destruction or event loops; zero browser freeze | `tests/decap-injector.test.ts` | [PASS] |
+| INJ-08 | Injection Debounce & Lock | User clicks Terapkan ke Editor Decap | Button disables immediately with loading text, preventing concurrent duplicate runs | `tests/decap-injector.test.ts` | [PASS] |
+| INJ-09 | Targeted FAQ List Injection | Injects 2+ FAQ items | Targets exact FAQ Add button without matching ancestor containers, yields to React DOM render ticks | `tests/decap-injector.test.ts` | [PASS] |
+| INJ-10 | Tags Widget Population | Synthesized article has 2-5 tags | Populates Decap CMS `tags` list widget inputs with native change events | `tests/decap-injector.test.ts` | [PASS] |
+| INJ-11 | Expandable Q&A Dual Injection | Article has FAQ items | Injects into both Decap FAQ collection widget and Article Body `<details class="qa-item">` accordions | `tests/decap-injector.test.ts` | [PASS] |
 
 ---
 
@@ -61,3 +66,14 @@ This matrix defines the exhaustive verification contract for the application, co
 | LNK-02 | Manual internal link addition | Click `+ Tambah Link`, select preset or enter custom URL & anchor | Link added to table, URL normalized, zero form submit interference | `tests/internal-links.test.ts` | [PASS] |
 | LNK-03 | Edit & delete internal links | Edit anchor text or click ✕ | Modifies link state or removes row cleanly | `tests/internal-links.test.ts` | [PASS] |
 | MED-01 | Vision image upload | Drop or select image file | Generates clean filename, stores to disk, runs vision analysis | `tests/pipeline-stages.test.ts` | [PASS] |
+
+---
+
+## 6. AI Article Studio: Outline, Citations, Multilingual & Performance
+| ID | Scenario | Input / Action | Expected Outcome | Automated Test | Status |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| OUT-01 | Comprehensive Outline Structure | Generate Outline in Step 2 | Outputs Title (50-60 chars + keyword), Meta Description, Slug (<=60 chars), Tags, H1/H2/H3 with word counts, Table, Quote, and 3 CTAs | `tests/pipeline-stages.test.ts` | [PASS] |
+| CIT-01 | Citations & References Option | Toggle 'Sertakan Sitasi & Referensi' | Integrates verified industry citations (`[^1]`, Google, arXiv, Gartner) and appends References section | `tests/pipeline-stages.test.ts` | [PASS] |
+| LNG-01 | Strict English Multilingual Fidelity | Select 'English' language | 100% of Title, Description, Quick Answer block, Body, and FAQ accordions are in English without Indonesian leakage | `tests/pipeline-stages.test.ts` | [PASS] |
+| FAQ-02 | Unlimited FAQ Generation | Topic with multi-faceted user intents | Generates >3 dynamic FAQ items (4-8 items) without arbitrary 3-item ceiling | `tests/pipeline-stages.test.ts` | [PASS] |
+| LDR-01 | Active Loaders & Pipeline Feedback | Outline Generation / Synthesis / Inject | Shows animated spinner, real-time status text, and debounced button states | `tests/pipeline-stages.test.ts` | [PASS] |

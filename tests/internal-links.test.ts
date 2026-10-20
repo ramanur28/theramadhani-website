@@ -116,4 +116,86 @@ describe('Internal Links Hub & Relevance Algorithm', () => {
     expect(studio.state.selectedLinks).toHaveLength(1);
     expect(studio.state.selectedLinks[0].anchor).toBe('Anchor Baru Terupdate');
   });
+  describe('Focus Keyphrase Chip Input & Comma Paste Detection', () => {
+    it('splits comma-separated string and adds each phrase to focusKeyphrases', () => {
+      studio.state.focusKeyphrases = [];
+      const count = studio.addFocusKeyphrases('generative engine optimization, technical seo, ai overviews');
+
+      expect(count).toBe(3);
+      expect(studio.state.focusKeyphrases).toEqual([
+        'generative engine optimization',
+        'technical seo',
+        'ai overviews',
+      ]);
+    });
+
+    it('splits semicolons, newlines, and trims excess whitespace and quotes', () => {
+      studio.state.focusKeyphrases = [];
+      const count = studio.addFocusKeyphrases('"GEO"; \'Perplexity Citations\';\nChatGPT Search\n\nEntity Graphs');
+
+      expect(count).toBe(4);
+      expect(studio.state.focusKeyphrases).toEqual([
+        'GEO',
+        'Perplexity Citations',
+        'ChatGPT Search',
+        'Entity Graphs',
+      ]);
+    });
+
+    it('ignores duplicates when pasting already existing keyphrases', () => {
+      studio.state.focusKeyphrases = ['GEO'];
+      const count = studio.addFocusKeyphrases('GEO, Technical SEO, GEO');
+
+      expect(count).toBe(1);
+      expect(studio.state.focusKeyphrases).toEqual(['GEO', 'Technical SEO']);
+    });
+
+    it('handles DOM paste event on ai-chip-input element', () => {
+      studio.open();
+      const chipInput = document.getElementById('ai-chip-input') as HTMLInputElement;
+      expect(chipInput).not.toBeNull();
+
+      studio.state.focusKeyphrases = [];
+
+      // Create synthetic paste event with clipboardData
+      const pasteEvent = new Event('paste', { bubbles: true, cancelable: true });
+      (pasteEvent as any).clipboardData = {
+        getData: (format: string) => {
+          if (format === 'text') return 'B2B SEO, Pipeline Marketing, Conversion Rate';
+          return '';
+        },
+      };
+
+      chipInput.dispatchEvent(pasteEvent);
+
+      expect(studio.state.focusKeyphrases).toEqual([
+        'B2B SEO',
+        'Pipeline Marketing',
+        'Conversion Rate',
+      ]);
+      expect(chipInput.value).toBe('');
+
+      // Verify chips were rendered in DOM
+      const wrap = document.getElementById('ai-chips-wrap');
+      const chips = wrap?.querySelectorAll('.ai-chip');
+      expect(chips?.length).toBe(3);
+    });
+
+    it('handles input event with commas as fallback for virtual keyboards', () => {
+      studio.open();
+      const chipInput = document.getElementById('ai-chip-input') as HTMLInputElement;
+      expect(chipInput).not.toBeNull();
+
+      studio.state.focusKeyphrases = [];
+      chipInput.value = 'Schema Entity, Knowledge Vault, ';
+      chipInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+      expect(studio.state.focusKeyphrases).toEqual([
+        'Schema Entity',
+        'Knowledge Vault',
+      ]);
+      expect(chipInput.value).toBe('');
+    });
+  });
+
 });

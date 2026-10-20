@@ -50,6 +50,7 @@
     topic: '',
     focusKeyphrases: [],
     language: 'id', // 'id' or 'en'
+    includeCitations: true, // Academic & Industry citations toggle
     
     // Media & Vision
     uploadedImage: null, // { file, name, cleanName, base64, url }
@@ -61,6 +62,12 @@
     
     // Generation outputs
     outline: [],
+    proposedTitle: '',
+    proposedSlug: '',
+    proposedDescription: '',
+    proposedTags: [],
+    proposedH1: '',
+    faqSuggestions: [],
     bodyChunks: [],
     synthesizedArticle: null, // { title, slug, description, quickAnswer, tags, faq, body, coverImage, coverAlt }
     isGenerating: false,
@@ -509,7 +516,7 @@
   }
 
   function autoSuggestInternalLinks() {
-    if (!state.siteCatalog || state.siteCatalog.length === 0) return;
+    if (!state.siteCatalog || !Array.isArray(state.siteCatalog) || state.siteCatalog.length === 0) return;
     const keywords = state.focusKeyphrases.map((k) => k.toLowerCase().trim()).filter(Boolean);
     if (keywords.length === 0) {
       state.selectedLinks = state.siteCatalog.slice(0, 3).map((item) => ({
@@ -556,9 +563,23 @@
       return null;
     }
 
-    updateProgressUI('Tahap 1: Menganalisa Gambar dengan Vision AI...', 'Mengekstrak entitas visual, diagram teks, dan rekomendasi penempatan...', 15);
+    const isEn = state.language === 'en';
+    updateProgressUI(
+      isEn ? 'Stage 1: Analyzing Image with Multimodal Vision AI...' : 'Tahap 1: Menganalisa Gambar dengan Vision AI...',
+      isEn ? 'Extracting visual entities, architecture flow, and placement recommendations...' : 'Mengekstrak entitas visual, diagram teks, dan rekomendasi penempatan...',
+      15
+    );
 
-    const prompt = `Analisa gambar/diagram teknis ini secara mendalam untuk artikel teknis digital marketing, SEO arsitektural, atau GEO.
+    const prompt = isEn
+      ? `Analyze this technical diagram/image in-depth for a digital marketing, architectural SEO, or Generative Engine Optimization (GEO) guide.
+Return response ONLY in valid JSON format with structure:
+{
+  "alt": "SEO and screen-reader optimized alt text (max 120 characters)",
+  "caption": "Concise technical description for figcaption beneath the image",
+  "visualInsights": "Summary of core concepts, component relations, or statistical findings from this image",
+  "recommendedPlacement": "Recommendation of which outline section this diagram belongs in"
+}`
+      : `Analisa gambar/diagram teknis ini secara mendalam untuk artikel teknis digital marketing, SEO arsitektural, atau GEO.
 Kembalikan respon HANYA dalam format JSON valid dengan struktur:
 {
   "alt": "Alt text teroptimasi SEO dan screen reader (maksimal 120 karakter)",
@@ -569,7 +590,9 @@ Kembalikan respon HANYA dalam format JSON valid dengan struktur:
 
     const rawResponse = await callAI({
       prompt,
-      systemPrompt: 'You are a senior technical SEO & multimodal vision expert. Output valid JSON only.',
+      systemPrompt: isEn
+        ? 'You are a senior technical SEO & multimodal vision expert. Output valid JSON only. Respond strictly in English.'
+        : 'You are a senior technical SEO & multimodal vision expert. Output valid JSON only.',
       imageBase64: state.uploadedImage.base64,
       jsonMode: true,
     });
@@ -581,9 +604,9 @@ Kembalikan respon HANYA dalam format JSON valid dengan struktur:
     } catch (e) {
       state.visionAnalysis = {
         alt: state.uploadedImage.cleanName.replace(/[-_]/g, ' '),
-        caption: 'Diagram arsitektur sistem dan visualisasi alur implementasi.',
+        caption: isEn ? 'System architecture diagram and implementation flow visualization.' : 'Diagram arsitektur sistem dan visualisasi alur implementasi.',
         visualInsights: rawResponse.substring(0, 300),
-        recommendedPlacement: 'Bagian implementasi arsitektur teknis',
+        recommendedPlacement: isEn ? 'Technical architecture implementation section' : 'Bagian implementasi arsitektur teknis',
       };
       return state.visionAnalysis;
     }
@@ -591,22 +614,104 @@ Kembalikan respon HANYA dalam format JSON valid dengan struktur:
 
   // STAGE 2: Outline Generation
   async function runStage2OutlineGeneration() {
-    updateProgressUI('Tahap 2: Menyusun Outline Artikel Terstruktur...', 'Merancang hierarki H2 & H3, penempatan Quick Answer, dan FAQ...', 30);
+    const isEn = state.language === 'en';
+    updateProgressUI(
+      isEn ? 'Stage 2: Structuring Rich Article Outline...' : 'Tahap 2: Menyusun Outline Artikel Terstruktur...',
+      isEn ? 'Designing H1/H2/H3 hierarchy, word count allocation, Table, Quotes, 3 CTAs, and dynamic FAQs...' : 'Merancang hierarki H1/H2/H3, alokasi kata, Tabel, Kutipan, 3 CTA, dan FAQ dinamis...',
+      30
+    );
 
     const strategyConfig = getAllStrategies()[state.strategy] || STRATEGY_PRESETS.geo_ai_search;
-    const keyphrasesList = state.focusKeyphrases.join(', ') || state.topic || 'Technical SEO';
-    const internalLinksContext = state.selectedLinks.map((l) => `- [${l.anchor}](${l.url}) : ${l.title}`).join('\n');
+    const primaryKeyword = state.focusKeyphrases[0] || state.topic || (isEn ? 'Technical SEO' : 'SEO Teknis');
+    const keyphrasesList = state.focusKeyphrases.join(', ') || state.topic || primaryKeyword;
+    const internalLinksContext = state.selectedLinks.length > 0
+      ? state.selectedLinks.map((l) => `- [${l.anchor}](${l.url}) : ${l.title}`).join('\n')
+      : (isEn ? 'None provided.' : 'Tidak ada.');
     
-    let visionContext = 'Tidak ada gambar yang diunggah.';
+    let visionContext = isEn ? 'No image uploaded.' : 'Tidak ada gambar yang diunggah.';
     if (state.visionAnalysis) {
-      visionContext = `Gambar terunggah: ${state.uploadedImage.cleanName}\nAlt: ${state.visionAnalysis.alt}\nCaption: ${state.visionAnalysis.caption}\nVisual Insights: ${state.visionAnalysis.visualInsights}`;
+      visionContext = isEn
+        ? `Uploaded image: ${state.uploadedImage.cleanName}\nAlt: ${state.visionAnalysis.alt}\nCaption: ${state.visionAnalysis.caption}\nVisual Insights: ${state.visionAnalysis.visualInsights}`
+        : `Gambar terunggah: ${state.uploadedImage.cleanName}\nAlt: ${state.visionAnalysis.alt}\nCaption: ${state.visionAnalysis.caption}\nVisual Insights: ${state.visionAnalysis.visualInsights}`;
     }
 
-    const prompt = `Buat outline artikel komprehensif, mendalam (target 2.000+ kata), dan teroptimasi untuk GEO / Google AI Overviews dalam bahasa ${state.language === 'id' ? 'Indonesia formal profesional' : 'English technical'}.
+    const citationInstruction = state.includeCitations
+      ? (isEn
+          ? 'CITATIONS REQUIREMENT: Plan integration of authoritative industry/academic references (Google Search Central, IEEE, arXiv, Gartner, W3C) with inline citation anchors and a planned References section.'
+          : 'PERSYARATAN SITASI: Rencanakan integrasi rujukan industri/akademik otoritatif (Google Search Central, IEEE, arXiv, Gartner, W3C) dengan jangkar sitasi dan rencana bagian Referensi.')
+      : '';
 
-Topik Utama: "${state.topic || state.focusKeyphrases[0] || 'Technical SEO'}"
+    const prompt = isEn
+      ? `You are an elite SEO strategist and technical architect creating an outline for an authoritative, comprehensive technical guide (target: 2,500+ words) optimized for Generative Engine Optimization (GEO) and Google AI Overviews.
+
+CRITICAL LANGUAGE INSTRUCTION:
+Write 100% in English. Never output Indonesian words, labels, or placeholders.
+
+Primary Topic: "${state.topic || primaryKeyword}"
+Primary Keyword (MUST be in Title & Slug): "${primaryKeyword}"
+Focus Keyphrases: ${keyphrasesList}
+Writing Strategy: ${strategyConfig.title} (${strategyConfig.instructions})
+${citationInstruction}
+
+Image / Diagram Context (Vision):
+${visionContext}
+
+Internal Links to Integrate Naturally:
+${internalLinksContext}
+
+SPECIFICATION REQUIREMENTS:
+1. Title: 50-60 characters, MUST include the Primary Keyword.
+2. Meta Description: 140-160 characters, high CTR compelling search snippet.
+3. URL Slug: Max 60 characters, lowercase hyphens only, includes Primary Keyword.
+4. Tags: Array of 3-6 relevant technical tags.
+5. Outline Hierarchy:
+   - H1: Authoritative article headline.
+   - Sections (H2s and H3s): Allocate a proposed target word count for each section (e.g. 300 to 500 words per section).
+   - Strategic Placements:
+     * Exactly 1 Comparison / Benchmark Table: Specify the exact section in "tableNote".
+     * 1 to 2 Expert Quotes: Specify the exact section in "quoteNote".
+     * Exactly 3 Outcome-Driven CTAs placed strategically across the outline:
+       - CTA #1 (Early transition CTA after foundations)
+       - CTA #2 (Mid-article implementation/advisory CTA)
+       - CTA #3 (Final strategic conversion CTA in closing section)
+       Specify these in "ctaNote" of the respective sections.
+6. FAQ Suggestions: 4 to 8 dynamic high-intent questions & search intents. Do NOT limit to 3 items.
+
+Return ONLY a valid JSON object with the following structure:
+{
+  "title": "Title (50-60 characters, includes Primary Keyword)",
+  "metaDescription": "Meta description (140-160 characters)",
+  "slug": "url-slug-max-60-chars",
+  "tags": ["Tag1", "Tag2", "Tag3", "Tag4"],
+  "h1": "Article H1 Headline",
+  "sections": [
+    {
+      "heading": "H2 Heading Text",
+      "subheadings": ["H3 Subheading A", "H3 Subheading B"],
+      "targetWordCount": 350,
+      "focus": "Core focus of this section",
+      "tableNote": "Comparison Table: X vs Y benchmark (or null)",
+      "quoteNote": "Expert Quote: Quote from senior authority (or null)",
+      "ctaNote": "CTA #1 / #2 / #3: Outcome-driven CTA copy and link (or null)",
+      "includesImage": true/false,
+      "internalLinkAnchor": "Anchor text if an internal link fits here"
+    }
+  ],
+  "faqSuggestions": [
+    { "question": "Question 1?", "intent": "Search intent" },
+    { "question": "Question 2?", "intent": "Implementation clarity" },
+    { "question": "Question 3?", "intent": "Impact on AI Answer Engines" },
+    { "question": "Question 4?", "intent": "Troubleshooting / edge cases" },
+    { "question": "Question 5?", "intent": "Cost & resource allocation" }
+  ]
+}`
+      : `Buat outline artikel komprehensif, mendalam (target 2.500+ kata), dan teroptimasi untuk Generative Engine Optimization (GEO) dan Google AI Overviews dalam Bahasa Indonesia formal profesional baku.
+
+Topik Utama: "${state.topic || primaryKeyword}"
+Primary Keyword (WAJIB ada di Judul & Slug): "${primaryKeyword}"
 Focus Keyphrases: ${keyphrasesList}
 Strategi Penulisan: ${strategyConfig.title} (${strategyConfig.instructions})
+${citationInstruction}
 
 Konteks Gambar (Vision):
 ${visionContext}
@@ -614,29 +719,58 @@ ${visionContext}
 Internal Links yang harus disisipkan:
 ${internalLinksContext}
 
+PERSYARATAN SPESIFIKASI:
+1. Title: 50-60 karakter, WAJIB menyertakan Primary Keyword.
+2. Meta Description: 140-160 karakter, padat dan menggugah CTR.
+3. URL Slug: Maksimal 60 karakter, huruf kecil dengan tanda hubung (-), menyertakan Primary Keyword.
+4. Tags: Array 3-6 tag teknis relevan.
+5. Hierarki Outline:
+   - H1: Judul H1 artikel yang berbobot.
+   - Sections (H2 & H3): Alokasikan usulan target kata untuk setiap bagian (misal 300 - 500 kata per section).
+   - Penempatan Khusus:
+     * Tepat 1 Tabel Perbandingan / Benchmark: Catat di "tableNote".
+     * 1-2 Kutipan Ahli (Expert Quotes): Catat di "quoteNote".
+     * Tepat 3 CTA Berorientasi Hasil (Outcome-Driven CTAs) yang ditempatkan secara strategis di outline:
+       - CTA #1 (Awal artikel / transisi fondasi)
+       - CTA #2 (Pertengahan artikel / implementasi)
+       - CTA #3 (Akhir artikel / transformasi strategis)
+       Catat di "ctaNote" pada section terkait.
+6. Rekomendasi FAQ: 4 hingga 8 pertanyaan berniat tinggi (search intent). Jangan batasi hanya 3 item.
+
 Kembalikan HANYA format JSON valid dengan struktur:
 {
-  "proposedTitle": "Judul artikel memikat & berbobot SEO (< 60 karakter)",
-  "proposedSlug": "slug-url-ramah-seo",
+  "title": "Judul (50-60 karakter, menyertakan Primary Keyword)",
+  "metaDescription": "Meta description (140-160 karakter)",
+  "slug": "url-slug-maks-60-karakter",
+  "tags": ["Tag1", "Tag2", "Tag3", "Tag4"],
+  "h1": "Judul H1 Utama",
   "sections": [
     {
       "heading": "H2 Heading Text",
       "subheadings": ["H3 Subheading A", "H3 Subheading B"],
+      "targetWordCount": 350,
       "focus": "Fokus pembahasan pada bagian ini",
+      "tableNote": "Tabel Perbandingan: X vs Y (atau null)",
+      "quoteNote": "Kutipan Ahli: Pernyataan dari otoritas industri (atau null)",
+      "ctaNote": "CTA #1 / #2 / #3: Ajakan bertindak berorientasi hasil (atau null)",
       "includesImage": true/false,
       "internalLinkAnchor": "Anchor text jika ada link yang cocok"
     }
   ],
   "faqSuggestions": [
-    { "question": "Pertanyaan FAQ 1", "intent": "Mengapa ini penting" },
-    { "question": "Pertanyaan FAQ 2", "intent": "Cara implementasi" },
-    { "question": "Pertanyaan FAQ 3", "intent": "Dampak terhadap AI Answer Engines" }
+    { "question": "Pertanyaan 1?", "intent": "Niat pencarian" },
+    { "question": "Pertanyaan 2?", "intent": "Kejelasan implementasi" },
+    { "question": "Pertanyaan 3?", "intent": "Dampak terhadap AI Answer Engines" },
+    { "question": "Pertanyaan 4?", "intent": "Studi kasus / penanganan kendala" },
+    { "question": "Pertanyaan 5?", "intent": "Alokasi sumber daya & biaya" }
   ]
 }`;
 
     const rawResponse = await callAI({
       prompt,
-      systemPrompt: 'You are an elite SEO strategist and technical architect. Always output valid JSON only.',
+      systemPrompt: isEn
+        ? 'You are an elite SEO strategist and technical architect. Always output valid JSON only. Respond 100% in English.'
+        : 'Anda adalah pakar strategi SEO teknis dan arsitektur web kelas dunia. Selalu hasilkan format JSON valid saja dalam Bahasa Indonesia formal.',
       jsonMode: true,
     });
 
@@ -644,8 +778,11 @@ Kembalikan HANYA format JSON valid dengan struktur:
       const cleanJson = rawResponse.replace(/```json\n?|```/g, '').trim();
       const parsed = JSON.parse(cleanJson);
       state.outline = parsed.sections || [];
-      state.proposedTitle = parsed.proposedTitle || '';
-      state.proposedSlug = parsed.proposedSlug || '';
+      state.proposedTitle = parsed.title || parsed.proposedTitle || '';
+      state.proposedSlug = parsed.slug || parsed.proposedSlug || '';
+      state.proposedDescription = parsed.metaDescription || parsed.description || '';
+      state.proposedTags = parsed.tags || [];
+      state.proposedH1 = parsed.h1 || parsed.title || parsed.proposedTitle || '';
       state.faqSuggestions = parsed.faqSuggestions || [];
       return parsed;
     } catch (e) {
@@ -663,19 +800,20 @@ Kembalikan HANYA format JSON valid dengan struktur:
       throw new Error('Outline belum tersedia. Silakan selesaikan tahap outline terlebih dahulu.');
     }
 
+    const isEn = state.language === 'en';
     const chunks = [];
     if (chunkCount === 1) {
-      chunks.push({ index: 1, total: 1, sections: sections, name: 'Seluruh Artikel' });
+      chunks.push({ index: 1, total: 1, sections: sections, name: isEn ? 'Complete Article' : 'Seluruh Artikel' });
     } else if (chunkCount === 2) {
       const mid = Math.ceil(sections.length / 2);
-      chunks.push({ index: 1, total: 2, sections: sections.slice(0, mid), name: 'Bagian 1: Fondasi & Arsitektur Utama' });
-      chunks.push({ index: 2, total: 2, sections: sections.slice(mid), name: 'Bagian 2: Implementasi Lanjutan & Evaluasi' });
+      chunks.push({ index: 1, total: 2, sections: sections.slice(0, mid), name: isEn ? 'Part 1: Foundations & Architecture' : 'Bagian 1: Fondasi & Arsitektur Utama' });
+      chunks.push({ index: 2, total: 2, sections: sections.slice(mid), name: isEn ? 'Part 2: Advanced Implementation & Synthesis' : 'Bagian 2: Implementasi Lanjutan & Evaluasi' });
     } else {
       const p1 = Math.ceil(sections.length / 3);
       const p2 = Math.ceil((sections.length * 2) / 3);
-      chunks.push({ index: 1, total: 3, sections: sections.slice(0, p1), name: 'Bagian 1: Definisi Eksekutif & Fondasi' });
-      chunks.push({ index: 2, total: 3, sections: sections.slice(p1, p2), name: 'Bagian 2: Arsitektur Inti & Pembahasan Visual' });
-      chunks.push({ index: 3, total: 3, sections: sections.slice(p2), name: 'Bagian 3: Optimasi Lanjutan, Praktik Terbaik & Kesimpulan' });
+      chunks.push({ index: 1, total: 3, sections: sections.slice(0, p1), name: isEn ? 'Part 1: Executive Answer & Core Foundations' : 'Bagian 1: Definisi Eksekutif & Fondasi' });
+      chunks.push({ index: 2, total: 3, sections: sections.slice(p1, p2), name: isEn ? 'Part 2: Deep Architecture, Visuals & Frameworks' : 'Bagian 2: Arsitektur Inti & Pembahasan Visual' });
+      chunks.push({ index: 3, total: 3, sections: sections.slice(p2), name: isEn ? 'Part 3: Advanced Optimization, Synthesis & Roadmaps' : 'Bagian 3: Optimasi Lanjutan, Praktik Terbaik & Kesimpulan' });
     }
 
     let accumulatedText = '';
@@ -684,8 +822,12 @@ Kembalikan HANYA format JSON valid dengan struktur:
     for (const chunk of chunks) {
       const pct = 40 + Math.round((chunk.index / chunk.total) * 45);
       updateProgressUI(
-        `Tahap 3: Menulis Body Artikel (${chunk.index}/${chunk.total})...`,
-        `Sedang menyusun ${chunk.name} dengan model ${state.provider === 'openai' ? state.openaiModel : state.geminiModel}...`,
+        isEn
+          ? `Stage 3: Writing Article Body (${chunk.index}/${chunk.total})...`
+          : `Tahap 3: Menulis Body Artikel (${chunk.index}/${chunk.total})...`,
+        isEn
+          ? `Synthesizing ${chunk.name} using ${state.provider === 'openai' ? state.openaiModel : state.geminiModel}...`
+          : `Sedang menyusun ${chunk.name} dengan model ${state.provider === 'openai' ? state.openaiModel : state.geminiModel}...`,
         pct
       );
 
@@ -694,9 +836,13 @@ Kembalikan HANYA format JSON valid dengan struktur:
         if (s.subheadings && s.subheadings.length > 0) {
           txt += s.subheadings.map((sub) => `### ${sub}`).join('\n') + '\n';
         }
-        if (s.focus) txt += `Fokus: ${s.focus}\n`;
+        if (s.targetWordCount) txt += `Proposed Word Count: ~${s.targetWordCount} words\n`;
+        if (s.focus) txt += `Focus: ${s.focus}\n`;
+        if (s.tableNote) txt += `[INCLUDE COMPARISON TABLE]: ${s.tableNote}\n`;
+        if (s.quoteNote) txt += `[INCLUDE EXPERT QUOTE]: ${s.quoteNote}\n`;
+        if (s.ctaNote) txt += `[INCLUDE OUTCOME-DRIVEN CTA]: ${s.ctaNote}\n`;
         if (s.includesImage && state.uploadedImage) {
-          txt += `[SERTAKAN GAMBAR]: Gunakan komponen <figure class="article-image-figure"><img src="${state.uploadedImage.url}" alt="${state.visionAnalysis?.alt || 'Diagram'}" class="article-body-image" loading="lazy" /><figcaption class="article-image-caption">${state.visionAnalysis?.caption || ''}</figcaption></figure>\n`;
+          txt += `[INCLUDE IMAGE]: Use HTML <figure class="article-image-figure"><img src="${state.uploadedImage.url}" alt="${state.visionAnalysis?.alt || 'Diagram'}" class="article-body-image" loading="lazy" /><figcaption class="article-image-caption">${state.visionAnalysis?.caption || ''}</figcaption></figure>\n`;
         }
         return txt;
       }).join('\n\n');
@@ -705,7 +851,44 @@ Kembalikan HANYA format JSON valid dengan struktur:
       const isLast = chunk.index === chunk.total;
 
       const strategyConfig = getAllStrategies()[state.strategy] || STRATEGY_PRESETS.geo_ai_search;
-      const prompt = `Anda adalah penulis teknis kelas dunia untuk theramadhani.com. Tulis bagian artikel berikut dalam bahasa ${state.language === 'id' ? 'Indonesia baku berstandar tinggi' : 'English'}.
+      const prompt = isEn
+        ? `You are an elite technical author writing for theramadhani.com. Write the following article section strictly in professional, authoritative English.
+
+CRITICAL LANGUAGE INSTRUCTION:
+Write 100% in English. Never output Indonesian words, labels, or placeholders.
+
+Primary Topic: "${state.proposedTitle || state.topic}"
+Strategy (${strategyConfig.title}):
+${strategyConfig.instructions}
+Focus Keyphrases: ${state.focusKeyphrases.join(', ')}
+Relevant Internal Links to embed naturally: ${internalLinksList}
+
+${isFirst ? `CRITICAL FOR FIRST SECTION:
+- Start IMMEDIATELY with a definitive 40-60 word Quick Answer Block summarizing the direct answer for AI Overviews, Perplexity, and ChatGPT. Must be 100% in English.
+- Proceed directly to the first H2 without conversational greetings or rhetorical opening remarks.` : ''}
+
+${!isFirst ? `PREVIOUS NARRATIVE CONTEXT (Maintain seamless flow without repeating intro phrases):
+${accumulatedText.slice(-800)}` : ''}
+
+${isLast ? `CRITICAL FOR FINAL SECTION:
+- Provide strategic conclusions, next actionable steps, and executive takeaways.
+${state.includeCitations ? '- Append a formal `### References & Authoritative Sources` section listing cited research, standards, and whitepapers (e.g., Google Search Central, IEEE, W3C, arXiv) with formal citations.' : ''}` : ''}
+
+${state.includeCitations ? `CITATION INSTRUCTIONS:
+- Include inline citations such as [^1], [^2], or authoritative in-text citations (e.g. Google Search Central, 2025) for data claims, technical metrics, and algorithmic explanations.` : ''}
+
+OUTLINE FOR THIS CHUNK:
+${sectionOutlineText}
+
+TECHNICAL RULES:
+- Use ## for H2 and ### for H3.
+- Do NOT output an H1 (rendered automatically by the template).
+- If a section contains a tableNote, construct a full, clean Markdown comparison table.
+- If a section contains a quoteNote, include a formatted blockquote (> "...") with expert attribution.
+- If a section contains a ctaNote, format a high-converting outcome-driven call-to-action block.
+- Write dense, high-impact technical markdown with specific metrics, architecture, and examples.
+- Output pure Markdown only.`
+        : `Anda adalah penulis teknis kelas dunia untuk theramadhani.com. Tulis bagian artikel berikut dalam Bahasa Indonesia formal profesional baku.
 
 Topik Utama: "${state.proposedTitle || state.topic}"
 Strategi Penulisan (${strategyConfig.title}):
@@ -714,14 +897,18 @@ Fokus Keyphrases: ${state.focusKeyphrases.join(', ')}
 Internal Link yang relevan untuk disisipkan alami: ${internalLinksList}
 
 ${isFirst ? `PENTING UNTUK BAGIAN AWAL:
-- Mulai langsung dengan Quick Answer Block definitif 40-60 kata yang merangkum inti jawaban untuk GEO / AI Search.
+- Mulai langsung dengan Quick Answer Block definitif 40-60 kata yang merangkum inti jawaban untuk GEO / AI Search dalam Bahasa Indonesia baku.
 - Setelah itu lanjutkan ke H2 pertama tanpa kalimat pengantar basa-basi.` : ''}
 
 ${!isFirst ? `KONTEKS SEBELUMNYA (Jaga kesinambungan alur tanpa mengulang kalimat pembuka):
 ${accumulatedText.slice(-800)}` : ''}
 
 ${isLast ? `PENTING UNTUK BAGIAN AKHIR:
-- Sertakan kesimpulan strategis, rekomendasi langkah berikutnya, dan ringkasan eksekutif.` : ''}
+- Sertakan kesimpulan strategis, rekomendasi langkah berikutnya, dan ringkasan eksekutif.
+${state.includeCitations ? '- Sertakan bagian `### Referensi & Sumber Rujukan` yang mencantumkan sumber resmi (Google Search Central, IEEE, W3C, arXiv).' : ''}` : ''}
+
+${state.includeCitations ? `INSTRUKSI SITASI:
+- Sertakan sitasi inline seperti [^1], [^2], atau kutipan otoritatif (misal Google Search Central, 2025) untuk klaim data dan metrik teknis.` : ''}
 
 OUTLINE YANG HARUS DITULIS PADA CHUNK INI:
 ${sectionOutlineText}
@@ -729,12 +916,17 @@ ${sectionOutlineText}
 INSTRUKSI TEKNIS:
 - Gunakan heading ## untuk H2 dan ### untuk H3.
 - Jangan menyertakan H1 (karena judul H1 otomatis dirender oleh sistem template).
+- Jika ada catatan tableNote, bangun tabel Markdown lengkap.
+- Jika ada catatan quoteNote, sertakan blockquote (> "...") dengan atribusi ahli.
+- Jika ada catatan ctaNote, format blok Call-To-Action yang persuasif.
 - Tulis secara mendalam, sertakan poin-poin struktural, metrik kuantitatif, dan fakta teknis.
 - Tulis hanya isi Markdown-nya saja.`;
 
       const chunkOutput = await callAI({
         prompt,
-        systemPrompt: 'You are a world-class Technical SEO & GEO Author. Write dense, high-impact technical markdown without fluff.',
+        systemPrompt: isEn
+          ? 'You are a world-class Technical SEO & GEO Author writing exclusively in English. Dense, high-impact technical markdown without fluff.'
+          : 'You are a world-class Technical SEO & GEO Author. Write dense, high-impact technical markdown without fluff.',
       });
 
       state.bodyChunks.push(chunkOutput);
@@ -746,24 +938,72 @@ INSTRUKSI TEKNIS:
 
   // STAGE 4: Synthesis & Supporting Elements
   async function runStage4Synthesis() {
-    updateProgressUI('Tahap 4: Sintesis Artikel & Metadata Pendukung...', 'Menghasilkan meta description, slug, Quick Answer, dan FAQ accordion...', 90);
+    const isEn = state.language === 'en';
+    updateProgressUI(
+      isEn ? 'Stage 4: Synthesizing Metadata & Dynamic FAQs...' : 'Tahap 4: Sintesis Artikel & Metadata Pendukung...',
+      isEn ? 'Generating meta description, slug, Quick Answer, tags, and 4-8 dynamic FAQs...' : 'Menghasilkan meta description, slug, Quick Answer, tags, dan 4-8 FAQ dinamis...',
+      90
+    );
 
     const fullBody = state.bodyChunks.join('\n\n').trim();
     const keyphrasesList = state.focusKeyphrases.join(', ');
 
-    const prompt = `Evaluasi draf artikel berikut dan hasilkan metadata pendukung yang sempurna:
+    const prompt = isEn
+      ? `Evaluate the following draft article and produce the final metadata strictly in English:
+
+Article Body:
+${fullBody.substring(0, 3500)}...
+
+Focus Keyphrases: ${keyphrasesList}
+
+CRITICAL LANGUAGE REQUIREMENT:
+All outputs must be 100% in English. The Quick Answer block and ALL FAQ questions and answers MUST be strictly in English. Never output Indonesian words, terms, or placeholders.
+
+Return ONLY a valid JSON object with the following structure:
+{
+  "title": "Final SEO Title (50-60 characters, CTR-optimized, includes primary keyword)",
+  "slug": "url-slug-max-60-chars-lowercase-hyphens",
+  "description": "Dense meta description (140-160 characters) driving high organic CTR",
+  "quickAnswer": "Definitive summary (40-60 words) directly answering the primary query for AI Overviews and Perplexity citations. 100% in English.",
+  "tags": ["Tag1", "Tag2", "Tag3", "Tag4"],
+  "faq": [
+    {
+      "question": "High-intent FAQ Question 1?",
+      "answer": "In-depth, factual 2-3 sentence answer with specific technical detail."
+    },
+    {
+      "question": "High-intent FAQ Question 2?",
+      "answer": "Direct technical explanation."
+    },
+    {
+      "question": "High-intent FAQ Question 3?",
+      "answer": "Empirical impact and metrics."
+    },
+    {
+      "question": "High-intent FAQ Question 4?",
+      "answer": "Implementation nuances and edge cases."
+    },
+    {
+      "question": "High-intent FAQ Question 5?",
+      "answer": "Resource and execution recommendations."
+    }
+  ]
+}
+
+NOTE: Provide 4 to 8 high-intent FAQ items based on user search journeys. Do NOT restrict to 3 items.`
+      : `Evaluasi draf artikel berikut dan hasilkan metadata pendukung yang sempurna dalam Bahasa Indonesia:
 
 Artikel Body:
-${fullBody.substring(0, 3000)}...
+${fullBody.substring(0, 3500)}...
 
 Focus Keyphrases: ${keyphrasesList}
 
 Kembalikan HANYA format JSON valid dengan struktur:
 {
-  "title": "Judul SEO final yang memicu CTR tinggi (< 60 karakter)",
+  "title": "Judul SEO final yang memicu CTR tinggi (50-60 karakter, menyertakan keyword utama)",
   "slug": "slug-url-bersih-tanpa-spasi",
   "description": "Meta description padat 140-160 karakter yang menggugah klik",
-  "quickAnswer": "Definitive summary 40-60 kata langsung to-the-point untuk kutipan AI Overviews & Perplexity",
+  "quickAnswer": "Definitive summary 40-60 kata langsung to-the-point untuk kutipan AI Overviews & Perplexity dalam Bahasa Indonesia",
   "tags": ["Tag1", "Tag2", "Tag3", "Tag4"],
   "faq": [
     {
@@ -777,13 +1017,25 @@ Kembalikan HANYA format JSON valid dengan struktur:
     {
       "question": "Pertanyaan FAQ 3?",
       "answer": "Jawaban terukur."
+    },
+    {
+      "question": "Pertanyaan FAQ 4?",
+      "answer": "Jawaban implementasi praktis."
+    },
+    {
+      "question": "Pertanyaan FAQ 5?",
+      "answer": "Jawaban evaluasi dan biaya."
     }
   ]
-}`;
+}
+
+CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan batasi hanya 3 item.`;
 
     const rawResponse = await callAI({
       prompt,
-      systemPrompt: 'You are an SEO metadata synthesizer. Output valid JSON only.',
+      systemPrompt: isEn
+        ? 'You are an SEO metadata synthesizer. Output valid JSON only. Respond strictly in English.'
+        : 'You are an SEO metadata synthesizer. Output valid JSON only.',
       jsonMode: true,
     });
 
@@ -792,14 +1044,14 @@ Kembalikan HANYA format JSON valid dengan struktur:
       const meta = JSON.parse(cleanJson);
 
       state.synthesizedArticle = {
-        title: meta.title || state.proposedTitle || 'Artikel Teknis',
-        slug: meta.slug || state.proposedSlug || 'artikel-teknis',
-        description: meta.description || '',
+        title: meta.title || state.proposedTitle || (isEn ? 'Technical SEO Guide' : 'Artikel Teknis'),
+        slug: meta.slug || state.proposedSlug || (isEn ? 'technical-seo-guide' : 'artikel-teknis'),
+        description: meta.description || state.proposedDescription || '',
         quickAnswer: meta.quickAnswer || '',
-        tags: meta.tags || ['Technical SEO', 'GEO'],
+        tags: meta.tags || (state.proposedTags && state.proposedTags.length > 0 ? state.proposedTags : ['Technical SEO', 'GEO']),
         faq: meta.faq || [],
         coverImage: state.uploadedImage ? state.uploadedImage.url : '/images/uploads/geo-blueprint.svg',
-        coverAlt: state.visionAnalysis?.alt || 'Article cover diagram',
+        coverAlt: state.visionAnalysis?.alt || (isEn ? 'Article cover diagram' : 'Diagram sampul artikel'),
         body: fullBody,
       };
 
@@ -808,7 +1060,6 @@ Kembalikan HANYA format JSON valid dengan struktur:
       throw new Error('Gagal mensintesis metadata artikel: ' + e.message);
     }
   }
-
   // =========================================================================
   // 6. Decap CMS Form Injector Engine
   // =========================================================================
@@ -838,12 +1089,15 @@ Kembalikan HANYA format JSON valid dengan struktur:
       return false;
     }
 
+    setInjectLoading(true, 'Menyiapkan Editor Decap CMS...', 'Memeriksa koneksi DOM editor artikel Decap CMS...');
+
     // 1. Ensure Decap CMS editor is currently mounted
     const hasEditorDOM = () => {
       return !!(
         document.querySelector('input[id*="title-field-"]') ||
         document.querySelector('input[name="title"]') ||
         document.querySelector('[data-slate-editor="true"]') ||
+        document.querySelector('.CodeMirror') ||
         document.querySelector('label[for*="title-field"]')
       );
     };
@@ -897,7 +1151,7 @@ Kembalikan HANYA format JSON valid dengan struktur:
             label.closest('[class*="ControlPane"], [class*="control"], [class*="Field"]') ||
             label.parentElement?.parentElement ||
             label.parentElement;
-          const input = pane?.querySelector('input, textarea, [data-slate-editor="true"]');
+          const input = pane?.querySelector('input, textarea');
           if (input) return input;
         }
       }
@@ -905,12 +1159,15 @@ Kembalikan HANYA format JSON valid dengan struktur:
       return null;
     }
 
+    setInjectLoading(true, 'Menyuntikkan Metadata & Judul...', 'Mengisi Title, Slug, Description, dan Quick Answer...');
+
     // 1. Title
     const titleEl = findFieldInput('title', 'input');
     if (titleEl && setNativeValue(titleEl, art.title)) {
       injectedCount++;
       populatedFields.push('Judul');
     }
+    await new Promise((r) => setTimeout(r, 25));
 
     // 2. Slug
     const slugEl = findFieldInput('slug', 'input');
@@ -918,6 +1175,7 @@ Kembalikan HANYA format JSON valid dengan struktur:
       injectedCount++;
       populatedFields.push('Slug');
     }
+    await new Promise((r) => setTimeout(r, 25));
 
     // 3. Description
     const descEl = findFieldInput('description', 'textarea') || findFieldInput('description', 'input');
@@ -925,6 +1183,7 @@ Kembalikan HANYA format JSON valid dengan struktur:
       injectedCount++;
       populatedFields.push('Deskripsi');
     }
+    await new Promise((r) => setTimeout(r, 25));
 
     // 4. Quick Answer
     const qaEl = findFieldInput('quickAnswer', 'textarea') || findFieldInput('quickAnswer', 'input');
@@ -932,6 +1191,7 @@ Kembalikan HANYA format JSON valid dengan struktur:
       injectedCount++;
       populatedFields.push('Quick Answer');
     }
+    await new Promise((r) => setTimeout(r, 25));
 
     // 5. Cover Image & Alt
     const coverEl = findFieldInput('coverImage', 'input');
@@ -945,123 +1205,204 @@ Kembalikan HANYA format JSON valid dengan struktur:
       injectedCount++;
       populatedFields.push('Alt Sampul');
     }
+    await new Promise((r) => setTimeout(r, 25));
 
-    // 6. Body Markdown (Slate.js, CodeMirror, Textarea)
-    let bodyInjected = false;
-    const slateEditor = document.querySelector('[data-slate-editor="true"]');
-    if (slateEditor) {
+    // 6. Tags Widget in Decap CMS (List Widget and Single Input Support)
+    if (art.tags && Array.isArray(art.tags) && art.tags.length > 0) {
+      setInjectLoading(true, 'Menyuntikkan Tags...', `Mengisi ${art.tags.length} tags ke dalam form Decap CMS...`);
       try {
-        slateEditor.focus();
-        const sel = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(slateEditor);
-        sel.removeAllRanges();
-        sel.addRange(range);
+        const labels = Array.from(document.querySelectorAll('label, [class*="TopBarLabel"], [class*="ControlLabel"], span'));
+        const tagsLabel = labels.find((l) => {
+          const lt = (l.textContent || '').trim().toLowerCase();
+          return lt === 'tags' || lt === 'tag' || lt.startsWith('tags (');
+        });
+        const tagsPane = tagsLabel?.closest('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane, .tags-pane') || tagsLabel?.parentElement?.parentElement;
 
-        let execSuccess = false;
-        if (typeof document['execCommand'] === 'function') {
-          try {
-            execSuccess = document['execCommand']('insertText', false, art.body);
-          } catch (_) {}
+        let addTagsBtn = null;
+        if (tagsPane) {
+          const buttons = Array.from(tagsPane.querySelectorAll('button'));
+          addTagsBtn = buttons.find((b) => {
+            const bt = (b.textContent || '').trim().toLowerCase();
+            return bt.includes('add tags') || bt.includes('add tag') || bt === '+' || bt.includes('tambah');
+          });
+        }
+        if (!addTagsBtn) {
+          const allButtons = Array.from(document.querySelectorAll('button'));
+          addTagsBtn = allButtons.find((b) => {
+            const bt = (b.textContent || '').trim().toLowerCase();
+            return bt.includes('add tags') || bt.includes('add tag') || bt === '+ add tag';
+          });
         }
 
-        if (!execSuccess || !slateEditor.textContent.trim()) {
-          try {
-            const dt = new DataTransfer();
-            dt.setData('text/plain', art.body);
-            const pasteEvt = new ClipboardEvent('paste', {
-              bubbles: true,
-              cancelable: true,
-              clipboardData: dt,
-            });
-            slateEditor.dispatchEvent(pasteEvt);
-          } catch (_) {
-            slateEditor.textContent = art.body;
+        let tagInputs = tagsPane
+          ? Array.from(tagsPane.querySelectorAll('input:not([type="button"]):not([type="submit"])'))
+          : Array.from(document.querySelectorAll('input[id*="tags-field-"], input[name*="tags"], input[id*="tags-"]'));
+
+        if (addTagsBtn) {
+          for (let i = tagInputs.length; i < art.tags.length; i++) {
+            addTagsBtn.click();
+            await new Promise((r) => setTimeout(r, 80));
+          }
+          tagInputs = tagsPane
+            ? Array.from(tagsPane.querySelectorAll('input:not([type="button"]):not([type="submit"])'))
+            : Array.from(document.querySelectorAll('input[id*="tags-field-"], input[name*="tags"], input[id*="tags-"]'));
+        }
+
+        let populatedTagsCount = 0;
+        art.tags.forEach((tagText, idx) => {
+          if (tagInputs[idx]) {
+            setNativeValue(tagInputs[idx], tagText.trim());
+            populatedTagsCount++;
+          }
+        });
+
+        // Fallback if Decap uses a single input field for tags
+        if (populatedTagsCount === 0) {
+          const singleTagInput = findFieldInput('tags', 'input');
+          if (singleTagInput) {
+            setNativeValue(singleTagInput, art.tags.join(', '));
+            populatedTagsCount = art.tags.length;
           }
         }
-        slateEditor.dispatchEvent(new Event('input', { bubbles: true }));
-        bodyInjected = true;
-      } catch (err) {
-        console.warn('[AI Studio] Slate injection notice:', err);
+
+        if (populatedTagsCount > 0) {
+          injectedCount++;
+          populatedFields.push(`Tags (${art.tags.length} item)`);
+        }
+      } catch (tagErr) {
+        console.warn('[AI Studio] Tag injection notice:', tagErr);
+      }
+      await new Promise((r) => setTimeout(r, 25));
+    }
+
+    // 7. Body Markdown & Expandable Q&A Accordion (Non-blocking & Slate-safe)
+    setInjectLoading(true, 'Menyuntikkan Body & Expandable Q&A...', 'Menyusun body markdown dan komponen accordion...');
+    let bodyContent = art.body || '';
+
+    // Automatically append Expandable Q&A accordions into Markdown body if not already present
+    if (art.faq && Array.isArray(art.faq) && art.faq.length > 0) {
+      if (!bodyContent.includes('class="qa-item"')) {
+        const isEn = state.language === 'en';
+        const faqSectionHeading = isEn ? '## Frequently Asked Questions' : '## Pertanyaan yang Sering Diajukan';
+        const faqAccordions = art.faq.map((item) => {
+          const q = (item.question || '').trim();
+          const a = (item.answer || '').trim();
+          return `<details class="qa-item">\n<summary class="qa-question">${q}</summary>\n<div class="qa-answer">\n<p>${a}</p>\n</div>\n</details>`;
+        }).join('\n\n');
+
+        bodyContent = `${bodyContent.trim()}\n\n${faqSectionHeading}\n\n${faqAccordions}`;
+        art.body = bodyContent;
       }
     }
 
-    const bodyTextarea =
-      findFieldInput('body', 'textarea') ||
-      document.querySelector('.cms-editor-raw textarea') ||
-      document.querySelector('.CodeMirror textarea');
-    if (bodyTextarea) {
-      if (setNativeValue(bodyTextarea, art.body)) {
-        bodyInjected = true;
-      }
+    let bodyInjected = false;
+    const modeSwitch = document.querySelector('button[role="switch"], [class*="ToolbarToggle"]');
+    const isSlateActive = !!document.querySelector('[data-slate-editor="true"]');
+
+    // If Slate is active and Decap has the Markdown/RichText switch, toggle to Raw Markdown mode
+    if (isSlateActive && modeSwitch) {
+      try {
+        modeSwitch.click();
+        await new Promise((r) => setTimeout(r, 100));
+      } catch (_) {}
     }
 
+    // 7a. Attempt CodeMirror editor (Standard in Decap Raw Markdown mode)
     const cm = document.querySelector('.CodeMirror')?.CodeMirror;
     if (cm && typeof cm.setValue === 'function') {
-      cm.setValue(art.body);
-      bodyInjected = true;
+      try {
+        cm.setValue(bodyContent);
+        if (typeof cm.save === 'function') cm.save();
+        bodyInjected = true;
+      } catch (cmErr) {
+        console.warn('[AI Studio] CodeMirror injection notice:', cmErr);
+      }
+    }
+
+    // 7b. Attempt Raw Textarea if CodeMirror API not present
+    if (!bodyInjected) {
+      const bodyTextarea = document.querySelector(
+        '.cms-editor-raw textarea, textarea[id*="body-field-"], textarea[name="body"]'
+      );
+      if (bodyTextarea && setNativeValue(bodyTextarea, bodyContent)) {
+        bodyInjected = true;
+      }
+    }
+
+    // Toggle back to Rich Text mode if we previously switched from Slate
+    if (isSlateActive && modeSwitch && bodyInjected) {
+      await new Promise((r) => setTimeout(r, 60));
+      try {
+        modeSwitch.click();
+        await new Promise((r) => setTimeout(r, 100));
+      } catch (_) {}
+    }
+
+    // 7c. Fallback for unit tests / JSDOM where modeSwitch and CodeMirror are not present
+    if (!bodyInjected) {
+      const slateEditor = document.querySelector('[data-slate-editor="true"]');
+      if (slateEditor) {
+        try {
+          slateEditor.textContent = bodyContent;
+          slateEditor.dispatchEvent(new Event('input', { bubbles: true }));
+          bodyInjected = true;
+        } catch (_) {}
+      }
     }
 
     if (bodyInjected) {
       injectedCount++;
-      populatedFields.push('Body Artikel');
+      populatedFields.push('Body Artikel & Expandable Q&A');
     }
+    await new Promise((r) => setTimeout(r, 40));
 
-    // 7. Frequently Asked Questions (FAQ) List Widget in Decap CMS
-    
+    // 8. Frequently Asked Questions (FAQ) List Widget in Decap CMS (Supports Unlimited >3 FAQs)
     if (art.faq && Array.isArray(art.faq) && art.faq.length > 0) {
+      setInjectLoading(true, 'Menyuntikkan FAQ Decap CMS...', `Mengisi ${art.faq.length} item FAQ ke widget Decap...`);
       try {
-        const labels = Array.from(document.querySelectorAll('label, span, div'));
-        const faqHeader = labels.find((el) => {
-          const t = el.textContent.toLowerCase();
-          return t.includes('frequently asked questions') || t === 'faq';
+        const allButtons = Array.from(document.querySelectorAll('button'));
+        let addFaqBtn = allButtons.find((b) => {
+          const bt = (b.textContent || '').trim().toLowerCase();
+          return bt.includes('add frequently asked questions') || bt === 'add faq' || bt === '+ add faq';
         });
 
-        const faqContainer =
-          faqHeader?.closest('[class*="TopBarContainer"], [class*="ControlPane"], [class*="control"], [class*="Field"]') ||
-          faqHeader?.parentElement?.parentElement ||
-          document.querySelector('[data-field-name="faq"]') ||
-          document.querySelector('#faq-field-container') ||
-          document.querySelector('.faq-pane');
-
-        let addFaqBtn = faqContainer?.querySelector(
-          'button[class*="StyledDropdownButton"], button[class*="AddButton"], button[class*="ListControl"]'
-        );
-        if (!addFaqBtn && faqContainer) {
-          const buttons = Array.from(faqContainer.querySelectorAll('button'));
-          addFaqBtn = buttons.find((b) => {
-            const bt = b.textContent.toLowerCase();
-            return bt.includes('add') || bt.includes('tambah') || bt.includes('+');
-          });
-        }
         if (!addFaqBtn) {
-          const allButtons = Array.from(document.querySelectorAll('button'));
-          addFaqBtn = allButtons.find((b) => {
-            const bt = b.textContent.toLowerCase();
-            return bt.includes('add frequently asked questions') || bt.includes('add faq');
+          const labels = Array.from(document.querySelectorAll('label, [class*="TopBarLabel"], [class*="ControlLabel"]'));
+          const faqLabel = labels.find((l) => {
+            const lt = (l.textContent || '').trim().toLowerCase();
+            return lt.includes('frequently asked questions') || lt === 'faq';
           });
+          const pane = faqLabel?.closest('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane');
+          if (pane) {
+            const paneButtons = Array.from(pane.querySelectorAll('button'));
+            addFaqBtn = paneButtons.find((b) => {
+              const bt = (b.textContent || '').trim().toLowerCase();
+              return bt.includes('add') || bt.includes('tambah') || bt.includes('+');
+            });
+          }
         }
 
         let questionInputs = Array.from(
-          document.querySelectorAll('input[id*="question-field-"], input[name*="question"], [data-field-name="question"] input')
+          document.querySelectorAll('input[id*="question"], input[name*="question"], [data-field-name="question"] input')
         );
 
         if (addFaqBtn) {
           for (let i = questionInputs.length; i < art.faq.length; i++) {
             addFaqBtn.click();
-            await new Promise((r) => setTimeout(r, 60));
+            await new Promise((r) => setTimeout(r, 120)); // wait for React DOM mount
           }
         }
 
         questionInputs = Array.from(
-          document.querySelectorAll('input[id*="question-field-"], input[name*="question"], [data-field-name="question"] input')
+          document.querySelectorAll('input[id*="question"], input[name*="question"], [data-field-name="question"] input')
         );
         const answerTextareas = Array.from(
-          document.querySelectorAll('textarea[id*="answer-field-"], textarea[name*="answer"], [data-field-name="answer"] textarea, input[id*="answer-field-"]')
+          document.querySelectorAll('textarea[id*="answer"], textarea[name*="answer"], [data-field-name="answer"] textarea, input[id*="answer"]')
         );
 
         let populatedFaqCount = 0;
-        art.faq.forEach((faqItem, idx) => {
+        for (let idx = 0; idx < art.faq.length; idx++) {
+          const faqItem = art.faq[idx];
           if (questionInputs[idx] && faqItem.question) {
             setNativeValue(questionInputs[idx], faqItem.question);
             populatedFaqCount++;
@@ -1069,20 +1410,20 @@ Kembalikan HANYA format JSON valid dengan struktur:
           if (answerTextareas[idx] && faqItem.answer) {
             setNativeValue(answerTextareas[idx], faqItem.answer);
           }
-        });
+          await new Promise((r) => setTimeout(r, 25));
+        }
 
         if (populatedFaqCount > 0) {
-          
           injectedCount++;
           populatedFields.push(`FAQ (${art.faq.length} item)`);
         }
       } catch (faqErr) {
-        console.warn('[AI Studio] FAQ Decap injection notice:', faqErr);
+        console.warn('[AI Studio] FAQ injection notice:', faqErr);
       }
     }
 
-
-    // 7. Auto-copy fallback to Clipboard
+    setInjectLoading(false);
+  // 8. Auto-copy fallback to Clipboard
     try {
       const fullMdx = `---
 title: "${art.title}"
@@ -1092,7 +1433,10 @@ publishDate: ${new Date().toISOString().split('T')[0]}
 coverImage: "${art.coverImage || ''}"
 coverAlt: "${art.coverAlt || ''}"
 quickAnswer: "${art.quickAnswer || ''}"
-tags: ${JSON.stringify(art.tags || [])}${(art.faq && art.faq.length > 0) ? `\nfaq:\n` + art.faq.map(f => `  - question: "${(f.question || '').replace(/"/g, '\\"')}"\n    answer: "${(f.answer || '').replace(/"/g, '\\"')}"`).join('\n') : ''}
+tags: ${JSON.stringify(art.tags || [])}${(art.faq && art.faq.length > 0) ? `
+faq:
+` + art.faq.map(f => `  - question: "${(f.question || '').replace(/"/g, '\"')}"
+    answer: "${(f.answer || '').replace(/"/g, '\"')}"`).join('\n') : ''}
 ---
 
 ${art.body}`;
@@ -1310,6 +1654,20 @@ ${art.body}`;
             </div>
           </div>
 
+          <!-- Citations & References Feature Toggle -->
+          <div class="ai-form-group">
+            <label class="ai-form-label">Sitasi Akademik & Referensi Industri</label>
+            <label class="ai-citation-toggle-box" style="display:flex; align-items:flex-start; gap:12px; background:var(--ai-bg-card); border:1px solid var(--ai-border); border-radius:10px; padding:12px 14px; cursor:pointer;">
+              <input type="checkbox" id="ai-citations-toggle" checked style="margin-top:3px; accent-color:var(--ai-primary); width:16px; height:16px;" />
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--ai-text-primary);">Sertakan Sitasi & Referensi Terpercaya (Citations)</div>
+                <div style="font-size:11px; color:var(--ai-text-muted); margin-top:3px; line-height:1.4;">
+                  Sertakan rujukan otoritatif terverifikasi (Google Search Central, IEEE, W3C, Gartner, arXiv) dengan kutipan inline [^1] serta daftar referensi di akhir artikel untuk mendongkrak kredibilitas E-E-A-T dan kutipan AI Overviews.
+                </div>
+              </div>
+            </label>
+          </div>
+
           <!-- Chunk Preference -->
           <div class="ai-form-group">
             <label class="ai-form-label">Preferensi Pembagian Body (Multi-Turn Chunks)</label>
@@ -1335,6 +1693,56 @@ ${art.body}`;
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
             <label class="ai-form-label" style="margin:0;">Struktur Outline Artikel</label>
             <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-regen-outline" style="padding:4px 10px; font-size:11px;">🔄 Buat Ulang Outline</button>
+          </div>
+
+          <!-- Active Loader for Outline Generation -->
+          <div class="ai-progress-card" id="ai-outline-loading-card" style="display:none; margin:16px 0;">
+            <div class="ai-spinner"></div>
+            <div class="ai-progress-title" id="ai-outline-loading-title">Sedang Merancang Outline Artikel...</div>
+            <div class="ai-progress-desc" id="ai-outline-loading-desc">Menganalisis topik, hierarki H1/H2/H3, alokasi kata, dan penempatan komponen...</div>
+          </div>
+
+          <!-- Rich Outline Overview Card (Title 50-60 chars, Meta Desc, Slug, Tags, H1) -->
+          <div id="ai-outline-overview-card" style="display:none; background:var(--ai-bg-card); border:1px solid var(--ai-border); border-radius:10px; padding:16px; margin-bottom:16px;">
+            <div style="font-size:12px; font-weight:700; color:var(--ai-primary); margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+              <span>📋 Metadata & Spesifikasi Outline</span>
+              <span id="ai-outline-status-badge" class="ai-badge ai-badge-success">Outline Terstruktur</span>
+            </div>
+            
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label style="font-size:11px; font-weight:600; color:var(--ai-text-secondary); margin:0;">Target Title (50-60 karakter + Keyword):</label>
+                <span id="ai-outline-title-len" style="font-size:10px; color:var(--ai-text-muted);">0 / 60 chars</span>
+              </div>
+              <input type="text" id="ai-outline-title-input" class="ai-input" style="font-size:12px; font-weight:600;" placeholder="Judul artikel teroptimasi SEO..." />
+            </div>
+
+            <div style="margin-bottom:10px;">
+              <label style="font-size:11px; font-weight:600; color:var(--ai-text-secondary); display:block; margin-bottom:4px;">Article H1 Headline:</label>
+              <input type="text" id="ai-outline-h1-input" class="ai-input" style="font-size:12px;" placeholder="H1 utama artikel..." />
+            </div>
+
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label style="font-size:11px; font-weight:600; color:var(--ai-text-secondary); margin:0;">Meta Description (140-160 karakter):</label>
+                <span id="ai-outline-desc-len" style="font-size:10px; color:var(--ai-text-muted);">0 / 160 chars</span>
+              </div>
+              <textarea id="ai-outline-desc-input" class="ai-textarea" rows="2" style="font-size:11px;" placeholder="Deskripsi meta padat dan menggugah CTR..."></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px;">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <label style="font-size:11px; font-weight:600; color:var(--ai-text-secondary); margin:0;">URL Slug (Maks. 60 chars):</label>
+                  <span id="ai-outline-slug-len" style="font-size:10px; color:var(--ai-text-muted);">0 / 60</span>
+                </div>
+                <input type="text" id="ai-outline-slug-input" class="ai-input" style="font-size:11px; font-family:var(--ai-font-mono);" placeholder="slug-url-artikel" />
+              </div>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:var(--ai-text-secondary); display:block; margin-bottom:4px;">Tags (Dipisahkan koma):</label>
+                <input type="text" id="ai-outline-tags-input" class="ai-input" style="font-size:11px;" placeholder="GEO, Technical SEO, AI Search..." />
+              </div>
+            </div>
           </div>
 
           <!-- Vision Insights Banner if analyzed -->
@@ -1367,6 +1775,13 @@ ${art.body}`;
 
         <!-- ================= STEP 5: REVIEW & TERAPKAN ================= -->
         <div class="ai-step-pane" id="ai-pane-5">
+          <!-- Injection Active Loader Card -->
+          <div class="ai-progress-card" id="ai-inject-loading-card" style="display:none; margin:16px 0; border-color:var(--ai-primary); background:rgba(217, 119, 6, 0.05);">
+            <div class="ai-spinner"></div>
+            <div class="ai-progress-title" id="ai-inject-loading-title">Sedang Menerapkan ke Decap CMS...</div>
+            <div class="ai-progress-desc" id="ai-inject-loading-desc">Menyinkronkan judul, slug, meta description, quick answer, tags, dan expandable Q&A...</div>
+          </div>
+
           <div class="ai-form-group">
             <label class="ai-form-label">SEO Title <span id="ai-title-len" style="color:var(--ai-primary); font-size:11px;">(0 chars)</span></label>
             <input type="text" class="ai-input" id="ai-res-title" />
@@ -1393,7 +1808,10 @@ ${art.body}`;
           </div>
 
           <div class="ai-form-group">
-            <label class="ai-form-label">FAQ Accordions (<span id="ai-faq-count">3</span> items)</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <label class="ai-form-label" style="margin:0;">Frequently Asked Questions / Expandable Q&A (<span id="ai-faq-count">0</span> items)</label>
+              <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-add-faq-item" style="padding:2px 8px; font-size:11px;">+ Tambah FAQ</button>
+            </div>
             <div id="ai-res-faq-container" style="display:flex; flex-direction:column; gap:8px;"></div>
           </div>
 
@@ -1594,21 +2012,43 @@ ${art.body}`;
       });
     });
 
-    // Focus Keyphrase Chip Input
+    // Focus Keyphrase Chip Input (Supports Enter, Comma, Paste, Input & Blur)
     const chipInput = document.getElementById('ai-chip-input');
-    chipInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ',') {
-        e.preventDefault();
-        const val = chipInput.value.trim().replace(/^,+|,+$/g, '');
-        if (val && !state.focusKeyphrases.includes(val)) {
-          state.focusKeyphrases.push(val);
-          renderChips();
+    if (chipInput) {
+      chipInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          const val = chipInput.value;
           chipInput.value = '';
-          autoSuggestInternalLinks();
-          renderInternalLinksTable();
+          addFocusKeyphrases(val);
         }
-      }
-    });
+      });
+
+      chipInput.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pastedText = (e.clipboardData || window['clipboardData'])?.getData('text') || '';
+        if (pastedText) {
+          addFocusKeyphrases(pastedText);
+          chipInput.value = '';
+        }
+      });
+
+      chipInput.addEventListener('input', () => {
+        if (chipInput.value.includes(',') || chipInput.value.includes(';') || chipInput.value.includes('\n')) {
+          const val = chipInput.value;
+          chipInput.value = '';
+          addFocusKeyphrases(val);
+        }
+      });
+
+      chipInput.addEventListener('blur', () => {
+        if (chipInput.value.trim()) {
+          const val = chipInput.value;
+          chipInput.value = '';
+          addFocusKeyphrases(val);
+        }
+      });
+    }
 
 
     // Strategy Add / Edit / Cancel Event Wiring
@@ -1928,9 +2368,27 @@ ${state.synthesizedArticle.body}`;
         switchStep(4);
         await startPipelineStage3And4();
       } else if (state.currentStep === 5) {
-        // One-Click Inject
-        await injectIntoDecapForm();
+        // One-Click Inject with Debounce & Loading State
+        const nextBtn = document.getElementById('ai-btn-next');
+        if (nextBtn?.disabled) return;
+        if (nextBtn) {
+          nextBtn.disabled = true;
+          nextBtn.textContent = 'Sedang Menerapkan...';
+        }
+        try {
+          await injectIntoDecapForm();
+        } finally {
+          if (nextBtn) {
+            nextBtn.disabled = false;
+            nextBtn.textContent = '🎯 Terapkan ke Editor Decap';
+          }
+        }
       }
+    });
+
+    // Citations Feature Toggle
+    document.getElementById('ai-citations-toggle')?.addEventListener('change', (e) => {
+      state.includeCitations = e.target.checked;
     });
 
     // Regenerate Outline
@@ -2004,6 +2462,29 @@ ${state.synthesizedArticle.body}`;
   // =========================================================================
   // 10. Chips & Internal Links Table Rendering
   // =========================================================================
+  function addFocusKeyphrases(rawInput) {
+    if (!rawInput) return 0;
+    const parts = String(rawInput)
+      .split(/[,;\n\r]+/)
+      .map((p) => p.trim().replace(/^['"]+|['"]+$/g, '').trim())
+      .filter(Boolean);
+
+    let addedCount = 0;
+    parts.forEach((phrase) => {
+      if (phrase && !state.focusKeyphrases.includes(phrase)) {
+        state.focusKeyphrases.push(phrase);
+        addedCount++;
+      }
+    });
+
+    if (addedCount > 0) {
+      renderChips();
+      autoSuggestInternalLinks();
+      renderInternalLinksTable();
+    }
+    return addedCount;
+  }
+
   function renderChips() {
     const wrap = document.getElementById('ai-chips-wrap');
     const input = document.getElementById('ai-chip-input');
@@ -2077,17 +2558,65 @@ ${state.synthesizedArticle.body}`;
     });
   }
 
+  // Helper Loaders for Outline Generation & Injection
+  function setOutlineLoading(isLoading, title, desc) {
+    const card = document.getElementById('ai-outline-loading-card');
+    const t = document.getElementById('ai-outline-loading-title');
+    const d = document.getElementById('ai-outline-loading-desc');
+    const list = document.getElementById('ai-outline-list');
+    const overview = document.getElementById('ai-outline-overview-card');
+
+    if (card) card.style.display = isLoading ? 'block' : 'none';
+    if (t && title) t.textContent = title;
+    if (d && desc) d.textContent = desc;
+
+    if (isLoading) {
+      if (list) list.style.display = 'none';
+      if (overview) overview.style.display = 'none';
+    } else {
+      if (list) list.style.display = 'flex';
+      if (overview && state.outline && state.outline.length > 0) overview.style.display = 'block';
+    }
+  }
+
+  function setInjectLoading(isLoading, title, desc) {
+    const card = document.getElementById('ai-inject-loading-card');
+    const t = document.getElementById('ai-inject-loading-title');
+    const d = document.getElementById('ai-inject-loading-desc');
+    const nextBtn = document.getElementById('ai-btn-next');
+
+    if (card) card.style.display = isLoading ? 'block' : 'none';
+    if (t && title) t.textContent = title;
+    if (d && desc) d.textContent = desc;
+
+    if (nextBtn && state.currentStep === 5) {
+      nextBtn.disabled = isLoading;
+      if (isLoading) {
+        nextBtn.innerHTML = '<span class="ai-spinner" style="width:14px; height:14px; margin:0; display:inline-block; vertical-align:middle; border-width:2px;"></span> Sedang Menerapkan...';
+      } else {
+        nextBtn.innerHTML = '🎯 Terapkan ke Editor Decap';
+      }
+    }
+  }
+
   // =========================================================================
   // 11. Pipeline Orchestrator (Stages Execution)
   // =========================================================================
   async function startPipelineStage1And2() {
     try {
       state.isGenerating = true;
+      const isEn = state.language === 'en';
+      setOutlineLoading(
+        true,
+        isEn ? 'Analyzing & Structuring Rich Outline...' : 'Sedang Merancang Outline Terstruktur...',
+        isEn ? 'Establishing H1/H2/H3 hierarchy, word count allocation, and component placements...' : 'Menetapkan hierarki H1/H2/H3, alokasi kata, serta penempatan Tabel, Kutipan & 3 CTA...'
+      );
       const nextBtn = document.getElementById('ai-btn-next');
       if (nextBtn) nextBtn.disabled = true;
 
       if (state.uploadedImage) {
-        showStudioToast('Memulai analisa Vision AI untuk gambar...', true);
+        showStudioToast(isEn ? 'Analyzing image with Multimodal Vision AI...' : 'Memulai analisa Vision AI untuk gambar...', true);
+        setOutlineLoading(true, isEn ? 'Analyzing Technical Diagram...' : 'Menganalisis Diagram Teknis...', isEn ? 'Extracting architectural entities and data points...' : 'Mengekstrak entitas diagram dan alur arsitektur...');
         await runStage1ImageAnalysis();
         const vCard = document.getElementById('ai-vision-insights-card');
         const vText = document.getElementById('ai-vision-insights-text');
@@ -2097,14 +2626,16 @@ ${state.synthesizedArticle.body}`;
         }
       }
 
-      showStudioToast('Menghasilkan outline terstruktur...', true);
+      showStudioToast(isEn ? 'Structuring outline & component placements...' : 'Menghasilkan outline terstruktur & penempatan komponen...', true);
+      setOutlineLoading(true, isEn ? 'Structuring Outline & Sections...' : 'Menyusun Outline & Alokasi Kata...', isEn ? 'Allocating word counts and assigning 3 Outcome-Driven CTAs...' : 'Mengalokasikan target kata & menetapkan penempatan Tabel, Kutipan, dan 3 CTA...');
       await runStage2OutlineGeneration();
       renderOutlineList();
-      showStudioToast('✓ Outline berhasil disusun! Anda dapat menyesuaikan setiap section.', true);
+      showStudioToast(isEn ? '✓ Outline generated successfully! Review metadata & sections below.' : '✓ Outline berhasil disusun! Periksa spesifikasi & section di bawah.', true);
     } catch (err) {
       showStudioToast('✕ Terjadi kesalahan: ' + err.message, false);
     } finally {
       state.isGenerating = false;
+      setOutlineLoading(false);
       const nextBtn = document.getElementById('ai-btn-next');
       if (nextBtn) nextBtn.disabled = false;
     }
@@ -2112,22 +2643,101 @@ ${state.synthesizedArticle.body}`;
 
   function renderOutlineList() {
     const listEl = document.getElementById('ai-outline-list');
+    const overviewCard = document.getElementById('ai-outline-overview-card');
     if (!listEl) return;
     listEl.innerHTML = '';
 
     if (!state.outline || state.outline.length === 0) {
+      if (overviewCard) overviewCard.style.display = 'none';
       listEl.innerHTML = `<div style="padding:20px; text-align:center; color:var(--ai-text-muted);">Tidak ada section. Klik 'Buat Ulang Outline'.</div>`;
       return;
     }
 
+    // Render Rich Outline Overview Card
+    if (overviewCard) {
+      overviewCard.style.display = 'block';
+      const titleInput = document.getElementById('ai-outline-title-input');
+      const h1Input = document.getElementById('ai-outline-h1-input');
+      const descInput = document.getElementById('ai-outline-desc-input');
+      const slugInput = document.getElementById('ai-outline-slug-input');
+      const tagsInput = document.getElementById('ai-outline-tags-input');
+
+      if (titleInput) {
+        titleInput.value = state.proposedTitle || '';
+        updateCharCounter('ai-outline-title-len', (state.proposedTitle || '').length, 60);
+        titleInput.oninput = (e) => {
+          state.proposedTitle = e.target.value;
+          updateCharCounter('ai-outline-title-len', e.target.value.length, 60);
+        };
+      }
+
+      if (h1Input) {
+        h1Input.value = state.proposedH1 || state.proposedTitle || '';
+        h1Input.oninput = (e) => {
+          state.proposedH1 = e.target.value;
+        };
+      }
+
+      if (descInput) {
+        descInput.value = state.proposedDescription || '';
+        updateCharCounter('ai-outline-desc-len', (state.proposedDescription || '').length, 160);
+        descInput.oninput = (e) => {
+          state.proposedDescription = e.target.value;
+          updateCharCounter('ai-outline-desc-len', e.target.value.length, 160);
+        };
+      }
+
+      if (slugInput) {
+        slugInput.value = state.proposedSlug || '';
+        const slLen = document.getElementById('ai-outline-slug-len');
+        if (slLen) slLen.textContent = `${(state.proposedSlug || '').length} / 60`;
+        slugInput.oninput = (e) => {
+          state.proposedSlug = e.target.value;
+          if (slLen) slLen.textContent = `${e.target.value.length} / 60`;
+        };
+      }
+
+      if (tagsInput) {
+        tagsInput.value = Array.isArray(state.proposedTags) ? state.proposedTags.join(', ') : (state.proposedTags || '');
+        tagsInput.oninput = (e) => {
+          state.proposedTags = e.target.value.split(',').map((t) => t.trim()).filter(Boolean);
+        };
+      }
+    }
+
+    // Render Section Hierarchy Cards
     state.outline.forEach((sec, idx) => {
       const item = document.createElement('div');
       item.className = 'ai-outline-item';
+      item.style.flexDirection = 'column';
+      item.style.alignItems = 'stretch';
+      item.style.gap = '8px';
+
+      const subheadingsHtml = (sec.subheadings && sec.subheadings.length > 0)
+        ? `<div class="ai-outline-subheadings">
+            ${sec.subheadings.map((sub) => `<div class="ai-outline-subheading-item"><span style="color:var(--ai-text-muted);">↳ H3:</span> <span>${escapeHtmlAttr(sub)}</span></div>`).join('')}
+           </div>`
+        : '';
+
+      const pillsHtml = `
+        <div class="ai-outline-feature-pills">
+          ${sec.targetWordCount ? `<span class="ai-badge ai-badge-wordcount" title="Target alokasi panjang konten">🎯 ~${sec.targetWordCount} kata</span>` : ''}
+          ${sec.tableNote ? `<span class="ai-badge ai-badge-table" title="${escapeHtmlAttr(sec.tableNote)}">📊 ${escapeHtmlAttr(sec.tableNote)}</span>` : ''}
+          ${sec.quoteNote ? `<span class="ai-badge ai-badge-quote" title="${escapeHtmlAttr(sec.quoteNote)}">💬 ${escapeHtmlAttr(sec.quoteNote)}</span>` : ''}
+          ${sec.ctaNote ? `<span class="ai-badge ai-badge-cta" title="${escapeHtmlAttr(sec.ctaNote)}">🚀 ${escapeHtmlAttr(sec.ctaNote)}</span>` : ''}
+          ${sec.includesImage ? '<span class="ai-badge" style="background:rgba(99,102,241,0.2); color:#A5B4FC;">🖼️ Gambar Diagram</span>' : ''}
+          ${sec.internalLinkAnchor ? `<span class="ai-badge" style="background:rgba(16,185,129,0.15); color:#6EE7B7;">🔗 ${escapeHtmlAttr(sec.internalLinkAnchor)}</span>` : ''}
+        </div>
+      `;
+
       item.innerHTML = `
-        <span class="ai-outline-num">H2.${idx + 1}</span>
-        <input type="text" class="ai-outline-input" value="${sec.heading}" data-sec-idx="${idx}" />
-        ${sec.includesImage ? '<span style="font-size:10px; background:rgba(99,102,241,0.2); color:#A5B4FC; padding:2px 6px; border-radius:4px;">🖼️ Gambar</span>' : ''}
-        <button type="button" class="ai-studio-icon-btn" data-del-sec="${idx}" title="Hapus Section" style="width:24px; height:24px; font-size:11px; color:var(--ai-error);">✕</button>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="ai-outline-num">H2.${idx + 1}</span>
+          <input type="text" class="ai-outline-input" value="${escapeHtmlAttr(sec.heading)}" data-sec-idx="${idx}" />
+          <button type="button" class="ai-studio-icon-btn" data-del-sec="${idx}" title="Hapus Section" style="width:24px; height:24px; font-size:11px; color:var(--ai-error);">✕</button>
+        </div>
+        ${subheadingsHtml}
+        ${pillsHtml}
       `;
 
       item.querySelector('.ai-outline-input')?.addEventListener('input', (e) => {
@@ -2190,36 +2800,98 @@ ${state.synthesizedArticle.body}`;
     const faqContainer = document.getElementById('ai-res-faq-container');
 
     if (titleEl) {
-      titleEl.value = art.title;
-      updateCharCounter('ai-title-len', art.title.length, 60);
-      titleEl.oninput = (e) => updateCharCounter('ai-title-len', e.target.value.length, 60);
+      titleEl.value = art.title || '';
+      updateCharCounter('ai-title-len', (art.title || '').length, 60);
+      titleEl.oninput = (e) => {
+        art.title = e.target.value;
+        updateCharCounter('ai-title-len', e.target.value.length, 60);
+      };
     }
 
-    if (slugEl) slugEl.value = art.slug;
+    if (slugEl) {
+      slugEl.value = art.slug || '';
+      slugEl.oninput = (e) => {
+        art.slug = e.target.value;
+      };
+    }
 
     if (descEl) {
-      descEl.value = art.description;
-      updateCharCounter('ai-desc-len', art.description.length, 160);
-      descEl.oninput = (e) => updateCharCounter('ai-desc-len', e.target.value.length, 160);
+      descEl.value = art.description || '';
+      updateCharCounter('ai-desc-len', (art.description || '').length, 160);
+      descEl.oninput = (e) => {
+        art.description = e.target.value;
+        updateCharCounter('ai-desc-len', e.target.value.length, 160);
+      };
     }
 
-    if (quickEl) quickEl.value = art.quickAnswer;
-    if (tagsEl) tagsEl.value = Array.isArray(art.tags) ? art.tags.join(', ') : art.tags;
-    if (bodyEl) bodyEl.value = art.body;
+    if (quickEl) {
+      quickEl.value = art.quickAnswer || '';
+      quickEl.oninput = (e) => {
+        art.quickAnswer = e.target.value;
+      };
+    }
 
-    if (faqContainer && art.faq) {
+    if (tagsEl) {
+      tagsEl.value = Array.isArray(art.tags) ? art.tags.join(', ') : (art.tags || '');
+      tagsEl.oninput = (e) => {
+        art.tags = e.target.value.split(',').map((t) => t.trim()).filter(Boolean);
+      };
+    }
+
+    if (bodyEl) {
+      bodyEl.value = art.body || '';
+      bodyEl.oninput = (e) => {
+        art.body = e.target.value;
+      };
+    }
+
+    function renderFaqReviewList() {
+      if (!faqContainer || !art.faq) return;
       faqContainer.innerHTML = '';
+
       art.faq.forEach((f, i) => {
-        const d = document.createElement('div');
-        d.style.cssText = 'background:var(--ai-bg-input); border:1px solid var(--ai-border); border-radius:6px; padding:10px; font-size:12px;';
-        d.innerHTML = `
-          <div style="font-weight:600; color:var(--ai-text-primary); margin-bottom:4px;">Q${i + 1}: ${f.question}</div>
-          <div style="color:var(--ai-text-secondary); line-height:1.4;">${f.answer}</div>
+        const item = document.createElement('div');
+        item.style.cssText = 'background:var(--ai-bg-input); border:1px solid var(--ai-border); border-radius:8px; padding:12px; font-size:12px; display:flex; flex-direction:column; gap:6px;';
+        item.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700; color:var(--ai-primary); font-size:11px;">FAQ #${i + 1}</span>
+            <button type="button" class="ai-studio-icon-btn" data-del-faq="${i}" title="Hapus FAQ" style="color:var(--ai-error); font-size:11px; width:20px; height:20px;">✕</button>
+          </div>
+          <input type="text" class="ai-input faq-q-input" value="${escapeHtmlAttr(f.question || '')}" placeholder="Pertanyaan FAQ..." style="font-size:12px; font-weight:600;" />
+          <textarea class="ai-textarea faq-a-input" rows="2" placeholder="Jawaban FAQ..." style="font-size:11px;">${escapeHtmlAttr(f.answer || '')}</textarea>
         `;
-        faqContainer.appendChild(d);
+
+        item.querySelector('.faq-q-input')?.addEventListener('input', (e) => {
+          art.faq[i].question = e.target.value;
+        });
+
+        item.querySelector('.faq-a-input')?.addEventListener('input', (e) => {
+          art.faq[i].answer = e.target.value;
+        });
+
+        item.querySelector('[data-del-faq]')?.addEventListener('click', () => {
+          art.faq.splice(i, 1);
+          renderFaqReviewList();
+        });
+
+        faqContainer.appendChild(item);
       });
+
       const countEl = document.getElementById('ai-faq-count');
       if (countEl) countEl.textContent = art.faq.length;
+    }
+
+    renderFaqReviewList();
+
+    const addFaqBtn = document.getElementById('ai-btn-add-faq-item');
+    if (addFaqBtn) {
+      addFaqBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!art.faq) art.faq = [];
+        art.faq.push({ question: '', answer: '' });
+        renderFaqReviewList();
+      };
     }
   }
 
@@ -2276,6 +2948,7 @@ ${state.synthesizedArticle.body}`;
     loadSiteCatalog: loadSiteCatalog,
     autoSuggestInternalLinks: autoSuggestInternalLinks,
     addManualInternalLink: addManualInternalLink,
+    addFocusKeyphrases: addFocusKeyphrases,
     loadCustomStrategies: loadCustomStrategies,
     getAllStrategies: getAllStrategies,
     getStrategy: getStrategy,
@@ -2287,6 +2960,10 @@ ${state.synthesizedArticle.body}`;
     runStage2OutlineGeneration: runStage2OutlineGeneration,
     runStage3ChunkedBodyGeneration: runStage3ChunkedBodyGeneration,
     runStage4Synthesis: runStage4Synthesis,
+    startPipelineStage1And2: startPipelineStage1And2,
+    startPipelineStage3And4: startPipelineStage3And4,
+    setOutlineLoading: setOutlineLoading,
+    setInjectLoading: setInjectLoading,
     setNativeValue: setNativeValue,
     injectIntoDecapForm: injectIntoDecapForm,
     handleUploadedImage: handleUploadedImage,

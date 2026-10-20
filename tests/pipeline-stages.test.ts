@@ -331,4 +331,223 @@ describe('Multi-Stage AI Article Pipeline', () => {
       }).rejects.toThrow('Instruksi AI prompt strategi tidak boleh kosong.');
     });
   });
+  describe('Rich Outline Specification, Citations & Language Consistency', () => {
+    it('OUT-01: generates a rich outline with 50-60 char title, meta description, slug, tags, H1, word counts, table, quotes, and 3 CTAs', async () => {
+      studio.state.topic = 'Generative Engine Optimization Guide';
+      studio.state.focusKeyphrases = ['Generative Engine Optimization', 'GEO Audit'];
+      studio.state.includeCitations = true;
+
+      const mockRichOutline = JSON.stringify({
+        title: 'Generative Engine Optimization: The Definitive Blueprint', // 56 chars, includes Primary Keyword
+        metaDescription: 'Master Generative Engine Optimization to capture citations in Perplexity, Claude, and Google AI Overviews with our technical architectural framework.', // 152 chars
+        slug: 'generative-engine-optimization-blueprint', // 41 chars, hyphens only
+        tags: ['GEO', 'Technical SEO', 'AI Search', 'Knowledge Graph'],
+        h1: 'Generative Engine Optimization: The Definitive Architectural Guide',
+        sections: [
+          {
+            heading: 'From 10 Blue Links to Synthesized AI Citations',
+            subheadings: ['How LLMs Retrieve Web Documents', 'The RAG Pipeline Explained'],
+            targetWordCount: 400,
+            focus: 'Theoretical shift to RAG answer engines',
+            tableNote: null,
+            quoteNote: 'Quote from leading information retrieval researcher on probabilistic answer generation',
+            ctaNote: 'CTA #1: Complimentary Architectural GEO Audit',
+            includesImage: false,
+          },
+          {
+            heading: 'Benchmark Matrix: Traditional SEO vs Generative Engine Optimization',
+            subheadings: ['Entity Extraction Fidelity', 'Token Context Window Limits'],
+            targetWordCount: 500,
+            focus: 'Direct technical comparison',
+            tableNote: 'Comparison Table: Traditional SEO vs GEO across 6 architectural dimensions',
+            quoteNote: null,
+            ctaNote: 'CTA #2: Download the Enterprise GEO Implementation Checklist',
+            includesImage: true,
+          },
+          {
+            heading: 'Strategic Execution & Long-Term Competitive Advantage',
+            subheadings: ['Brand Entity Graph Optimization', 'Monitoring AI Search Share of Voice'],
+            targetWordCount: 450,
+            focus: 'Actionable transformation and measurement',
+            tableNote: null,
+            quoteNote: null,
+            ctaNote: 'CTA #3: Schedule Direct Consultation with Ramadhani',
+            includesImage: false,
+          },
+        ],
+        faqSuggestions: [
+          { question: 'What is Generative Engine Optimization?', intent: 'Definition' },
+          { question: 'How does GEO differ from traditional SEO?', intent: 'Comparison' },
+          { question: 'Does Schema Markup impact AI search citation?', intent: 'Technical verification' },
+          { question: 'What tools monitor brand mentions in ChatGPT?', intent: 'Tooling & instrumentation' },
+          { question: 'How long does it take to see citations?', intent: 'Timeline & ROI' },
+        ],
+      });
+
+      global.fetch = vi.fn().mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: mockRichOutline } }],
+        }),
+      }));
+
+      const parsed = await studio.runStage2OutlineGeneration();
+
+      expect(parsed.title).toBe('Generative Engine Optimization: The Definitive Blueprint');
+      expect(parsed.title.length).toBeGreaterThanOrEqual(50);
+      expect(parsed.title.length).toBeLessThanOrEqual(60);
+      expect(parsed.title).toContain('Generative Engine Optimization');
+
+      expect(parsed.metaDescription.length).toBeGreaterThanOrEqual(140);
+      expect(parsed.metaDescription.length).toBeLessThanOrEqual(160);
+
+      expect(parsed.slug.length).toBeLessThanOrEqual(60);
+      expect(parsed.slug).not.toContain(' ');
+      expect(parsed.slug).toContain('generative-engine-optimization');
+
+      expect(parsed.tags).toHaveLength(4);
+      expect(parsed.h1).toBe('Generative Engine Optimization: The Definitive Architectural Guide');
+
+      // Verify sections with word counts, table, quote, and 3 CTAs
+      expect(parsed.sections).toHaveLength(3);
+      expect(parsed.sections[0].targetWordCount).toBe(400);
+      expect(parsed.sections[1].tableNote).toContain('Comparison Table');
+      expect(parsed.sections[0].quoteNote).toContain('Quote');
+
+      // Verify all 3 outcome-driven CTAs are present across the outline
+      const ctas = parsed.sections.map((s: any) => s.ctaNote).filter(Boolean);
+      expect(ctas).toHaveLength(3);
+      expect(ctas[0]).toContain('CTA #1');
+      expect(ctas[1]).toContain('CTA #2');
+      expect(ctas[2]).toContain('CTA #3');
+
+      // Verify state was populated correctly
+      expect(studio.state.proposedTitle).toBe(parsed.title);
+      expect(studio.state.proposedSlug).toBe(parsed.slug);
+      expect(studio.state.proposedDescription).toBe(parsed.metaDescription);
+      expect(studio.state.proposedTags).toEqual(parsed.tags);
+      expect(studio.state.proposedH1).toBe(parsed.h1);
+    });
+
+    it('CIT-01: prompts for inline citations and references section when includeCitations is enabled', async () => {
+      studio.state.includeCitations = true;
+      studio.state.chunkPref = 1;
+      studio.state.language = 'en';
+      studio.state.outline = [
+        {
+          heading: 'Core Architecture',
+          subheadings: ['Entity Relations'],
+          targetWordCount: 500,
+          tableNote: null,
+          quoteNote: null,
+          ctaNote: 'CTA #1: Audit',
+        },
+      ];
+
+      let capturedPrompt = '';
+      global.fetch = vi.fn().mockImplementation(async (_url, options: any) => {
+        const body = JSON.parse(options.body);
+        capturedPrompt = body.messages[1].content;
+        return {
+          ok: true,
+          json: async () => ({
+            choices: [{
+              message: {
+                content: '## Core Architecture\n\nEntities play a vital role [^1].\n\n### References & Authoritative Sources\n\n1. [^1]: Google Search Central, 2025.',
+              },
+            }],
+          }),
+        };
+      });
+
+      const body = await studio.runStage3ChunkedBodyGeneration();
+      expect(capturedPrompt).toContain('CITATION INSTRUCTIONS');
+      expect(capturedPrompt).toContain('### References & Authoritative Sources');
+      expect(body).toContain('### References & Authoritative Sources');
+    });
+
+    it('LNG-01: strictly enforces English system and user prompts without Indonesian words when language is en', async () => {
+      studio.state.language = 'en';
+      studio.state.bodyChunks = [
+        '## Executive Overview\n\nGenerative Engine Optimization is the discipline of optimizing digital content for large language models.',
+      ];
+
+      let capturedSystemPrompt = '';
+      let capturedUserPrompt = '';
+
+      global.fetch = vi.fn().mockImplementation(async (_url, options: any) => {
+        const body = JSON.parse(options.body);
+        capturedSystemPrompt = body.messages[0].content;
+        capturedUserPrompt = body.messages[1].content;
+        return {
+          ok: true,
+          json: async () => ({
+            choices: [{
+              message: {
+                content: JSON.stringify({
+                  title: 'Generative Engine Optimization Blueprint 2026',
+                  slug: 'geo-blueprint-2026',
+                  description: 'The authoritative technical guide on generative engine optimization for technical SEO professionals and architects.',
+                  quickAnswer: 'Generative Engine Optimization (GEO) is the technical methodology of structuring content with semantic entity graphs for LLM retrieval.',
+                  tags: ['GEO', 'Technical SEO'],
+                  faq: [
+                    { question: 'What is GEO?', answer: 'GEO stands for Generative Engine Optimization.' },
+                    { question: 'How to implement GEO?', answer: 'Deploy structured JSON-LD and direct answer blocks.' },
+                    { question: 'Does GEO replace SEO?', answer: 'No, GEO complements traditional organic search.' },
+                    { question: 'How is citation tracked?', answer: 'Use LLM answer monitoring benchmarks.' },
+                  ],
+                }),
+              },
+            }],
+          }),
+        };
+      });
+
+      const res = await studio.runStage4Synthesis();
+
+      expect(capturedSystemPrompt).toContain('strictly in English');
+      expect(capturedUserPrompt).toContain('CRITICAL LANGUAGE REQUIREMENT');
+      expect(capturedUserPrompt).toContain('All outputs must be 100% in English');
+
+      expect(res.quickAnswer).toContain('Generative Engine Optimization');
+      expect(res.faq).toHaveLength(4);
+      expect(res.faq[0].question).toBe('What is GEO?');
+    });
+
+    it('FAQ-02: generates and synthesizes more than 3 FAQs without artificial limitation', async () => {
+      studio.state.language = 'en';
+      studio.state.bodyChunks = ['## Full Content...'];
+
+      const mockFaqList = [
+        { question: 'Question 1?', answer: 'Answer 1.' },
+        { question: 'Question 2?', answer: 'Answer 2.' },
+        { question: 'Question 3?', answer: 'Answer 3.' },
+        { question: 'Question 4?', answer: 'Answer 4.' },
+        { question: 'Question 5?', answer: 'Answer 5.' },
+      ];
+
+      global.fetch = vi.fn().mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                title: 'Guide Title',
+                slug: 'guide-title',
+                description: 'Meta description',
+                quickAnswer: 'Quick answer',
+                tags: ['GEO'],
+                faq: mockFaqList,
+              }),
+            },
+          }],
+        }),
+      }));
+
+      const res = await studio.runStage4Synthesis();
+      expect(res.faq.length).toBe(5);
+      expect(res.faq.length).toBeGreaterThan(3);
+    });
+  });
+
 });

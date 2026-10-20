@@ -758,3 +758,95 @@
   border-color: var(--ai-error);
   color: #FECACA;
 }
+
+/* --------------------------------------------------------------------------
+   8. Rich Outline, Citations & Active Loader Badges
+   -------------------------------------------------------------------------- */
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ai-text-secondary);
+}
+
+.ai-badge-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.ai-badge-warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.ai-badge-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.ai-badge-cta {
+  background: rgba(217, 119, 6, 0.15);
+  color: #FBBF24;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  font-weight: 700;
+}
+
+.ai-badge-table {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93C5FD;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.ai-badge-quote {
+  background: rgba(168, 85, 247, 0.15);
+  color: #D8B4FE;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.ai-badge-wordcount {
+  font-family: var(--ai-font-mono);
+  background: rgba(99, 102, 241, 0.15);
+  color: #A5B4FC;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.ai-citation-toggle-box {
+  transition: all 0.2s ease;
+}
+
+.ai-citation-toggle-box:hover {
+  border-color: var(--ai-primary);
+  background: var(--ai-bg-card-hover);
+}
+
+.ai-outline-subheadings {
+  margin-top: 8px;
+  padding-left: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-outline-subheading-item {
+  font-size: 11px;
+  color: var(--ai-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-outline-feature-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 28px;
+}
