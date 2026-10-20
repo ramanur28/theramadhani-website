@@ -647,6 +647,7 @@ Kembalikan HANYA format JSON valid dengan struktur:
     if (state.provider === 'openai') {
       if (state.openaiModel === 'gpt-6-luna') return 'GPT-6 Luna';
       if (state.openaiModel === 'gpt-5.6-luna') return 'GPT-5.6 Luna';
+      if (state.openaiModel === 'gpt-5.4') return 'GPT-5.4';
       if (state.openaiModel === 'gpt-5.4-mini') return 'GPT-5.4 Mini';
       if (state.openaiModel === 'gpt-4o-mini') return 'GPT-4o Mini';
       if (state.openaiModel === 'gpt-4o') return 'GPT-4o';
@@ -930,16 +931,17 @@ Kembalikan HANYA format JSON valid dengan struktur:
               <select class="ai-select" id="ai-cfg-openai-model">
                 <option value="gpt-6-luna" ${state.openaiModel === 'gpt-6-luna' ? 'selected' : ''}>🌙 GPT-6 Luna (Advanced Reasoning & Deep Pillar)</option>
                 <option value="gpt-5.6-luna" ${state.openaiModel === 'gpt-5.6-luna' ? 'selected' : ''}>🌙 GPT-5.6 Luna (Flagship Reasoning)</option>
+                <option value="gpt-5.4" ${state.openaiModel === 'gpt-5.4' ? 'selected' : ''}>🧠 GPT-5.4 (Next-Gen Flagship)</option>
                 <option value="gpt-5.4-mini" ${state.openaiModel === 'gpt-5.4-mini' ? 'selected' : ''}>⚡ GPT-5.4 Mini (Fast & Intelligent)</option>
-                <option value="gpt-4o-mini" ${state.openaiModel === 'gpt-4o-mini' ? 'selected' : ''}>⚡ GPT-4o Mini (Hemat Token & Kuota Cepat)</option>
                 <option value="gpt-4o" ${state.openaiModel === 'gpt-4o' ? 'selected' : ''}>🌐 GPT-4o (Omni Multimodal Flagship)</option>
-                <option value="custom" ${!['gpt-6-luna', 'gpt-5.6-luna', 'gpt-5.4-mini', 'gpt-4o', 'gpt-4o-mini'].includes(state.openaiModel) ? 'selected' : ''}>🔧 Custom Model ID...</option>
+                <option value="gpt-4o-mini" ${state.openaiModel === 'gpt-4o-mini' ? 'selected' : ''}>⚡ GPT-4o Mini (Hemat Token & Kuota Cepat)</option>
+                <option value="custom" ${!['gpt-6-luna', 'gpt-5.6-luna', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-4o', 'gpt-4o-mini'].includes(state.openaiModel) ? 'selected' : ''}>🔧 Custom Model ID...</option>
               </select>
             </div>
 
-            <div class="ai-form-group" id="ai-cfg-custom-model-wrap" style="display:${!['gpt-6-luna', 'gpt-5.6-luna', 'gpt-5.4-mini', 'gpt-4o', 'gpt-4o-mini'].includes(state.openaiModel) ? 'block' : 'none'}; margin-bottom:0;">
+            <div class="ai-form-group" id="ai-cfg-custom-model-wrap" style="display:${!['gpt-6-luna', 'gpt-5.6-luna', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-4o', 'gpt-4o-mini'].includes(state.openaiModel) ? 'block' : 'none'}; margin-bottom:0;">
               <label class="ai-form-label">Custom Model ID</label>
-              <input type="text" class="ai-input" id="ai-cfg-custom-model-input" placeholder="e.g. gpt-6-luna atau gpt-mini" value="${!['gpt-6-luna', 'gpt-5.6-luna', 'gpt-5.4-mini', 'gpt-4o', 'gpt-4o-mini'].includes(state.openaiModel) ? state.openaiModel : ''}" />
+              <input type="text" class="ai-input" id="ai-cfg-custom-model-input" placeholder="e.g. gpt-5.4 atau custom-model" value="${!['gpt-6-luna', 'gpt-5.6-luna', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-4o', 'gpt-4o-mini'].includes(state.openaiModel) ? state.openaiModel : ''}" />
               <div class="ai-form-hint">Ketik ID model kustom yang ingin dipanggil secara spesifik.</div>
             </div>
           </div>

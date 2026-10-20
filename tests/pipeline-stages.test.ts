@@ -122,7 +122,7 @@ describe('Multi-Stage AI Article Pipeline', () => {
       };
 
       const capturedPrompts: string[] = [];
-      global.fetch = vi.fn().mockImplementation(async (url, opts) => {
+      global.fetch = vi.fn().mockImplementation(async (_url, opts) => {
         const body = JSON.parse(opts.body);
         const userMsg = body.messages[body.messages.length - 1].content;
         capturedPrompts.push(userMsg);

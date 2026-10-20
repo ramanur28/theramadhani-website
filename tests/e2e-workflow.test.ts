@@ -187,7 +187,7 @@ Strategi ini menjamin visibilitas jangka panjang perusahaan Anda di seluruh ekos
     });
 
     let callCount = 0;
-    global.fetch = vi.fn().mockImplementation(async (url, opts) => {
+    global.fetch = vi.fn().mockImplementation(async (_url, _opts) => {
       callCount++;
       // Call 1: Vision Analysis
       if (callCount === 1) {

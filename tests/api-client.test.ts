@@ -18,7 +18,7 @@ describe('AI Client & Model Configurations', () => {
   describe('OpenAI Model Payload Formatting & Temperature Rules', () => {
     it('omits temperature when calling reasoning model gpt-6-luna', async () => {
       let interceptedBody: any = null;
-      global.fetch = vi.fn().mockImplementation(async (url, opts) => {
+      global.fetch = vi.fn().mockImplementation(async (_url, opts) => {
         interceptedBody = JSON.parse(opts.body);
         return {
           ok: true,
@@ -40,7 +40,7 @@ describe('AI Client & Model Configurations', () => {
 
     it('omits temperature when calling gpt-5.6-luna', async () => {
       let interceptedBody: any = null;
-      global.fetch = vi.fn().mockImplementation(async (url, opts) => {
+      global.fetch = vi.fn().mockImplementation(async (_url, opts) => {
         interceptedBody = JSON.parse(opts.body);
         return {
           ok: true,
@@ -57,9 +57,28 @@ describe('AI Client & Model Configurations', () => {
       expect(interceptedBody.temperature).toBeUndefined();
     });
 
+    it('formats gpt-5.4 with model and temperature: 0.6', async () => {
+      let interceptedBody: any = null;
+      global.fetch = vi.fn().mockImplementation(async (_url, opts) => {
+        interceptedBody = JSON.parse(opts.body);
+        return {
+          ok: true,
+          json: async () => ({
+            choices: [{ message: { content: 'Response from GPT-5.4' } }],
+          }),
+        };
+      });
+
+      studio.state.openaiModel = 'gpt-5.4';
+      await studio.callOpenAI({ prompt: 'Test prompt' });
+
+      expect(interceptedBody.model).toBe('gpt-5.4');
+      expect(interceptedBody.temperature).toBe(0.6);
+    });
+
     it('includes temperature: 0.6 when calling gpt-5.4-mini', async () => {
       let interceptedBody: any = null;
-      global.fetch = vi.fn().mockImplementation(async (url, opts) => {
+      global.fetch = vi.fn().mockImplementation(async (_url, opts) => {
         interceptedBody = JSON.parse(opts.body);
         return {
           ok: true,
@@ -78,7 +97,7 @@ describe('AI Client & Model Configurations', () => {
 
     it('includes temperature: 0.6 when calling gpt-4o-mini', async () => {
       let interceptedBody: any = null;
-      global.fetch = vi.fn().mockImplementation(async (url, opts) => {
+      global.fetch = vi.fn().mockImplementation(async (_url, opts) => {
         interceptedBody = JSON.parse(opts.body);
         return {
           ok: true,
@@ -97,7 +116,7 @@ describe('AI Client & Model Configurations', () => {
 
     it('handles image_url for multimodal requests in OpenAI format', async () => {
       let interceptedBody: any = null;
-      global.fetch = vi.fn().mockImplementation(async (url, opts) => {
+      global.fetch = vi.fn().mockImplementation(async (_url, opts) => {
         interceptedBody = JSON.parse(opts.body);
         return {
           ok: true,
@@ -161,13 +180,16 @@ describe('AI Client & Model Configurations', () => {
   });
 
   describe('Model Badge Name Resolution', () => {
-    it('returns human-friendly names for models', () => {
+    it('returns human-friendly names for models including GPT-5.4 and GPT-5.4 Mini', () => {
       studio.state.provider = 'openai';
       studio.state.openaiModel = 'gpt-6-luna';
       expect(studio.getActiveModelName()).toBe('GPT-6 Luna');
 
       studio.state.openaiModel = 'gpt-5.6-luna';
       expect(studio.getActiveModelName()).toBe('GPT-5.6 Luna');
+
+      studio.state.openaiModel = 'gpt-5.4';
+      expect(studio.getActiveModelName()).toBe('GPT-5.4');
 
       studio.state.openaiModel = 'gpt-5.4-mini';
       expect(studio.getActiveModelName()).toBe('GPT-5.4 Mini');
