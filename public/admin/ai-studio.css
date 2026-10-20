@@ -1,0 +1,760 @@
+/* ==========================================================================
+   AI Article Studio - Slide-over Side Drawer Styles
+   Designed for Decap CMS | Ramadhani Personal Brand & Technical Publication
+   ========================================================================== */
+
+:root {
+  --ai-primary: #D97706;
+  --ai-primary-hover: #B45309;
+  --ai-primary-glow: rgba(217, 119, 6, 0.25);
+  --ai-bg-main: #0E1217;
+  --ai-bg-card: #161B22;
+  --ai-bg-card-hover: #1C212B;
+  --ai-bg-input: #0B0E14;
+  --ai-border: #262E3B;
+  --ai-border-focus: #D97706;
+  --ai-text-primary: #F3F4F6;
+  --ai-text-secondary: #9CA3AF;
+  --ai-text-muted: #6B7280;
+  --ai-success: #10B981;
+  --ai-error: #EF4444;
+  --ai-info: #3B82F6;
+  --ai-purple: #8B5CF6;
+  --ai-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+  --ai-font-mono: "JetBrains Mono", monospace;
+}
+
+/* --------------------------------------------------------------------------
+   1. Floating & Topbar Trigger Buttons
+   -------------------------------------------------------------------------- */
+.ai-studio-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  color: #FFFFFF !important;
+  font-family: var(--ai-font);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  z-index: 999;
+}
+
+.ai-studio-trigger-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.5);
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+}
+
+.ai-studio-floating-trigger {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99998;
+  border-radius: 50px;
+  padding: 10px 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 15px var(--ai-primary-glow);
+}
+
+/* --------------------------------------------------------------------------
+   2. Slide-over Side Drawer Container & Backdrop
+   -------------------------------------------------------------------------- */
+.ai-studio-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.ai-studio-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ai-studio-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 620px;
+  max-width: 95vw;
+  background: var(--ai-bg-main);
+  color: var(--ai-text-primary);
+  font-family: var(--ai-font);
+  border-left: 1px solid var(--ai-border);
+  box-shadow: -15px 0 35px rgba(0, 0, 0, 0.6);
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.ai-studio-drawer.is-open {
+  transform: translateX(0);
+}
+
+/* --------------------------------------------------------------------------
+   3. Drawer Header
+   -------------------------------------------------------------------------- */
+.ai-studio-header {
+  padding: 18px 24px;
+  background: #11151D;
+  border-bottom: 1px solid var(--ai-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.ai-studio-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-studio-badge-logo {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #D97706, #78350F);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #FFF;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+}
+
+.ai-studio-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ai-text-primary);
+}
+
+.ai-studio-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ai-text-muted);
+  font-family: var(--ai-font-mono);
+}
+
+.ai-studio-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-studio-icon-btn {
+  background: var(--ai-bg-card);
+  border: 1px solid var(--ai-border);
+  color: var(--ai-text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.ai-studio-icon-btn:hover {
+  background: var(--ai-bg-card-hover);
+  color: var(--ai-text-primary);
+  border-color: #4B5563;
+}
+
+/* --------------------------------------------------------------------------
+   4. Stepper Progress Navigation
+   -------------------------------------------------------------------------- */
+.ai-studio-stepper {
+  display: flex;
+  background: #131720;
+  border-bottom: 1px solid var(--ai-border);
+  padding: 8px 16px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.ai-step-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ai-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.ai-step-item:hover {
+  color: var(--ai-text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ai-step-item.is-active {
+  color: #FFF;
+  background: rgba(217, 119, 6, 0.15);
+  border-color: rgba(217, 119, 6, 0.4);
+}
+
+.ai-step-item.is-completed {
+  color: var(--ai-success);
+}
+
+.ai-step-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  background: var(--ai-border);
+  color: var(--ai-text-secondary);
+}
+
+.ai-step-item.is-active .ai-step-num {
+  background: var(--ai-primary);
+  color: #FFF;
+}
+
+.ai-step-item.is-completed .ai-step-num {
+  background: var(--ai-success);
+  color: #0E1217;
+  font-weight: 800;
+}
+
+/* --------------------------------------------------------------------------
+   5. Drawer Body / Content Scroll Area
+   -------------------------------------------------------------------------- */
+.ai-studio-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ai-studio-body::-webkit-scrollbar {
+  width: 6px;
+}
+.ai-studio-body::-webkit-scrollbar-track {
+  background: var(--ai-bg-main);
+}
+.ai-studio-body::-webkit-scrollbar-thumb {
+  background: var(--ai-border);
+  border-radius: 4px;
+}
+.ai-studio-body::-webkit-scrollbar-thumb:hover {
+  background: var(--ai-primary);
+}
+
+.ai-step-pane {
+  display: none;
+  animation: fadeIn 0.25s ease forwards;
+}
+
+.ai-step-pane.is-active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --------------------------------------------------------------------------
+   6. Form Elements & Cards
+   -------------------------------------------------------------------------- */
+.ai-form-group {
+  margin-bottom: 20px;
+}
+
+.ai-form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ai-text-secondary);
+  margin-bottom: 8px;
+}
+
+.ai-form-hint {
+  font-size: 11px;
+  color: var(--ai-text-muted);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.ai-input,
+.ai-select,
+.ai-textarea {
+  width: 100%;
+  background: var(--ai-bg-input);
+  border: 1px solid var(--ai-border);
+  color: var(--ai-text-primary);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--ai-font);
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-input:focus,
+.ai-select:focus,
+.ai-textarea:focus {
+  border-color: var(--ai-border-focus);
+  box-shadow: 0 0 0 2px var(--ai-primary-glow);
+}
+
+.ai-textarea {
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* Radio Cards (Strategi & Provider) */
+.ai-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ai-card-grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.ai-radio-card {
+  background: var(--ai-bg-card);
+  border: 1px solid var(--ai-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.ai-radio-card:hover {
+  background: var(--ai-bg-card-hover);
+  border-color: #374151;
+}
+
+.ai-radio-card.is-selected {
+  background: rgba(217, 119, 6, 0.08);
+  border-color: var(--ai-primary);
+  box-shadow: 0 0 0 1px var(--ai-primary);
+}
+
+.ai-radio-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ai-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-radio-desc {
+  font-size: 11px;
+  color: var(--ai-text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Chips / Tags Input */
+.ai-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: var(--ai-bg-input);
+  border: 1px solid var(--ai-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-height: 44px;
+  align-items: center;
+}
+
+.ai-chip {
+  background: #1E293B;
+  border: 1px solid #334155;
+  color: #E2E8F0;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-chip-primary {
+  background: rgba(217, 119, 6, 0.2);
+  border-color: rgba(217, 119, 6, 0.5);
+  color: #FBBF24;
+}
+
+.ai-chip-remove {
+  cursor: pointer;
+  color: var(--ai-text-muted);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.ai-chip-remove:hover {
+  color: var(--ai-error);
+}
+
+.ai-chip-input {
+  border: none;
+  background: transparent;
+  color: var(--ai-text-primary);
+  outline: none;
+  font-family: var(--ai-font);
+  font-size: 12px;
+  flex: 1;
+  min-width: 140px;
+}
+
+/* Image Upload Area */
+.ai-upload-dropzone {
+  border: 2px dashed var(--ai-border);
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.01);
+  transition: all 0.2s ease;
+}
+
+.ai-upload-dropzone:hover,
+.ai-upload-dropzone.is-dragover {
+  border-color: var(--ai-primary);
+  background: rgba(217, 119, 6, 0.05);
+}
+
+.ai-upload-icon {
+  font-size: 28px;
+  color: var(--ai-text-muted);
+  margin-bottom: 8px;
+}
+
+.ai-upload-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ai-text-secondary);
+}
+
+.ai-upload-subtext {
+  font-size: 11px;
+  color: var(--ai-text-muted);
+  margin-top: 4px;
+}
+
+.ai-image-preview-card {
+  display: flex;
+  gap: 14px;
+  background: var(--ai-bg-card);
+  border: 1px solid var(--ai-border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.ai-image-preview-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--ai-border);
+  background: #000;
+}
+
+.ai-image-preview-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.ai-image-preview-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-image-preview-meta {
+  font-size: 11px;
+  color: var(--ai-text-muted);
+  font-family: var(--ai-font-mono);
+  margin-top: 3px;
+}
+
+/* Internal Links Manager Table */
+.ai-links-table-wrap {
+  background: var(--ai-bg-input);
+  border: 1px solid var(--ai-border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.ai-link-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  transition: background 0.15s ease;
+}
+
+.ai-link-row:hover {
+  background: var(--ai-bg-card);
+}
+
+.ai-link-anchor {
+  flex: 1;
+  font-weight: 500;
+  color: var(--ai-text-primary);
+}
+
+.ai-link-url {
+  font-family: var(--ai-font-mono);
+  font-size: 11px;
+  color: var(--ai-text-muted);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Outline Interactive Editor */
+.ai-outline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ai-outline-item {
+  background: var(--ai-bg-card);
+  border: 1px solid var(--ai-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-outline-num {
+  font-family: var(--ai-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ai-primary);
+  width: 24px;
+}
+
+.ai-outline-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--ai-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+}
+
+.ai-outline-input:focus {
+  border-bottom: 1px solid var(--ai-primary);
+}
+
+/* Generation Progress Box */
+.ai-progress-card {
+  background: var(--ai-bg-card);
+  border: 1px solid var(--ai-border);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.ai-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(217, 119, 6, 0.2);
+  border-top-color: var(--ai-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-progress-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ai-text-primary);
+}
+
+.ai-progress-desc {
+  font-size: 12px;
+  color: var(--ai-text-muted);
+  margin-top: 6px;
+}
+
+.ai-progress-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: var(--ai-bg-input);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 18px;
+}
+
+.ai-progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #D97706, #10B981);
+  transition: width 0.4s ease;
+}
+
+/* --------------------------------------------------------------------------
+   7. Drawer Footer & Action Buttons
+   -------------------------------------------------------------------------- */
+.ai-studio-footer {
+  padding: 16px 24px;
+  background: #11151D;
+  border-top: 1px solid var(--ai-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-family: var(--ai-font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.ai-btn-secondary {
+  background: var(--ai-bg-card);
+  color: var(--ai-text-secondary);
+  border: 1px solid var(--ai-border);
+}
+
+.ai-btn-secondary:hover {
+  background: var(--ai-bg-card-hover);
+  color: var(--ai-text-primary);
+  border-color: #4B5563;
+}
+
+.ai-btn-primary {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  color: #FFF;
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.35);
+}
+
+.ai-btn-primary:hover {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.5);
+  transform: translateY(-1px);
+}
+
+.ai-btn-success {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #FFF;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
+}
+
+.ai-btn-success:hover {
+  background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
+  transform: translateY(-1px);
+}
+
+.ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Toast Notification in AI Studio */
+.ai-toast {
+  position: absolute;
+  top: 70px;
+  left: 24px;
+  right: 24px;
+  background: #1F2937;
+  border: 1px solid var(--ai-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100001;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  transform: translateY(-10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s ease;
+}
+
+.ai-toast.is-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ai-toast-success {
+  border-color: var(--ai-success);
+  color: #A7F3D0;
+}
+
+.ai-toast-error {
+  border-color: var(--ai-error);
+  color: #FECACA;
+}

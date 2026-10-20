@@ -69,6 +69,67 @@ function decapServerIntegration() {
           });
         });
 
+        // 2b. Live Articles & Work Index endpoint for AI Studio Internal Linking
+        server.middlewares.use(async (req, res, next) => {
+          if (req.url === '/api/articles-index' || req.url === '/api/articles-index.json') {
+            try {
+              const fs = await import('fs');
+              const path = await import('path');
+              const articlesDir = path.resolve(process.cwd(), 'src/content/articles');
+              const workDir = path.resolve(process.cwd(), 'src/content/work');
+              const items = [];
+
+              function parseMDX(filePath, typePrefix) {
+                const text = fs.readFileSync(filePath, 'utf-8');
+                const titleM = text.match(/^title:\s*["']?([^"'\r\n]+)["']?/m);
+                const descM = text.match(/^description:\s*["']?([^"'\r\n]+)["']?/m);
+                const slugM = text.match(/^slug:\s*["']?([^"'\r\n]+)["']?/m);
+                const tagsM = text.match(/^tags:\s*\[(.*?)\]/m);
+                const fileSlug = path.basename(filePath, path.extname(filePath));
+                const slug = slugM ? slugM[1].trim() : fileSlug;
+                let tags = [];
+                if (tagsM) {
+                  tags = tagsM[1].split(',').map((t) => t.trim().replace(/^["']|["']$/g, ''));
+                }
+                return {
+                  type: typePrefix === 'articles' ? 'article' : 'case-study',
+                  title: titleM ? titleM[1].trim() : fileSlug,
+                  slug,
+                  url: `/${typePrefix}/${slug}/`,
+                  description: descM ? descM[1].trim() : '',
+                  tags,
+                };
+              }
+
+              if (fs.existsSync(articlesDir)) {
+                for (const f of fs.readdirSync(articlesDir)) {
+                  if (f.endsWith('.md') || f.endsWith('.mdx')) {
+                    items.push(parseMDX(path.join(articlesDir, f), 'articles'));
+                  }
+                }
+              }
+
+              if (fs.existsSync(workDir)) {
+                for (const f of fs.readdirSync(workDir)) {
+                  if (f.endsWith('.md') || f.endsWith('.mdx')) {
+                    items.push(parseMDX(path.join(workDir, f), 'work'));
+                  }
+                }
+              }
+
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify(items, null, 2));
+              return;
+            } catch (err) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: String(err) }));
+              return;
+            }
+          }
+          next();
+        });
+
         // 3. Check and start Decap CMS proxy server on port 8081 if needed
         const net = await import('net');
         const isPortInUse = await new Promise((resolve) => {
