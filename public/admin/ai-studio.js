@@ -585,63 +585,211 @@ Kembalikan HANYA format JSON valid dengan struktur:
     return true;
   }
 
-  function injectIntoDecapForm() {
+  async function injectIntoDecapForm() {
     const art = state.synthesizedArticle;
     if (!art) {
       showStudioToast('Belum ada artikel yang disintesis untuk diterapkan.', false);
       return false;
     }
 
-    let injectedCount = 0;
-
-    function findFieldInput(fieldName, tag = 'input') {
-      return (
-        document.querySelector(`${tag}[id*="${fieldName}-field"]`) ||
-        document.querySelector(`${tag}[name="${fieldName}"]`) ||
-        document.querySelector(`[data-field-name="${fieldName}"] ${tag}`) ||
-        Array.from(document.querySelectorAll('label')).find((l) =>
-          l.textContent.toLowerCase().includes(fieldName.toLowerCase())
-        )?.parentElement?.querySelector(`${tag}, textarea`)
+    // 1. Ensure Decap CMS editor is currently mounted
+    const hasEditorDOM = () => {
+      return !!(
+        document.querySelector('input[id*="title-field-"]') ||
+        document.querySelector('input[name="title"]') ||
+        document.querySelector('[data-slate-editor="true"]') ||
+        document.querySelector('label[for*="title-field"]')
       );
+    };
+
+    if (!hasEditorDOM()) {
+      showStudioToast('Mengarahkan ke editor artikel Decap CMS...', true);
+      window.location.hash = '#/collections/articles/new';
+
+      let attempts = 0;
+      while (attempts < 20) {
+        await new Promise((r) => setTimeout(r, 200));
+        attempts++;
+        if (hasEditorDOM()) break;
+      }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+
+    let injectedCount = 0;
+    const populatedFields = [];
+
+    // Helper to find field inputs across various Decap CMS DOM variations
+    function findFieldInput(fieldName, widgetType = 'input') {
+      const byId = document.querySelector(
+        `input[id*="${fieldName}-field-"], textarea[id*="${fieldName}-field-"], input[id^="${fieldName}-"], textarea[id^="${fieldName}-"]`
+      );
+      if (byId) return byId;
+
+      const byName = document.querySelector(`input[name="${fieldName}"], textarea[name="${fieldName}"]`);
+      if (byName) return byName;
+
+      const byDataField = document.querySelector(`[data-field-name="${fieldName}"] ${widgetType}`);
+      if (byDataField) return byDataField;
+
+      const labels = Array.from(document.querySelectorAll('label'));
+      const targetVariants = [
+        fieldName.toLowerCase(),
+        fieldName.replace(/([A-Z])/g, ' $1').toLowerCase().trim(),
+        fieldName.replace(/([A-Z])/g, '-$1').toLowerCase(),
+      ];
+
+      for (const label of labels) {
+        const labelFor = (label.getAttribute('for') || '').toLowerCase();
+        if (targetVariants.some((v) => labelFor.includes(v))) {
+          const el = document.getElementById(label.getAttribute('for'));
+          if (el) return el;
+        }
+
+        const labelText = label.textContent.trim().toLowerCase();
+        if (targetVariants.some((v) => labelText.includes(v) || labelText.startsWith(v))) {
+          const pane =
+            label.closest('[class*="ControlPane"], [class*="control"], [class*="Field"]') ||
+            label.parentElement?.parentElement ||
+            label.parentElement;
+          const input = pane?.querySelector('input, textarea, [data-slate-editor="true"]');
+          if (input) return input;
+        }
+      }
+
+      return null;
     }
 
     // 1. Title
     const titleEl = findFieldInput('title', 'input');
-    if (titleEl && setNativeValue(titleEl, art.title)) injectedCount++;
+    if (titleEl && setNativeValue(titleEl, art.title)) {
+      injectedCount++;
+      populatedFields.push('Judul');
+    }
 
     // 2. Slug
     const slugEl = findFieldInput('slug', 'input');
-    if (slugEl && setNativeValue(slugEl, art.slug)) injectedCount++;
+    if (slugEl && setNativeValue(slugEl, art.slug)) {
+      injectedCount++;
+      populatedFields.push('Slug');
+    }
 
     // 3. Description
-    const descEl = findFieldInput('description', 'input') || findFieldInput('description', 'textarea');
-    if (descEl && setNativeValue(descEl, art.description)) injectedCount++;
+    const descEl = findFieldInput('description', 'textarea') || findFieldInput('description', 'input');
+    if (descEl && setNativeValue(descEl, art.description)) {
+      injectedCount++;
+      populatedFields.push('Deskripsi');
+    }
 
     // 4. Quick Answer
     const qaEl = findFieldInput('quickAnswer', 'textarea') || findFieldInput('quickAnswer', 'input');
-    if (qaEl && setNativeValue(qaEl, art.quickAnswer)) injectedCount++;
+    if (qaEl && setNativeValue(qaEl, art.quickAnswer)) {
+      injectedCount++;
+      populatedFields.push('Quick Answer');
+    }
 
     // 5. Cover Image & Alt
     const coverEl = findFieldInput('coverImage', 'input');
-    if (coverEl && setNativeValue(coverEl, art.coverImage)) injectedCount++;
+    if (coverEl && setNativeValue(coverEl, art.coverImage)) {
+      injectedCount++;
+      populatedFields.push('Gambar Sampul');
+    }
 
     const coverAltEl = findFieldInput('coverAlt', 'input');
-    if (coverAltEl && setNativeValue(coverAltEl, art.coverAlt)) injectedCount++;
+    if (coverAltEl && setNativeValue(coverAltEl, art.coverAlt)) {
+      injectedCount++;
+      populatedFields.push('Alt Sampul');
+    }
 
-    // 6. Body Markdown
-    const bodyEl = findFieldInput('body', 'textarea') || document.querySelector('.CodeMirror textarea') || document.querySelector('[class*="editorControl"] textarea');
-    if (bodyEl) {
-      if (setNativeValue(bodyEl, art.body)) injectedCount++;
-    } else {
-      const cm = document.querySelector('.CodeMirror')?.CodeMirror;
-      if (cm) {
-        cm.setValue(art.body);
-        injectedCount++;
+    // 6. Body Markdown (Slate.js, CodeMirror, Textarea)
+    let bodyInjected = false;
+    const slateEditor = document.querySelector('[data-slate-editor="true"]');
+    if (slateEditor) {
+      try {
+        slateEditor.focus();
+        const sel = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(slateEditor);
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        let execSuccess = false;
+        if (typeof document['execCommand'] === 'function') {
+          try {
+            execSuccess = document['execCommand']('insertText', false, art.body);
+          } catch (_) {}
+        }
+
+        if (!execSuccess || !slateEditor.textContent.trim()) {
+          try {
+            const dt = new DataTransfer();
+            dt.setData('text/plain', art.body);
+            const pasteEvt = new ClipboardEvent('paste', {
+              bubbles: true,
+              cancelable: true,
+              clipboardData: dt,
+            });
+            slateEditor.dispatchEvent(pasteEvt);
+          } catch (_) {
+            slateEditor.textContent = art.body;
+          }
+        }
+        slateEditor.dispatchEvent(new Event('input', { bubbles: true }));
+        bodyInjected = true;
+      } catch (err) {
+        console.warn('[AI Studio] Slate injection notice:', err);
       }
     }
 
-    showStudioToast(`✓ Berhasil menerapkan artikel ke ${injectedCount} bidang di Decap Editor!`, true);
-    return true;
+    const bodyTextarea =
+      findFieldInput('body', 'textarea') ||
+      document.querySelector('.cms-editor-raw textarea') ||
+      document.querySelector('.CodeMirror textarea');
+    if (bodyTextarea) {
+      if (setNativeValue(bodyTextarea, art.body)) {
+        bodyInjected = true;
+      }
+    }
+
+    const cm = document.querySelector('.CodeMirror')?.CodeMirror;
+    if (cm && typeof cm.setValue === 'function') {
+      cm.setValue(art.body);
+      bodyInjected = true;
+    }
+
+    if (bodyInjected) {
+      injectedCount++;
+      populatedFields.push('Body Artikel');
+    }
+
+    // 7. Auto-copy fallback to Clipboard
+    try {
+      const fullMdx = `---
+title: "${art.title}"
+description: "${art.description}"
+slug: "${art.slug}"
+publishDate: ${new Date().toISOString().split('T')[0]}
+coverImage: "${art.coverImage || ''}"
+coverAlt: "${art.coverAlt || ''}"
+quickAnswer: "${art.quickAnswer || ''}"
+tags: ${JSON.stringify(art.tags || [])}
+---
+
+${art.body}`;
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(fullMdx);
+      }
+    } catch (_) {}
+
+    if (injectedCount > 0) {
+      showStudioToast(`✓ Berhasil menerapkan ke ${injectedCount} bidang: ${populatedFields.join(', ')}! (Disalin ke clipboard)`, true);
+      setTimeout(() => {
+        closeStudioDrawer();
+      }, 1200);
+      return true;
+    } else {
+      showStudioToast('⚠️ Form Decap Editor belum terbuka. Pastikan Anda berada di halaman "New Article". Konten telah disalin ke clipboard!', false);
+      return false;
+    }
   }
 
   // =========================================================================
@@ -1249,7 +1397,7 @@ ${state.synthesizedArticle.body}`;
         await startPipelineStage3And4();
       } else if (state.currentStep === 5) {
         // One-Click Inject
-        injectIntoDecapForm();
+        await injectIntoDecapForm();
       }
     });
 

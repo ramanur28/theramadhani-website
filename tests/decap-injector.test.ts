@@ -34,7 +34,7 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
           </div>
           <div class="control-pane">
             <label for="body-field-123">Body</label>
-            <textarea id="body-field-123" name="body"></textarea>
+            <div data-slate-editor="true" contenteditable="true" role="textbox"></div>
           </div>
         </form>
       </div>
@@ -58,7 +58,7 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
     expect(changeEventFired).toBe(true);
   });
 
-  it('programmatically injects all synthesized fields into Decap CMS form inputs', () => {
+  it('programmatically injects all synthesized fields into Decap CMS form inputs including Slate body', async () => {
     studio.state.synthesizedArticle = {
       title: 'Generative Engine Optimization Mastery 2026',
       slug: 'generative-engine-optimization-mastery-2026',
@@ -71,7 +71,7 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
       faq: [],
     };
 
-    const injected = studio.injectIntoDecapForm();
+    const injected = await studio.injectIntoDecapForm();
     expect(injected).toBe(true);
 
     const titleEl = document.getElementById('title-field-123') as HTMLInputElement;
@@ -80,7 +80,7 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
     const quickEl = document.getElementById('quickAnswer-field-123') as HTMLTextAreaElement;
     const coverEl = document.getElementById('coverImage-field-123') as HTMLInputElement;
     const coverAltEl = document.getElementById('coverAlt-field-123') as HTMLInputElement;
-    const bodyEl = document.getElementById('body-field-123') as HTMLTextAreaElement;
+    const slateEl = document.querySelector('[data-slate-editor="true"]') as HTMLDivElement;
 
     expect(titleEl.value).toBe('Generative Engine Optimization Mastery 2026');
     expect(slugEl.value).toBe('generative-engine-optimization-mastery-2026');
@@ -88,12 +88,12 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
     expect(quickEl.value).toBe('Generative Engine Optimization (GEO) prioritizes entity graph structuring and concise 40-60 word answer blocks.');
     expect(coverEl.value).toBe('/images/uploads/geo-blueprint.svg');
     expect(coverAltEl.value).toBe('GEO Architecture Diagram');
-    expect(bodyEl.value).toContain('## The Evolution of AI Search');
+    expect(slateEl.textContent).toContain('The Evolution of AI Search');
   });
 
-  it('gracefully handles missing synthesized article without crashing', () => {
+  it('gracefully handles missing synthesized article without crashing', async () => {
     studio.state.synthesizedArticle = null;
-    const result = studio.injectIntoDecapForm();
+    const result = await studio.injectIntoDecapForm();
     expect(result).toBe(false);
 
     const toast = document.getElementById('ai-studio-toast');

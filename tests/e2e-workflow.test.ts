@@ -260,7 +260,7 @@ Strategi ini menjamin visibilitas jangka panjang perusahaan Anda di seluruh ekos
     // -----------------------------------------------------------------------
     // Phase 6: User clicks "Terapkan ke Editor Decap" (DOM Injection)
     // -----------------------------------------------------------------------
-    const injectionSuccess = studio.injectIntoDecapForm();
+    const injectionSuccess = await studio.injectIntoDecapForm();
     expect(injectionSuccess).toBe(true);
 
     // Verify all Decap CMS inputs now hold the synthesized content
