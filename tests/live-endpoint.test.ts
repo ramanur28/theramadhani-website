@@ -70,4 +70,13 @@ describe('Live Dev Server & Catalog Endpoint Validation', () => {
     const resMedia = await fetch(`${BASE_URL}/admin/media`);
     expect(resMedia.status).toBe(200);
   });
+
+  it('serves persistent /api/strategies endpoint with JSON data from disk', async () => {
+    const res = await fetch(`${BASE_URL}/api/strategies`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('application/json');
+
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+  });
 });

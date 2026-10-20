@@ -92,6 +92,232 @@
     },
   };
 
+
+  // =========================================================================
+  // 2.1 Custom Strategy CRUD Engine & Direct Disk Persistence (/api/strategies)
+  // =========================================================================
+  let customStrategiesCache = [];
+
+  async function loadCustomStrategies() {
+    try {
+      const res = await fetch('/api/strategies');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          customStrategiesCache = data;
+          return data;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      const resFallback = await fetch('/admin/strategies.json');
+      if (resFallback.ok) {
+        const dataFallback = await resFallback.json();
+        if (Array.isArray(dataFallback)) {
+          customStrategiesCache = dataFallback;
+          return dataFallback;
+        }
+      }
+    } catch (_) {}
+
+    return customStrategiesCache || [];
+  }
+
+  async function saveCustomStrategies(list) {
+    customStrategiesCache = list || [];
+    try {
+      await fetch('/api/strategies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customStrategiesCache),
+      });
+    } catch (err) {
+      console.warn('[AI Studio] Gagal menyimpan custom strategies ke disk via API:', err);
+    }
+  }
+
+  function getAllStrategies() {
+    const custom = customStrategiesCache || [];
+    const merged = {};
+    Object.keys(STRATEGY_PRESETS).forEach((key) => {
+      merged[key] = { ...STRATEGY_PRESETS[key], isCustom: false, id: key };
+    });
+    custom.forEach((item) => {
+      if (item && item.id) {
+        merged[item.id] = { ...item, isCustom: true };
+      }
+    });
+    return merged;
+  }
+
+  function getStrategy(id) {
+    const all = getAllStrategies();
+    return all[id] || all.geo_ai_search || STRATEGY_PRESETS.geo_ai_search;
+  }
+
+  async function createCustomStrategy({ title, desc, instructions }) {
+    if (!title || !title.trim()) throw new Error('Judul strategi tidak boleh kosong.');
+    if (!instructions || !instructions.trim()) throw new Error('Instruksi AI prompt strategi tidak boleh kosong.');
+
+    const id = 'strat_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    const item = {
+      id,
+      title: title.trim(),
+      desc: (desc || '').trim() || title.trim(),
+      instructions: instructions.trim(),
+      isCustom: true,
+      updatedAt: Date.now(),
+    };
+
+    const current = [...(customStrategiesCache || [])];
+    current.push(item);
+    await saveCustomStrategies(current);
+    renderStrategyCards();
+    return item;
+  }
+
+  async function updateCustomStrategy(id, { title, desc, instructions }) {
+    if (!id) throw new Error('ID strategi tidak valid.');
+    if (STRATEGY_PRESETS[id]) throw new Error('Strategi bawaan sistem tidak dapat diedit.');
+    if (!title || !title.trim()) throw new Error('Judul strategi tidak boleh kosong.');
+    if (!instructions || !instructions.trim()) throw new Error('Instruksi AI prompt strategi tidak boleh kosong.');
+
+    const current = [...(customStrategiesCache || [])];
+    const idx = current.findIndex((s) => s.id === id);
+    if (idx === -1) throw new Error('Strategi kustom tidak ditemukan.');
+
+    current[idx] = {
+      ...current[idx],
+      title: title.trim(),
+      desc: (desc || '').trim() || title.trim(),
+      instructions: instructions.trim(),
+      updatedAt: Date.now(),
+    };
+
+    await saveCustomStrategies(current);
+    renderStrategyCards();
+    return current[idx];
+  }
+
+  async function deleteCustomStrategy(id) {
+    if (!id) throw new Error('ID strategi tidak valid.');
+    if (STRATEGY_PRESETS[id]) throw new Error('Strategi bawaan sistem tidak dapat dihapus.');
+
+    const current = (customStrategiesCache || []).filter((s) => s.id !== id);
+    await saveCustomStrategies(current);
+
+    if (state.strategy === id) {
+      state.strategy = 'geo_ai_search';
+      localStorage.setItem(STORAGE_KEYS.STRATEGY, state.strategy);
+    }
+    renderStrategyCards();
+    return true;
+  }
+
+  function openStrategyForm(editId = null) {
+    const formBox = document.getElementById('ai-strategy-form-box');
+    const formTitle = document.getElementById('ai-strategy-form-title');
+    const idInput = document.getElementById('ai-strat-edit-id');
+    const titleInput = document.getElementById('ai-strat-title-input');
+    const descInput = document.getElementById('ai-strat-desc-input');
+    const instInput = document.getElementById('ai-strat-instructions-input');
+
+    if (!formBox) return;
+
+    if (editId) {
+      const strat = getStrategy(editId);
+      if (formTitle) formTitle.textContent = 'Edit Strategi Kustom';
+      if (idInput) idInput.value = editId;
+      if (titleInput) titleInput.value = strat.title;
+      if (descInput) descInput.value = strat.desc;
+      if (instInput) instInput.value = strat.instructions;
+    } else {
+      if (formTitle) formTitle.textContent = 'Tambah Strategi Kustom Baru';
+      if (idInput) idInput.value = '';
+      if (titleInput) titleInput.value = '';
+      if (descInput) descInput.value = '';
+      if (instInput) instInput.value = '';
+    }
+
+    formBox.style.display = 'block';
+    titleInput?.focus();
+  }
+
+  function closeStrategyForm() {
+    const formBox = document.getElementById('ai-strategy-form-box');
+    if (formBox) formBox.style.display = 'none';
+  }
+
+  function renderStrategyCards() {
+    const container = document.getElementById('ai-strategy-cards');
+    if (!container) return;
+
+    const all = getAllStrategies();
+    container.innerHTML = '';
+
+    Object.keys(all).forEach((key) => {
+      const s = all[key];
+      const isSelected = state.strategy === key;
+      const card = document.createElement('div');
+      card.className = 'ai-radio-card ' + (isSelected ? 'is-selected' : '');
+      card.setAttribute('data-strategy', key);
+
+      let badge = '';
+      if (key === 'geo_ai_search') {
+        badge = '<span style="background:rgba(245,158,11,0.2); color:#F59E0B; font-size:9px; padding:2px 6px; border-radius:4px; margin-left:6px;">Rekomendasi</span>';
+      } else if (s.isCustom) {
+        badge = '<span style="background:rgba(99,102,241,0.2); color:#A5B4FC; font-size:9px; padding:2px 6px; border-radius:4px; margin-left:6px;">Kustom</span>';
+      }
+
+      let actionsHtml = '';
+      if (s.isCustom) {
+        actionsHtml = `
+          <div style="display:flex; gap:4px; margin-left:8px;" class="ai-strat-actions">
+            <button type="button" class="ai-studio-icon-btn" data-edit-strat="${key}" title="Edit Strategi" style="width:22px; height:22px; font-size:10px;">✏️</button>
+            <button type="button" class="ai-studio-icon-btn" data-del-strat="${key}" title="Hapus Strategi" style="width:22px; height:22px; font-size:10px; color:var(--ai-error);">🗑️</button>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div class="ai-radio-title" style="flex:1;">
+            ${s.isCustom ? '🎯 ' : ''}${s.title} ${badge}
+          </div>
+          ${actionsHtml}
+        </div>
+        <div class="ai-radio-desc" style="margin-top:4px;">${s.desc}</div>
+      `;
+
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('[data-edit-strat]') || e.target.closest('[data-del-strat]')) return;
+        document.querySelectorAll('#ai-strategy-cards .ai-radio-card').forEach((c) => c.classList.remove('is-selected'));
+        card.classList.add('is-selected');
+        state.strategy = key;
+        localStorage.setItem(STORAGE_KEYS.STRATEGY, state.strategy);
+      });
+
+      card.querySelector('[data-edit-strat]')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openStrategyForm(key);
+      });
+
+      card.querySelector('[data-del-strat]')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (confirm(`Hapus strategi kustom "${s.title}"?`)) {
+          deleteCustomStrategy(key).then(() => {
+            showStudioToast(`✓ Strategi "${s.title}" telah dihapus dari disk`, true);
+          });
+        }
+      });
+
+      container.appendChild(card);
+    });
+  }
+
   // =========================================================================
   // 3. API Client Engine (Gemini & OpenAI)
   // =========================================================================
@@ -367,7 +593,7 @@ Kembalikan respon HANYA dalam format JSON valid dengan struktur:
   async function runStage2OutlineGeneration() {
     updateProgressUI('Tahap 2: Menyusun Outline Artikel Terstruktur...', 'Merancang hierarki H2 & H3, penempatan Quick Answer, dan FAQ...', 30);
 
-    const strategyConfig = STRATEGY_PRESETS[state.strategy] || STRATEGY_PRESETS.geo_ai_search;
+    const strategyConfig = getAllStrategies()[state.strategy] || STRATEGY_PRESETS.geo_ai_search;
     const keyphrasesList = state.focusKeyphrases.join(', ') || state.topic || 'Technical SEO';
     const internalLinksContext = state.selectedLinks.map((l) => `- [${l.anchor}](${l.url}) : ${l.title}`).join('\n');
     
@@ -478,9 +704,12 @@ Kembalikan HANYA format JSON valid dengan struktur:
       const isFirst = chunk.index === 1;
       const isLast = chunk.index === chunk.total;
 
+      const strategyConfig = getAllStrategies()[state.strategy] || STRATEGY_PRESETS.geo_ai_search;
       const prompt = `Anda adalah penulis teknis kelas dunia untuk theramadhani.com. Tulis bagian artikel berikut dalam bahasa ${state.language === 'id' ? 'Indonesia baku berstandar tinggi' : 'English'}.
 
 Topik Utama: "${state.proposedTitle || state.topic}"
+Strategi Penulisan (${strategyConfig.title}):
+${strategyConfig.instructions}
 Fokus Keyphrases: ${state.focusKeyphrases.join(', ')}
 Internal Link yang relevan untuk disisipkan alami: ${internalLinksList}
 
@@ -778,6 +1007,81 @@ Kembalikan HANYA format JSON valid dengan struktur:
       populatedFields.push('Body Artikel');
     }
 
+    // 7. Frequently Asked Questions (FAQ) List Widget in Decap CMS
+    
+    if (art.faq && Array.isArray(art.faq) && art.faq.length > 0) {
+      try {
+        const labels = Array.from(document.querySelectorAll('label, span, div'));
+        const faqHeader = labels.find((el) => {
+          const t = el.textContent.toLowerCase();
+          return t.includes('frequently asked questions') || t === 'faq';
+        });
+
+        const faqContainer =
+          faqHeader?.closest('[class*="TopBarContainer"], [class*="ControlPane"], [class*="control"], [class*="Field"]') ||
+          faqHeader?.parentElement?.parentElement ||
+          document.querySelector('[data-field-name="faq"]') ||
+          document.querySelector('#faq-field-container') ||
+          document.querySelector('.faq-pane');
+
+        let addFaqBtn = faqContainer?.querySelector(
+          'button[class*="StyledDropdownButton"], button[class*="AddButton"], button[class*="ListControl"]'
+        );
+        if (!addFaqBtn && faqContainer) {
+          const buttons = Array.from(faqContainer.querySelectorAll('button'));
+          addFaqBtn = buttons.find((b) => {
+            const bt = b.textContent.toLowerCase();
+            return bt.includes('add') || bt.includes('tambah') || bt.includes('+');
+          });
+        }
+        if (!addFaqBtn) {
+          const allButtons = Array.from(document.querySelectorAll('button'));
+          addFaqBtn = allButtons.find((b) => {
+            const bt = b.textContent.toLowerCase();
+            return bt.includes('add frequently asked questions') || bt.includes('add faq');
+          });
+        }
+
+        let questionInputs = Array.from(
+          document.querySelectorAll('input[id*="question-field-"], input[name*="question"], [data-field-name="question"] input')
+        );
+
+        if (addFaqBtn) {
+          for (let i = questionInputs.length; i < art.faq.length; i++) {
+            addFaqBtn.click();
+            await new Promise((r) => setTimeout(r, 60));
+          }
+        }
+
+        questionInputs = Array.from(
+          document.querySelectorAll('input[id*="question-field-"], input[name*="question"], [data-field-name="question"] input')
+        );
+        const answerTextareas = Array.from(
+          document.querySelectorAll('textarea[id*="answer-field-"], textarea[name*="answer"], [data-field-name="answer"] textarea, input[id*="answer-field-"]')
+        );
+
+        let populatedFaqCount = 0;
+        art.faq.forEach((faqItem, idx) => {
+          if (questionInputs[idx] && faqItem.question) {
+            setNativeValue(questionInputs[idx], faqItem.question);
+            populatedFaqCount++;
+          }
+          if (answerTextareas[idx] && faqItem.answer) {
+            setNativeValue(answerTextareas[idx], faqItem.answer);
+          }
+        });
+
+        if (populatedFaqCount > 0) {
+          
+          injectedCount++;
+          populatedFields.push(`FAQ (${art.faq.length} item)`);
+        }
+      } catch (faqErr) {
+        console.warn('[AI Studio] FAQ Decap injection notice:', faqErr);
+      }
+    }
+
+
     // 7. Auto-copy fallback to Clipboard
     try {
       const fullMdx = `---
@@ -788,7 +1092,7 @@ publishDate: ${new Date().toISOString().split('T')[0]}
 coverImage: "${art.coverImage || ''}"
 coverAlt: "${art.coverAlt || ''}"
 quickAnswer: "${art.quickAnswer || ''}"
-tags: ${JSON.stringify(art.tags || [])}
+tags: ${JSON.stringify(art.tags || [])}${(art.faq && art.faq.length > 0) ? `\nfaq:\n` + art.faq.map(f => `  - question: "${(f.question || '').replace(/"/g, '\\"')}"\n    answer: "${(f.answer || '').replace(/"/g, '\\"')}"`).join('\n') : ''}
 ---
 
 ${art.body}`;
@@ -900,25 +1204,42 @@ ${art.body}`;
           </div>
 
           <div class="ai-form-group">
-            <label class="ai-form-label">Strategi Penulisan Konten</label>
-            <div class="ai-card-grid-1" id="ai-strategy-cards">
-              <div class="ai-radio-card is-selected" data-strategy="geo_ai_search">
-                <div class="ai-radio-title">🚀 GEO & AI Answer Authority <span>Rekomendasi</span></div>
-                <div class="ai-radio-desc">Optimasi untuk Perplexity, ChatGPT, dan Google AI Overviews dengan 40-60 word quick answer block & entity graphs.</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <label class="ai-form-label" style="margin:0;">Strategi Penulisan Konten</label>
+              <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-add-strategy" style="padding:4px 10px; font-size:11px;">+ Tambah Strategi</button>
+            </div>
+
+            <!-- Inline Strategy Form Modal (Add / Edit) -->
+            <div id="ai-strategy-form-box" class="ai-strategy-form-box" style="display:none; margin-bottom:10px; padding:12px; background:var(--ai-bg-card); border:1px solid var(--ai-border); border-radius:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span id="ai-strategy-form-title" style="font-size:11px; font-weight:700; color:var(--ai-text-primary);">Tambah Strategi Kustom Baru</span>
+                <button type="button" id="ai-btn-close-strat-form" class="ai-studio-icon-btn" style="width:20px; height:20px; font-size:10px;">✕</button>
               </div>
-              <div class="ai-radio-card" data-strategy="technical_deepdive">
-                <div class="ai-radio-title">🛠️ Technical SEO & Engineering Deep-Dive</div>
-                <div class="ai-radio-desc">Arsitektur web, crawlability, Core Web Vitals, dan engineering audit mendalam.</div>
+
+              <input type="hidden" id="ai-strat-edit-id" value="" />
+
+              <div style="margin-bottom:8px;">
+                <label style="font-size:10px; color:var(--ai-text-muted); display:block; margin-bottom:4px;">Nama / Judul Strategi:</label>
+                <input type="text" id="ai-strat-title-input" class="ai-input" placeholder="e.g. B2B Enterprise Conversion Blueprint" style="font-size:11px; padding:6px 8px;" />
               </div>
-              <div class="ai-radio-card" data-strategy="executive_roi">
-                <div class="ai-radio-title">📈 Executive Thought Leadership & ROI</div>
-                <div class="ai-radio-desc">Fokus pada pertumbuhan pipeline organik B2B, efisiensi CAC, dan dampak komersial.</div>
+
+              <div style="margin-bottom:8px;">
+                <label style="font-size:10px; color:var(--ai-text-muted); display:block; margin-bottom:4px;">Deskripsi Singkat:</label>
+                <input type="text" id="ai-strat-desc-input" class="ai-input" placeholder="e.g. Fokus pada customer pain points, ROI, dan perbandingan solusi langsung" style="font-size:11px; padding:6px 8px;" />
               </div>
-              <div class="ai-radio-card" data-strategy="step_by_step_tutorial">
-                <div class="ai-radio-title">📚 Step-by-Step Technical Tutorial</div>
-                <div class="ai-radio-desc">Panduan langkah demi langkah praktis dengan prasyarat, konfigurasi, dan verifikasi.</div>
+
+              <div style="margin-bottom:10px;">
+                <label style="font-size:10px; color:var(--ai-text-muted); display:block; margin-bottom:4px;">Instruksi Prompt AI (Persona & Panduan Penulisan):</label>
+                <textarea id="ai-strat-instructions-input" class="ai-input" rows="3" placeholder="Berikan instruksi spesifik kepada AI tentang gaya bahasa, format paragraf, pembuktian fakta, dan CTA..." style="font-size:11px; padding:6px 8px; font-family:var(--ai-font-sans);"></textarea>
+              </div>
+
+              <div style="display:flex; justify-content:flex-end; gap:6px;">
+                <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-cancel-strat" style="padding:4px 10px; font-size:11px;">Batal</button>
+                <button type="button" class="ai-btn ai-btn-primary" id="ai-btn-save-strat" style="padding:4px 12px; font-size:11px;">Simpan Strategi</button>
               </div>
             </div>
+
+            <div class="ai-card-grid-1" id="ai-strategy-cards"></div>
           </div>
 
           <div class="ai-form-group">
@@ -1202,6 +1523,7 @@ ${art.body}`;
     state.isOpen = true;
     drawerEl.classList.add('is-open');
     backdropEl.classList.add('is-open');
+    loadCustomStrategies().then(() => renderStrategyCards());
     updateActiveModelBadge();
     loadSiteCatalog().then(() => {
       renderInternalLinksTable();
@@ -1288,7 +1610,54 @@ ${art.body}`;
       }
     });
 
-    // Strategy Selection
+
+    // Strategy Add / Edit / Cancel Event Wiring
+    document.getElementById('ai-btn-add-strategy')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openStrategyForm(null);
+    });
+
+    document.getElementById('ai-btn-close-strat-form')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeStrategyForm();
+    });
+
+    document.getElementById('ai-btn-cancel-strat')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeStrategyForm();
+    });
+
+    document.getElementById('ai-btn-save-strat')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const editId = document.getElementById('ai-strat-edit-id')?.value.trim();
+      const title = document.getElementById('ai-strat-title-input')?.value.trim();
+      const desc = document.getElementById('ai-strat-desc-input')?.value.trim();
+      const instructions = document.getElementById('ai-strat-instructions-input')?.value.trim();
+
+      try {
+        if (editId) {
+          await updateCustomStrategy(editId, { title, desc, instructions });
+          showStudioToast(`✓ Strategi "${title}" berhasil diperbarui di disk!`, true);
+        } else {
+          const created = await createCustomStrategy({ title, desc, instructions });
+          state.strategy = created.id;
+          localStorage.setItem(STORAGE_KEYS.STRATEGY, state.strategy);
+          renderStrategyCards();
+          showStudioToast(`✓ Strategi baru "${title}" berhasil disimpan ke disk & dipilih!`, true);
+        }
+        closeStrategyForm();
+      } catch (err) {
+        showStudioToast(`✕ ${err.message}`, false);
+      }
+    });
+
+    renderStrategyCards();
+
+    // Strategy Selection Fallback
     document.querySelectorAll('#ai-strategy-cards .ai-radio-card').forEach((card) => {
       card.addEventListener('click', () => {
         document.querySelectorAll('#ai-strategy-cards .ai-radio-card').forEach((c) => c.classList.remove('is-selected'));
@@ -1907,6 +2276,13 @@ ${state.synthesizedArticle.body}`;
     loadSiteCatalog: loadSiteCatalog,
     autoSuggestInternalLinks: autoSuggestInternalLinks,
     addManualInternalLink: addManualInternalLink,
+    loadCustomStrategies: loadCustomStrategies,
+    getAllStrategies: getAllStrategies,
+    getStrategy: getStrategy,
+    createCustomStrategy: createCustomStrategy,
+    updateCustomStrategy: updateCustomStrategy,
+    deleteCustomStrategy: deleteCustomStrategy,
+    renderStrategyCards: renderStrategyCards,
     runStage1ImageAnalysis: runStage1ImageAnalysis,
     runStage2OutlineGeneration: runStage2OutlineGeneration,
     runStage3ChunkedBodyGeneration: runStage3ChunkedBodyGeneration,

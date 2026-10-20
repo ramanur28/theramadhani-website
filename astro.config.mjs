@@ -73,6 +73,95 @@ function decapServerIntegration() {
           });
         });
 
+        // 2c. Persistent Custom Strategies API (Direct Disk Storage in public/admin/strategies.json)
+        server.middlewares.use(async (req, res, next) => {
+          const urlPath = (req.url || '').split('?')[0];
+          if (urlPath === '/api/strategies' || urlPath === '/api/strategies.json') {
+            const fs = await import('fs');
+            const path = await import('path');
+            const stratFilePath = path.resolve(process.cwd(), 'public/admin/strategies.json');
+
+            function readDiskStrategies() {
+              if (!fs.existsSync(stratFilePath)) {
+                fs.writeFileSync(stratFilePath, '[]\n', 'utf8');
+                return [];
+              }
+              try {
+                const raw = fs.readFileSync(stratFilePath, 'utf8');
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch (_) {
+                return [];
+              }
+            }
+
+            function writeDiskStrategies(data) {
+              const dir = path.dirname(stratFilePath);
+              if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+              fs.writeFileSync(stratFilePath, JSON.stringify(data, null, 2) + '\n', 'utf8');
+            }
+
+            if (req.method === 'GET') {
+              const data = readDiskStrategies();
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify(data));
+              return;
+            }
+
+            if (req.method === 'POST') {
+              let body = '';
+              req.on('data', (chunk) => { body += chunk; });
+              req.on('end', () => {
+                try {
+                  const payload = JSON.parse(body);
+                  let current = readDiskStrategies();
+                  if (Array.isArray(payload)) {
+                    current = payload;
+                  } else if (payload.action === 'delete') {
+                    current = current.filter((s) => s.id !== payload.id);
+                  } else {
+                    const idx = current.findIndex((s) => s.id === payload.id);
+                    if (idx >= 0) {
+                      current[idx] = { ...current[idx], ...payload, updatedAt: Date.now() };
+                    } else {
+                      current.push({ ...payload, updatedAt: Date.now() });
+                    }
+                  }
+                  writeDiskStrategies(current);
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ success: true, strategies: current }));
+                } catch (err) {
+                  res.statusCode = 400;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: String(err) }));
+                }
+              });
+              return;
+            }
+
+            if (req.method === 'DELETE') {
+              let body = '';
+              req.on('data', (chunk) => { body += chunk; });
+              req.on('end', () => {
+                try {
+                  const { id } = JSON.parse(body);
+                  let current = readDiskStrategies();
+                  current = current.filter((s) => s.id !== id);
+                  writeDiskStrategies(current);
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ success: true, strategies: current }));
+                } catch (err) {
+                  res.statusCode = 400;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: String(err) }));
+                }
+              });
+              return;
+            }
+          }
+          next();
+        });
+
         // 2b. Live Articles & Work Index endpoint for AI Studio Internal Linking
         server.middlewares.use(async (req, res, next) => {
           if (req.url === '/api/articles-index' || req.url === '/api/articles-index.json') {

@@ -99,4 +99,61 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
     const toast = document.getElementById('ai-studio-toast');
     expect(toast?.textContent).toContain('Belum ada artikel yang disintesis');
   });
+  it('detects FAQ list widget in Decap CMS, clicks add button, and populates questions and answers', async () => {
+    const form = document.querySelector('.decap-editor-form');
+    const faqPane = document.createElement('div');
+    faqPane.className = 'control-pane faq-pane';
+    faqPane.innerHTML = `
+      <span class="TopBarLabel">Frequently Asked Questions (Expandable Q&A)</span>
+      <button type="button" class="StyledDropdownButton" id="add-faq-btn">Add frequently asked questions (expandable q&a)</button>
+      <div id="faq-items-wrap"></div>
+    `;
+    form?.appendChild(faqPane);
+
+    let faqIndex = 0;
+    const addBtn = faqPane.querySelector('#add-faq-btn');
+    addBtn?.addEventListener('click', () => {
+      faqIndex++;
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'faq-item';
+      itemDiv.innerHTML = `
+        <label for="question-field-${faqIndex}">Question</label>
+        <input id="question-field-${faqIndex}" name="question" value="" />
+        <label for="answer-field-${faqIndex}">Answer</label>
+        <textarea id="answer-field-${faqIndex}" name="answer"></textarea>
+      `;
+      faqPane.querySelector('#faq-items-wrap')?.appendChild(itemDiv);
+    });
+
+    studio.state.synthesizedArticle = {
+      title: 'GEO with FAQ Guide',
+      slug: 'geo-faq-guide',
+      description: 'Test description',
+      quickAnswer: 'Quick answer',
+      coverImage: '/img.png',
+      coverAlt: 'Alt',
+      body: 'Body text',
+      tags: ['GEO'],
+      faq: [
+        { question: 'Apa itu GEO?', answer: 'GEO adalah Generative Engine Optimization.' },
+        { question: 'Mengapa FAQ penting?', answer: 'FAQ mempermudah ekstraksi AI Answer Engines.' },
+      ],
+    };
+
+    const injected = await studio.injectIntoDecapForm();
+    expect(injected).toBe(true);
+
+    const qInputs = document.querySelectorAll<HTMLInputElement>('input[id*="question-field-"]');
+    const aTextareas = document.querySelectorAll<HTMLTextAreaElement>('textarea[id*="answer-field-"]');
+
+    expect(qInputs.length).toBe(2);
+    expect(aTextareas.length).toBe(2);
+    expect(qInputs[0].value).toBe('Apa itu GEO?');
+    expect(aTextareas[0].value).toBe('GEO adalah Generative Engine Optimization.');
+    expect(qInputs[1].value).toBe('Mengapa FAQ penting?');
+    expect(aTextareas[1].value).toBe('FAQ mempermudah ekstraksi AI Answer Engines.');
+
+    const toast = document.getElementById('ai-studio-toast');
+    expect(toast?.textContent).toContain('FAQ (2 item)');
+  });
 });

@@ -221,4 +221,114 @@ describe('Multi-Stage AI Article Pipeline', () => {
       expect(studio.state.synthesizedArticle).toEqual(result);
     });
   });
+  describe('Strategy Management & Custom Strategy CRUD', () => {
+    it('retrieves all default strategy presets', () => {
+      const all = studio.getAllStrategies();
+      expect(all).toHaveProperty('geo_ai_search');
+      expect(all).toHaveProperty('technical_deepdive');
+      expect(all).toHaveProperty('executive_roi');
+      expect(all).toHaveProperty('step_by_step_tutorial');
+      expect(all.geo_ai_search.isCustom).toBe(false);
+    });
+
+    it('creates and persists a new custom strategy without localStorage reliance', async () => {
+      const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({ success: true }),
+      } as any));
+
+      const custom = await studio.createCustomStrategy({
+        title: 'B2B High-Converting SaaS Copywriting',
+        desc: 'Fokus pada CTA, ROI, dan perbandingan solusi langsung.',
+        instructions: 'Adopt a senior SaaS copywriter persona with strong direct-response principles.',
+      });
+
+      expect(custom).toHaveProperty('id');
+      expect(custom.id).toMatch(/^strat_/);
+      expect(custom.title).toBe('B2B High-Converting SaaS Copywriting');
+      expect(custom.isCustom).toBe(true);
+
+      // Verify fetch was dispatched to /api/strategies
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/strategies',
+        expect.objectContaining({ method: 'POST' })
+      );
+
+      // Verify localStorage was NOT used for storing strategies
+      expect(localStorage.getItem('__decap_ai_custom_strategies')).toBeNull();
+
+      const all = studio.getAllStrategies();
+      expect(all[custom.id]).toBeDefined();
+      expect(all[custom.id].instructions).toContain('senior SaaS copywriter');
+    });
+
+    it('updates an existing custom strategy on disk', async () => {
+      vi.spyOn(global, 'fetch').mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({ success: true }),
+      } as any));
+
+      const custom = await studio.createCustomStrategy({
+        title: 'Initial Title',
+        desc: 'Initial Desc',
+        instructions: 'Initial Instructions',
+      });
+
+      const updated = await studio.updateCustomStrategy(custom.id, {
+        title: 'Updated Strategic Title',
+        desc: 'Updated Desc',
+        instructions: 'Updated Instructions for AI',
+      });
+
+      expect(updated.title).toBe('Updated Strategic Title');
+      expect(updated.instructions).toBe('Updated Instructions for AI');
+
+      const retrieved = studio.getStrategy(custom.id);
+      expect(retrieved.title).toBe('Updated Strategic Title');
+    });
+
+    it('prevents editing or deleting built-in default presets', async () => {
+      await expect(async () => {
+        await studio.updateCustomStrategy('geo_ai_search', {
+          title: 'Hacked Title',
+          instructions: 'Hacked',
+        });
+      }).rejects.toThrow('Strategi bawaan sistem tidak dapat diedit.');
+
+      await expect(async () => {
+        await studio.deleteCustomStrategy('geo_ai_search');
+      }).rejects.toThrow('Strategi bawaan sistem tidak dapat dihapus.');
+    });
+
+    it('deletes custom strategy and resets to default if selected', async () => {
+      vi.spyOn(global, 'fetch').mockImplementation(async () => ({
+        ok: true,
+        json: async () => ({ success: true }),
+      } as any));
+
+      const custom = await studio.createCustomStrategy({
+        title: 'Temporary Strategy',
+        desc: 'Temp',
+        instructions: 'Temp instructions',
+      });
+
+      studio.state.strategy = custom.id;
+      const deleted = await studio.deleteCustomStrategy(custom.id);
+      expect(deleted).toBe(true);
+
+      const all = studio.getAllStrategies();
+      expect(all[custom.id]).toBeUndefined();
+      expect(studio.state.strategy).toBe('geo_ai_search');
+    });
+
+    it('validates required fields when creating or updating custom strategy', async () => {
+      await expect(async () => {
+        await studio.createCustomStrategy({ title: '', instructions: 'some instructions' });
+      }).rejects.toThrow('Judul strategi tidak boleh kosong.');
+
+      await expect(async () => {
+        await studio.createCustomStrategy({ title: 'My Strategy', instructions: '' });
+      }).rejects.toThrow('Instruksi AI prompt strategi tidak boleh kosong.');
+    });
+  });
 });
