@@ -34,7 +34,14 @@
     provider: localStorage.getItem(STORAGE_KEYS.PROVIDER) || 'gemini',
     geminiKey: localStorage.getItem(STORAGE_KEYS.GEMINI_KEY) || '',
     openaiKey: localStorage.getItem(STORAGE_KEYS.OPENAI_KEY) || '',
-    geminiModel: localStorage.getItem(STORAGE_KEYS.GEMINI_MODEL) || 'gemini-2.5-flash',
+    geminiModel: (() => {
+      const saved = localStorage.getItem(STORAGE_KEYS.GEMINI_MODEL);
+      if (!saved || saved === 'gemini-2.5-flash') {
+        localStorage.setItem(STORAGE_KEYS.GEMINI_MODEL, 'gemini-3.8-flash');
+        return 'gemini-3.8-flash';
+      }
+      return saved;
+    })(),
     openaiModel: localStorage.getItem(STORAGE_KEYS.OPENAI_MODEL) || 'gpt-6-luna',
     strategy: localStorage.getItem(STORAGE_KEYS.STRATEGY) || 'geo_ai_search',
     chunkPref: parseInt(localStorage.getItem(STORAGE_KEYS.CHUNKS) || '3', 10),
@@ -99,7 +106,7 @@
   async function callGemini({ prompt, systemPrompt, imageBase64, mimeType, jsonMode }) {
     if (!state.geminiKey) throw new Error('Google Gemini API Key belum diisi. Masukkan kunci di tab Pengaturan.');
     
-    const model = state.geminiModel || 'gemini-2.5-flash';
+    const model = state.geminiModel || 'gemini-3.8-flash';
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(state.geminiKey)}`;
 
     const parts = [];
@@ -653,7 +660,10 @@ Kembalikan HANYA format JSON valid dengan struktur:
       if (state.openaiModel === 'gpt-4o') return 'GPT-4o';
       return state.openaiModel;
     }
-    return state.geminiModel;
+    if (state.geminiModel === 'gemini-3.8-flash') return 'Gemini 3.8 Flash';
+    if (state.geminiModel === 'gemini-3.8-pro') return 'Gemini 3.8 Pro';
+    if (state.geminiModel === 'gemini-2.5-pro') return 'Gemini 2.5 Pro';
+    return state.geminiModel || 'Gemini 3.8 Flash';
   }
 
   function updateActiveModelBadge() {
@@ -908,8 +918,9 @@ Kembalikan HANYA format JSON valid dengan struktur:
             <div class="ai-form-group" style="margin-bottom:0;">
               <label class="ai-form-label">Gemini Model</label>
               <select class="ai-select" id="ai-cfg-gemini-model">
-                <option value="gemini-2.5-flash" ${state.geminiModel === 'gemini-2.5-flash' ? 'selected' : ''}>Gemini 2.5 Flash (Cepat, Efisien, Multimodal)</option>
-                <option value="gemini-2.5-pro" ${state.geminiModel === 'gemini-2.5-pro' ? 'selected' : ''}>Gemini 2.5 Pro (Penalaran Maksimal & Analitis)</option>
+                <option value="gemini-3.8-flash" ${state.geminiModel === 'gemini-3.8-flash' ? 'selected' : ''}>⚡ Gemini 3.8 Flash (Direkomendasikan - Cepat, Efisien, Multimodal)</option>
+                <option value="gemini-3.8-pro" ${state.geminiModel === 'gemini-3.8-pro' ? 'selected' : ''}>🧠 Gemini 3.8 Pro (Penalaran Maksimal & Analitis)</option>
+                <option value="gemini-2.5-pro" ${state.geminiModel === 'gemini-2.5-pro' ? 'selected' : ''}>Gemini 2.5 Pro</option>
                 <option value="gemini-1.5-flash" ${state.geminiModel === 'gemini-1.5-flash' ? 'selected' : ''}>Gemini 1.5 Flash</option>
                 <option value="gemini-1.5-pro" ${state.geminiModel === 'gemini-1.5-pro' ? 'selected' : ''}>Gemini 1.5 Pro</option>
               </select>
@@ -1142,7 +1153,7 @@ Kembalikan HANYA format JSON valid dengan struktur:
     document.getElementById('ai-btn-save-config')?.addEventListener('click', () => {
       state.geminiKey = document.getElementById('ai-cfg-gemini-key')?.value.trim() || '';
       state.openaiKey = document.getElementById('ai-cfg-openai-key')?.value.trim() || '';
-      state.geminiModel = document.getElementById('ai-cfg-gemini-model')?.value || 'gemini-2.5-flash';
+      state.geminiModel = document.getElementById('ai-cfg-gemini-model')?.value || 'gemini-3.8-flash';
       
       const selectedOpenAI = document.getElementById('ai-cfg-openai-model')?.value || 'gpt-6-luna';
       if (selectedOpenAI === 'custom') {
@@ -1171,6 +1182,7 @@ Kembalikan HANYA format JSON valid dengan struktur:
       try {
         state.geminiKey = document.getElementById('ai-cfg-gemini-key')?.value.trim() || '';
         state.openaiKey = document.getElementById('ai-cfg-openai-key')?.value.trim() || '';
+        state.geminiModel = document.getElementById('ai-cfg-gemini-model')?.value || state.geminiModel;
         const testRes = await callAI({ prompt: 'Ping! Balas hanya dengan kata: OK' });
         showStudioToast(`✓ Koneksi Berhasil (${state.provider.toUpperCase()} - ${getActiveModelName()}): ${testRes.trim()}`, true);
       } catch (err) {

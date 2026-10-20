@@ -53,4 +53,21 @@ describe('Live Dev Server & Catalog Endpoint Validation', () => {
     expect(css).toContain('.ai-studio-drawer');
     expect(css).toContain('.ai-studio-trigger-btn');
   });
+
+  it('serves clean admin URL /admin/collections/work without 404 and includes router bridge', async () => {
+    const res = await fetch(`${BASE_URL}/admin/collections/work`);
+    expect(res.status).toBe(200);
+
+    const html = await res.text();
+    expect(html).toContain('Clean URL to Hash Router Bridge');
+    expect(html).toContain('/admin/#');
+  });
+
+  it('serves clean admin URL /admin/collections/articles and /admin/media without 404', async () => {
+    const resArticles = await fetch(`${BASE_URL}/admin/collections/articles`);
+    expect(resArticles.status).toBe(200);
+
+    const resMedia = await fetch(`${BASE_URL}/admin/media`);
+    expect(resMedia.status).toBe(200);
+  });
 });

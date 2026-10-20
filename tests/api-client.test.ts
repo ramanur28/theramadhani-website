@@ -12,7 +12,7 @@ describe('AI Client & Model Configurations', () => {
     studio.state.openaiKey = 'test-openai-key';
     studio.state.geminiKey = 'test-gemini-key';
     studio.state.openaiModel = 'gpt-6-luna';
-    studio.state.geminiModel = 'gemini-2.5-flash';
+    studio.state.geminiModel = 'gemini-3.8-flash';
   });
 
   describe('OpenAI Model Payload Formatting & Temperature Rules', () => {
@@ -144,7 +144,7 @@ describe('AI Client & Model Configurations', () => {
   });
 
   describe('Google Gemini API Client', () => {
-    it('formats Gemini 2.5 payload with inline_data for images', async () => {
+    it('formats Gemini 3.8 Flash payload with inline_data for images', async () => {
       let interceptedBody: any = null;
       let interceptedUrl: any = null;
 
@@ -160,7 +160,7 @@ describe('AI Client & Model Configurations', () => {
       });
 
       studio.state.provider = 'gemini';
-      studio.state.geminiModel = 'gemini-2.5-flash';
+      studio.state.geminiModel = 'gemini-3.8-flash';
       const result = await studio.callGemini({
         prompt: 'Test Gemini Prompt',
         imageBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB',
@@ -168,7 +168,7 @@ describe('AI Client & Model Configurations', () => {
       });
 
       expect(result).toBe('Gemini response text');
-      expect(interceptedUrl).toContain('gemini-2.5-flash');
+      expect(interceptedUrl).toContain('gemini-3.8-flash');
       expect(interceptedBody.contents[0].parts[1].inline_data.data).toBe('iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB');
       expect(interceptedBody.contents[0].parts[1].inline_data.mime_type).toBe('image/jpeg');
     });
@@ -180,7 +180,7 @@ describe('AI Client & Model Configurations', () => {
   });
 
   describe('Model Badge Name Resolution', () => {
-    it('returns human-friendly names for models including GPT-5.4 and GPT-5.4 Mini', () => {
+    it('returns human-friendly names for models including GPT-5.4, GPT-5.4 Mini, and Gemini 3.8 Flash', () => {
       studio.state.provider = 'openai';
       studio.state.openaiModel = 'gpt-6-luna';
       expect(studio.getActiveModelName()).toBe('GPT-6 Luna');
@@ -204,8 +204,11 @@ describe('AI Client & Model Configurations', () => {
       expect(studio.getActiveModelName()).toBe('custom-llm-v1');
 
       studio.state.provider = 'gemini';
-      studio.state.geminiModel = 'gemini-2.5-flash';
-      expect(studio.getActiveModelName()).toBe('gemini-2.5-flash');
+      studio.state.geminiModel = 'gemini-3.8-flash';
+      expect(studio.getActiveModelName()).toBe('Gemini 3.8 Flash');
+
+      studio.state.geminiModel = 'gemini-3.8-pro';
+      expect(studio.getActiveModelName()).toBe('Gemini 3.8 Pro');
     });
   });
 });

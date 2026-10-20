@@ -14,6 +14,10 @@ function decapServerIntegration() {
         // 1. Rewrite any relative /admin/images/uploads/* to /images/uploads/*
         // This eliminates 404 errors when preview or editor renders relative image paths
         server.middlewares.use((req, _res, next) => {
+          // Rewrite clean /admin/collections/* and /admin/media to /admin/
+          if (req.url && (req.url.startsWith('/admin/collections') || req.url.startsWith('/admin/media'))) {
+            req.url = '/admin/';
+          }
           if (req.url && req.url.startsWith('/admin/images/uploads/')) {
             req.url = req.url.replace('/admin/images/uploads/', '/images/uploads/');
           }

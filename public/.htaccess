@@ -50,6 +50,11 @@ Options -MultiViews -Indexes +FollowSymLinks
     # Fallback for relative image paths under /admin/
     RewriteRule ^admin/images/uploads/(.*)$ /images/uploads/$1 [L,R=301]
 
+    # Decap CMS Admin SPA Clean URL Support (e.g. /admin/collections/work -> /admin/index.html)
+    RewriteCond %{REQUEST_URI} ^/admin/(collections|media) [NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^admin/.*$ /admin/index.html [L]
+
     # Direct OAuth Handlers for Decap CMS
     RewriteRule ^auth/?$ /auth/index.php [L,QSA]
     RewriteRule ^callback/?$ /callback/index.php [L,QSA]

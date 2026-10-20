@@ -9,6 +9,17 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Content Manager | Ramadhani</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <!-- Clean URL to Hash Router Bridge -->
+    <script is:inline>
+      (function() {
+        var path = window.location.pathname;
+        if (path.indexOf('/admin/collections') === 0 || path.indexOf('/admin/media') === 0) {
+          var subRoute = path.replace(/^\/admin/, '');
+          var targetUrl = '/admin/#' + subRoute + window.location.search;
+          window.location.replace(targetUrl);
+        }
+      })();
+    </script>
     <!-- Explicit CMS Config Link -->
     <link href="/admin/config.yml" type="text/yaml" rel="cms-config-url" />
     <!-- AI Article Studio Stylesheet -->
