@@ -429,4 +429,48 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
     expect(document.getElementById('ai-outline-overview-card')?.style.display).toBe('block');
   });
 
+  it('INJ-12: discovers Decap CMS React Fiber on body widget and invokes onChange without destructive DOM mutation', async () => {
+    const form = document.querySelector('.decap-editor-form');
+    const visualPane = document.createElement('div');
+    visualPane.className = 'control-pane cms-editor-visual';
+    
+    let fiberOnChangeValue = '';
+    const fiberKey = '__reactFiber$test_body';
+    (visualPane as any)[fiberKey] = {
+      memoizedProps: {
+        field: { get: (k: string) => (k === 'name' ? 'body' : null) },
+        value: '',
+        onChange: (val: string) => { fiberOnChangeValue = val; },
+      },
+      return: null,
+    };
+
+    const slateDiv = document.createElement('div');
+    slateDiv.setAttribute('data-slate-editor', 'true');
+    visualPane.appendChild(slateDiv);
+    form?.appendChild(visualPane);
+
+    studio.state.synthesizedArticle = {
+      title: 'Fiber Article Test',
+      slug: 'fiber-article-test',
+      description: 'Testing fiber onChange dispatch',
+      quickAnswer: 'Quick answer fiber',
+      coverImage: '/img.png',
+      coverAlt: 'Alt',
+      body: '# Real Markdown Body\n\nInjected via Redux fiber onChange.',
+      tags: ['GEO'],
+      faq: [],
+    };
+
+    const injected = await studio.injectIntoDecapForm();
+    expect(injected).toBe(true);
+
+    // Verify React Fiber onChange was invoked with synthesized body
+    expect(fiberOnChangeValue).toContain('# Real Markdown Body');
+    // Verify slate textContent was NOT destructively overwritten
+    expect(slateDiv.textContent).toBe('');
+
+    visualPane.remove();
+  });
+
 });

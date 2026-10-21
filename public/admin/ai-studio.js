@@ -705,7 +705,10 @@ Return ONLY a valid JSON object with the following structure:
     { "question": "Question 5?", "intent": "Cost & resource allocation" }
   ]
 }`
-      : `Buat outline artikel komprehensif, mendalam (target 2.500+ kata), dan teroptimasi untuk Generative Engine Optimization (GEO) dan Google AI Overviews dalam Bahasa Indonesia formal profesional baku.
+      : `Buat outline artikel komprehensif, mendalam (target 2.500+ kata), dan teroptimasi untuk Generative Engine Optimization (GEO) dan Google AI Overviews.
+
+TARGET BAHASA: ${isEn ? 'English' : 'Bahasa Indonesia'}
+INSTRUKSI BAHASA: Tulis 100% dalam ${isEn ? 'English' : 'Bahasa Indonesia'}. Seluruh output JSON, judul, heading, dan FAQ harus konsisten dalam ${isEn ? 'English' : 'Bahasa Indonesia'}.
 
 Topik Utama: "${state.topic || primaryKeyword}"
 Primary Keyword (WAJIB ada di Judul & Slug): "${primaryKeyword}"
@@ -888,7 +891,10 @@ TECHNICAL RULES:
 - If a section contains a ctaNote, format a high-converting outcome-driven call-to-action block.
 - Write dense, high-impact technical markdown with specific metrics, architecture, and examples.
 - Output pure Markdown only.`
-        : `Anda adalah penulis teknis kelas dunia untuk theramadhani.com. Tulis bagian artikel berikut dalam Bahasa Indonesia formal profesional baku.
+        : `Anda adalah penulis teknis kelas dunia untuk theramadhani.com. Tulis bagian artikel berikut dengan gaya profesional, otoritatif, dan mendalam.
+
+TARGET BAHASA: ${isEn ? 'English' : 'Bahasa Indonesia'}
+INSTRUKSI BAHASA: Tulis 100% dalam ${isEn ? 'English' : 'Bahasa Indonesia'}. Seluruh konten, heading, tabel, kutipan, dan CTA harus konsisten dalam ${isEn ? 'English' : 'Bahasa Indonesia'}.
 
 Topik Utama: "${state.proposedTitle || state.topic}"
 Strategi Penulisan (${strategyConfig.title}):
@@ -1296,49 +1302,136 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
     }
 
     let bodyInjected = false;
-    const modeSwitch = document.querySelector('button[role="switch"], [class*="ToolbarToggle"]');
-    const isSlateActive = !!document.querySelector('[data-slate-editor="true"]');
 
-    // If Slate is active and Decap has the Markdown/RichText switch, toggle to Raw Markdown mode
-    if (isSlateActive && modeSwitch) {
-      try {
-        modeSwitch.click();
-        await new Promise((r) => setTimeout(r, 100));
-      } catch (_) {}
-    }
+    // Helper to find Decap CMS MarkdownControl React Fiber onChange handler
+    function findBodyFiberOnChange() {
+      const candidates = [
+        document.querySelector('[data-slate-editor="true"]'),
+        document.querySelector('.cms-editor-visual'),
+        document.querySelector('.cms-editor-raw'),
+        document.querySelector('button[role="switch"], [class*="ToolbarToggle"]')?.closest('[class*="ControlPane"], [class*="control"], .control-pane'),
+      ].filter(Boolean);
 
-    // 7a. Attempt CodeMirror editor (Standard in Decap Raw Markdown mode)
-    const cm = document.querySelector('.CodeMirror')?.CodeMirror;
-    if (cm && typeof cm.setValue === 'function') {
-      try {
-        cm.setValue(bodyContent);
-        if (typeof cm.save === 'function') cm.save();
-        bodyInjected = true;
-      } catch (cmErr) {
-        console.warn('[AI Studio] CodeMirror injection notice:', cmErr);
+      for (const el of candidates) {
+        let dom = el;
+        while (dom && dom !== document.body) {
+          const fiberKey = Object.keys(dom).find(
+            (k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance')
+          );
+          if (fiberKey && dom[fiberKey]) {
+            let curr = dom[fiberKey];
+            let depth = 0;
+            while (curr && depth < 35) {
+              if (curr.memoizedProps && typeof curr.memoizedProps.onChange === 'function') {
+                const fieldName = curr.memoizedProps.field?.get
+                  ? curr.memoizedProps.field.get('name')
+                  : curr.memoizedProps.field?.name;
+                if (fieldName === 'body' || (curr.memoizedProps.value !== undefined && curr.memoizedProps.field)) {
+                  return curr.memoizedProps.onChange;
+                }
+              }
+              curr = curr.return;
+              depth++;
+            }
+          }
+          dom = dom.parentElement;
+        }
       }
+      return null;
     }
 
-    // 7b. Attempt Raw Textarea if CodeMirror API not present
-    if (!bodyInjected) {
-      const bodyTextarea = document.querySelector(
-        '.cms-editor-raw textarea, textarea[id*="body-field-"], textarea[name="body"]'
+    // Helper to find the specific Rich Text / Markdown mode toggle switch inside the Body widget toolbar
+    // (Crucial: Avoids accidentally selecting the "Featured on Homepage" boolean switch)
+    function findBodyModeSwitch() {
+      const bodyPane = document.querySelector(
+        '.cms-editor-visual, .cms-editor-raw, [data-slate-editor="true"]'
+      )?.closest('[class*="ControlPane"], [class*="control"], .control-pane')
+      || Array.from(document.querySelectorAll('[class*="ControlPane"], [class*="control"]')).find((pane) => {
+        const text = pane.textContent || '';
+        return text.includes('Rich Text') && text.includes('Markdown');
+      });
+
+      if (bodyPane) {
+        const switchInPane = bodyPane.querySelector(
+          'button[role="switch"], [class*="ToolbarToggle"], [class*="ToggleContainer"], [class*="EditorToggle"]'
+        );
+        if (switchInPane) return switchInPane;
+      }
+
+      const allSwitches = Array.from(
+        document.querySelectorAll('button[role="switch"], [class*="ToolbarToggle"], [class*="EditorToggle"]')
       );
-      if (bodyTextarea && setNativeValue(bodyTextarea, bodyContent)) {
+      for (const sw of allSwitches) {
+        const parentText = (sw.parentElement?.textContent || '') + (sw.closest('div')?.textContent || '');
+        if (parentText.includes('Rich Text') || parentText.includes('Markdown')) {
+          return sw;
+        }
+      }
+
+      return null;
+    }
+
+    // 7a. Primary: Decap CMS React Fiber onChange injection (Updates Redux & Preview immediately)
+    const bodyOnChange = findBodyFiberOnChange();
+    if (bodyOnChange) {
+      try {
+        bodyOnChange(bodyContent);
         bodyInjected = true;
+
+        // Toggle mode to re-mount VisualEditor so Slate parses the new Redux markdown value into Slate AST
+        const modeSwitch = findBodyModeSwitch();
+        if (modeSwitch) {
+          modeSwitch.click();
+          await new Promise((r) => setTimeout(r, 150));
+          modeSwitch.click();
+          await new Promise((r) => setTimeout(r, 150));
+        }
+      } catch (fiberErr) {
+        console.warn('[AI Studio] React Fiber injection notice:', fiberErr);
       }
     }
 
-    // Toggle back to Rich Text mode if we previously switched from Slate
-    if (isSlateActive && modeSwitch && bodyInjected) {
-      await new Promise((r) => setTimeout(r, 60));
-      try {
-        modeSwitch.click();
-        await new Promise((r) => setTimeout(r, 100));
-      } catch (_) {}
+    // 7b. Secondary: CodeMirror / Raw mode switch injection (Standard fallback or for unit test mocks)
+    if (!bodyInjected) {
+      const modeSwitch = findBodyModeSwitch() || document.querySelector('button[role="switch"], [class*="ToolbarToggle"]');
+      
+      if (modeSwitch && !document.querySelector('.CodeMirror')) {
+        try {
+          modeSwitch.click();
+          await new Promise((r) => setTimeout(r, 100));
+        } catch (_) {}
+      }
+
+      const cm = document.querySelector('.CodeMirror')?.CodeMirror;
+      if (cm && typeof cm.setValue === 'function') {
+        try {
+          cm.setValue(bodyContent);
+          if (typeof cm.save === 'function') cm.save();
+          bodyInjected = true;
+        } catch (cmErr) {
+          console.warn('[AI Studio] CodeMirror injection notice:', cmErr);
+        }
+      }
+
+      if (!bodyInjected) {
+        const bodyTextarea = document.querySelector(
+          '.cms-editor-raw textarea, textarea[id*="body-field-"], textarea[name="body"]'
+        );
+        if (bodyTextarea && setNativeValue(bodyTextarea, bodyContent)) {
+          bodyInjected = true;
+        }
+      }
+
+      if (modeSwitch && bodyInjected) {
+        await new Promise((r) => setTimeout(r, 60));
+        try {
+          modeSwitch.click();
+          await new Promise((r) => setTimeout(r, 100));
+        } catch (_) {}
+      }
     }
 
-    // 7c. Fallback for unit tests / JSDOM where modeSwitch and CodeMirror are not present
+    // 7c. Fallback for mock/test environments (e.g. JSDOM without React Fiber)
     if (!bodyInjected) {
       const slateEditor = document.querySelector('[data-slate-editor="true"]');
       if (slateEditor) {
