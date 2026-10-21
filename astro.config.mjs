@@ -162,6 +162,146 @@ function decapServerIntegration() {
           next();
         });
 
+        // 2d. Article Plans & Content Planner API (SQLite & Sync)
+        server.middlewares.use(async (req, res, next) => {
+          const urlPath = (req.url || '').split('?')[0];
+          if (urlPath === '/api/article-plans' || urlPath.startsWith('/api/article-plans/')) {
+            const plannerDb = await import('./src/utils/planner-db.js');
+
+            function getWebsiteArticles() {
+              // fs imported
+              // path imported
+              const articlesDir = path.resolve(process.cwd(), 'src/content/articles');
+              const items = [];
+              if (fs.existsSync(articlesDir)) {
+                for (const f of fs.readdirSync(articlesDir)) {
+                  if (f.endsWith('.md') || f.endsWith('.mdx')) {
+                    const filePath = path.join(articlesDir, f);
+                    const text = fs.readFileSync(filePath, 'utf-8');
+                    const titleM = text.match(/^title:\s*["']?([^"'\r\n]+)["']?/m);
+                    const descM = text.match(/^description:\s*["']?([^"'\r\n]+)["']?/m);
+                    const slugM = text.match(/^slug:\s*["']?([^"'\r\n]+)["']?/m);
+                    const tagsM = text.match(/^tags:\s*\[(.*?)\]/m);
+                    const fileSlug = path.basename(filePath, path.extname(filePath));
+                    const slug = slugM ? slugM[1].trim() : fileSlug;
+                    let tags = [];
+                    if (tagsM) {
+                      tags = tagsM[1].split(',').map((t) => t.trim().replace(/^["']|["']$/g, ''));
+                    }
+                    items.push({
+                      type: 'article',
+                      title: titleM ? titleM[1].trim() : fileSlug,
+                      slug,
+                      url: `/articles/${slug}/`,
+                      description: descM ? descM[1].trim() : '',
+                      tags,
+                    });
+                  }
+                }
+              }
+              return items;
+            }
+
+            if (req.method === 'GET') {
+              const plans = plannerDb.getAllPlans();
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify(plans));
+              return;
+            }
+
+            if (req.method === 'POST') {
+              let body = '';
+              req.on('data', (chunk) => { body += chunk; });
+              req.on('end', () => {
+                try {
+                  const payload = JSON.parse(body || '{}');
+                  if (urlPath === '/api/article-plans/sync' || payload.action === 'sync') {
+                    const liveArticles = getWebsiteArticles();
+                    const result = plannerDb.syncWithWebsiteArticles(liveArticles, payload.autoImport !== false);
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: true, ...result }));
+                    return;
+                  }
+
+                  if (urlPath === '/api/article-plans/bulk' || payload.action === 'bulk') {
+                    let itemsToInsert = [];
+                    let parseErrors = [];
+                    if (payload.csvText) {
+                      const parsed = plannerDb.parseCSV(payload.csvText);
+                      itemsToInsert = parsed.rows;
+                      parseErrors = parsed.errors;
+                    } else if (Array.isArray(payload.plans)) {
+                      itemsToInsert = payload.plans;
+                    }
+                    const bulkResult = plannerDb.bulkCreatePlans(itemsToInsert);
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({
+                      success: true,
+                      inserted: bulkResult.inserted,
+                      errors: [...parseErrors, ...bulkResult.errors],
+                      plans: plannerDb.getAllPlans(),
+                    }));
+                    return;
+                  }
+
+                  const plan = plannerDb.createPlan(payload);
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ success: true, plan, plans: plannerDb.getAllPlans() }));
+                } catch (err) {
+                  res.statusCode = 400;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: String(err) }));
+                }
+              });
+              return;
+            }
+
+            if (req.method === 'PUT') {
+              let body = '';
+              req.on('data', (chunk) => { body += chunk; });
+              req.on('end', () => {
+                try {
+                  const payload = JSON.parse(body || '{}');
+                  if (!payload.id) {
+                    res.statusCode = 400;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ error: 'Missing plan id' }));
+                    return;
+                  }
+                  const updated = plannerDb.updatePlan(payload.id, payload);
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ success: true, plan: updated, plans: plannerDb.getAllPlans() }));
+                } catch (err) {
+                  res.statusCode = 400;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: String(err) }));
+                }
+              });
+              return;
+            }
+
+            if (req.method === 'DELETE') {
+              let body = '';
+              req.on('data', (chunk) => { body += chunk; });
+              req.on('end', () => {
+                try {
+                  const payload = JSON.parse(body || '{}');
+                  const id = payload.id || urlPath.split('/').pop();
+                  const deleted = plannerDb.deletePlan(id);
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ success: deleted, plans: plannerDb.getAllPlans() }));
+                } catch (err) {
+                  res.statusCode = 400;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: String(err) }));
+                }
+              });
+              return;
+            }
+          }
+          next();
+        });
+
         // 2b. Live Articles & Work Index endpoint for AI Studio Internal Linking
         server.middlewares.use(async (req, res, next) => {
           if (req.url === '/api/articles-index' || req.url === '/api/articles-index.json') {

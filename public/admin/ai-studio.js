@@ -1446,6 +1446,29 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
     if (bodyInjected) {
       injectedCount++;
       populatedFields.push('Body Artikel & Expandable Q&A');
+
+      // Auto-sync plan in Article Planner database if matching plan exists
+      try {
+        if (window.ArticlePlanner && window.ArticlePlanner.state?.plans) {
+          const matchedPlan = window.ArticlePlanner.state.plans.find((p) => {
+            const pTitle = (p.articleTitle || '').toLowerCase();
+            const aTitle = (art.title || '').toLowerCase();
+            const pKey = (p.focusKeyphrase || '').toLowerCase();
+            const aKey = (state.primaryKeyword || '').toLowerCase();
+            return pTitle === aTitle || (pKey && pKey === aKey);
+          });
+          if (matchedPlan) {
+            window.ArticlePlanner.savePlan({
+              id: matchedPlan.id,
+              status: 'Published',
+              slug: art.slug,
+              liveUrl: art.slug ? `/articles/${art.slug}/` : undefined,
+            });
+          }
+        }
+      } catch (syncErr) {
+        console.warn('[AI Studio] Article Planner sync notice:', syncErr);
+      }
     }
     await new Promise((r) => setTimeout(r, 40));
 
@@ -1627,7 +1650,10 @@ ${art.body}`;
         <!-- ================= STEP 1: SETUP & STRATEGI ================= -->
         <div class="ai-step-pane is-active" id="ai-pane-1">
           <div class="ai-form-group">
-            <label class="ai-form-label">Topik Utama atau Judul Panduan</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label class="ai-form-label" style="margin:0;">Topik Utama atau Judul Panduan</label>
+              <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-pick-plan" style="padding:2px 8px; font-size:11px; color:#FBBF24; border-color:rgba(217,119,6,0.3);">📋 Ambil dari Rencana Artikel</button>
+            </div>
             <input type="text" class="ai-input" id="ai-topic-input" placeholder="e.g. Panduan Arsitektur Generative Engine Optimization (GEO) 2026" />
             <div class="ai-form-hint">Masukkan ide pokok atau draft judul yang ingin dibahas secara komprehensif.</div>
           </div>
@@ -3022,6 +3048,7 @@ ${state.synthesizedArticle.body}`;
     }, 1500);
 
     setTimeout(() => clearInterval(interval), 30000);
+    try { const pendingPlan = sessionStorage.getItem('ap_tulis_ai_plan'); if (pendingPlan) { sessionStorage.removeItem('ap_tulis_ai_plan'); const plan = JSON.parse(pendingPlan); setTimeout(() => { openStudioDrawer(); state.topic = plan.articleTitle; state.primaryKeyword = plan.focusKeyphrase; state.focusKeyphrases = [plan.focusKeyphrase]; const topicInput = document.getElementById('ai-topic-input'); if (topicInput) topicInput.value = plan.articleTitle; const chipContainer = document.getElementById('ai-chips-container'); const hiddenInput = document.getElementById('ai-focus-keyphrases-input'); if (chipContainer && hiddenInput) { chipContainer.innerHTML = ''; const chip = document.createElement('div'); chip.className = 'ai-chip'; chip.innerHTML = plan.focusKeyphrase + ' <button type="button" class="ai-chip-remove">Ã—</button>'; chip.querySelector('.ai-chip-remove')?.addEventListener('click', () => chip.remove()); chipContainer.appendChild(chip); hiddenInput.value = plan.focusKeyphrase; } }, 800); } } catch (_) {}
   }
 
   if (document.readyState === 'loading') {

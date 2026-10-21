@@ -1,0 +1,72 @@
+---
+// Standalone Article Planner Route
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Rencana Artikel & Kalender Konten | Ramadhani</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/admin/article-planner.css" />
+    <style is:inline>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0B1120;
+        color: #F8FAFC;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        min-height: 100vh;
+      }
+      .ap-standalone-container {
+        max-width: 1360px;
+        margin: 0 auto;
+        padding: 30px 20px;
+      }
+      .ap-standalone-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .ap-nav-link {
+        color: #94A3B8;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.2s;
+      }
+      .ap-nav-link:hover {
+        color: #FBBF24;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ap-standalone-container">
+      <div class="ap-standalone-topbar">
+        <div>
+          <a href="/admin/" class="ap-nav-link">← Kembali ke Decap CMS</a>
+        </div>
+        <div style="display:flex; gap:12px;">
+          <a href="/admin/#/collections/articles" class="ap-nav-link">📝 Kelola Artikel Decap</a>
+          <a href="/articles/" target="_blank" class="ap-nav-link">🌐 Lihat Website Live ↗</a>
+        </div>
+      </div>
+      <div id="ap-standalone-mount"></div>
+    </div>
+
+    <!-- Article Planner Scripts -->
+    <script is:inline src="/admin/article-planner.js"></script>
+    <script is:inline>
+      function openNow() { if (window.ArticlePlanner && window.ArticlePlanner.open) window.ArticlePlanner.open(); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', openNow); else openNow();
+      setTimeout(openNow, 150); setTimeout(openNow, 500);
+    </script>
+  </body>
+</html>
