@@ -550,4 +550,113 @@ describe('Multi-Stage AI Article Pipeline', () => {
     });
   });
 
+  describe('Multi-Image Upload & WebP Client Compression Engine', () => {
+    it('IMG-01: supports uploading multiple images and populates state.uploadedImages', async () => {
+      // Mock File objects
+      const file1 = new File(['mock svg content'], 'architecture-flow.svg', { type: 'image/svg+xml' });
+      const file2 = new File(['mock png content'], 'benchmark-table.png', { type: 'image/png' });
+
+      // Clear existing
+      studio.state.uploadedImages = [];
+      studio.state.uploadedImage = null;
+
+      await studio.handleUploadedImages([file1, file2]);
+
+      expect(studio.state.uploadedImages.length).toBe(2);
+      expect(studio.state.uploadedImages[0].name).toBe('architecture-flow.svg');
+      expect(studio.state.uploadedImages[1].name).toBe('benchmark-table.png');
+
+      // First image should be marked as cover by default
+      expect(studio.state.uploadedImages[0].isCover).toBe(true);
+      expect(studio.state.uploadedImages[1].isCover).toBe(false);
+
+      // state.uploadedImage should point to cover
+      expect(studio.state.uploadedImage).toBe(studio.state.uploadedImages[0]);
+    });
+
+    it('IMG-02: allows switching cover image dynamically with setCoverImage', () => {
+      expect(studio.state.uploadedImages.length).toBe(2);
+      const secondId = studio.state.uploadedImages[1].id;
+
+      studio.setCoverImage(secondId);
+
+      expect(studio.state.uploadedImages[0].isCover).toBe(false);
+      expect(studio.state.uploadedImages[1].isCover).toBe(true);
+      expect(studio.state.uploadedImage.id).toBe(secondId);
+      expect(studio.state.uploadedImage.name).toBe('benchmark-table.png');
+    });
+
+    it('IMG-03: supports removing single image and re-assigning cover if cover was removed', () => {
+      const removedId = studio.state.uploadedImages[1].id;
+      studio.removeUploadedImage(removedId);
+
+      expect(studio.state.uploadedImages.length).toBe(1);
+      // Remaining image should automatically become cover
+      expect(studio.state.uploadedImages[0].isCover).toBe(true);
+      expect(studio.state.uploadedImage.id).toBe(studio.state.uploadedImages[0].id);
+
+      studio.clearAllImages();
+      expect(studio.state.uploadedImages.length).toBe(0);
+      expect(studio.state.uploadedImage).toBeNull();
+    });
+
+    it('IMG-04: compresses SVG with zero pixel distortion and returns valid metadata', async () => {
+      const svgFile = new File(['<svg xmlns="http://www.w3.org/2000/svg"><circle r="10"/></svg>'], 'icon.svg', {
+        type: 'image/svg+xml',
+      });
+      const comp = await studio.compressImage(svgFile);
+
+      expect(comp).not.toBeNull();
+      expect(comp.format).toBe('svg');
+      expect(comp.mimeType).toBe('image/svg+xml');
+      expect(comp.base64).toContain('data:image/svg+xml');
+    });
+
+    it('IMG-05: distributes multiple uploaded images across article sections in Stage 3 chunking', async () => {
+      studio.state.uploadedImages = [
+        {
+          id: 'img-1',
+          name: 'hero-architecture.webp',
+          cleanName: 'article-hero.webp',
+          url: '/images/uploads/article-hero.webp',
+          base64: 'data:image/webp;base64,mock1',
+          isCover: true,
+          visionAnalysis: { alt: 'Architecture Hero', caption: 'High-level system topology.' },
+        },
+        {
+          id: 'img-2',
+          name: 'benchmark-graph.webp',
+          cleanName: 'article-benchmark.webp',
+          url: '/images/uploads/article-benchmark.webp',
+          base64: 'data:image/webp;base64,mock2',
+          isCover: false,
+          visionAnalysis: { alt: 'Performance Benchmarks', caption: 'Latency comparison across models.' },
+        },
+      ];
+      studio.state.uploadedImage = studio.state.uploadedImages[0];
+
+      studio.state.outline = [
+        { heading: 'Overview', subheadings: [], focus: 'Intro', includesImage: true },
+        { heading: 'Benchmark Details', subheadings: [], focus: 'Data', includesImage: true },
+      ];
+      studio.state.chunkPref = 1;
+
+      let capturedPrompt = '';
+      global.fetch = vi.fn().mockImplementation(async (_url, opts) => {
+        const body = JSON.parse(opts.body);
+        capturedPrompt = body.messages[1].content;
+        return {
+          ok: true,
+          json: async () => ({
+            choices: [{ message: { content: '## Section with images\nContent...' } }],
+          }),
+        };
+      });
+
+      await studio.runStage3ChunkedBodyGeneration();
+
+      expect(capturedPrompt).toContain('/images/uploads/article-hero.webp');
+      expect(capturedPrompt).toContain('/images/uploads/article-benchmark.webp');
+    });
+  });
 });

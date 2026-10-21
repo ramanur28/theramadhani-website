@@ -251,4 +251,31 @@ Technical SEO Consultant,Landing Page,Hire Premier Technical SEO Consultant,Sche
     expect(imported?.focusKeyphrase).toBe('Performance, Core Web Vitals, Speed Optimization');
     expect(imported?.focusKeyphrases).toEqual(['Performance', 'Core Web Vitals', 'Speed Optimization']);
   });
+  it('PLN-11: robustly parses CSV with heavily quoted multi-keyphrases and multi-intents without column shifting', () => {
+    const complexCsv = `focus keyphrase,page role,article title,status,intent
+"organic seo fundamentals, what is an organic search, how organic search works, organic search results, organic seo optimization",Pillar page,Organic SEO Fundamentals: The Complete Guide to Natural Search Growth,Planned (Rencana),Informational
+"ctr seo, organic ctr, organic click through rate, organic click, organic ctr by position, organic click through rate by search position, improve organic ctr, finding your own ctr, ctr organic search, blogs about organic click through rate, organic ctr and seo, seo ctr only company name, how to increase ctr in seo, google organic ctr",Sub page,Organic CTR in SEO: Benchmarks by Position & How to Improve Click-Through Rate,Planned (Rencana),"Informational, Transactional"
+"what are organic keywords, seo organic keywords, organic keywords definition, top organic keywords, organic search keywords, organic keywords example, organic serp ranking, what do you mean by organic keywords",Sub page,"What Are SEO Organic Keywords? Definition, Examples & How to Find Them",Planned (Rencana),"Informational, Commercial"`;
+
+    const { rows, errors } = parseCSV(complexCsv);
+    expect(errors.length).toBe(0);
+    expect(rows.length).toBe(3);
+
+    // Row 0
+    expect(rows[0].focusKeyphrases?.length).toBe(5);
+    expect(rows[0].articleTitle).toBe('Organic SEO Fundamentals: The Complete Guide to Natural Search Growth');
+    expect(rows[0].pageRole).toBe('Pillar Page');
+    expect(rows[0].intent).toBe('Informational');
+
+    // Row 1 (14 keyphrases, dual intent)
+    expect(rows[1].focusKeyphrases?.length).toBe(14);
+    expect(rows[1].articleTitle).toBe('Organic CTR in SEO: Benchmarks by Position & How to Improve Click-Through Rate');
+    expect(rows[1].pageRole).toBe('Topic Cluster');
+    expect(rows[1].intent).toBe('Transactional');
+
+    // Row 2 (8 keyphrases, quoted title and dual intent)
+    expect(rows[2].focusKeyphrases?.length).toBe(8);
+    expect(rows[2].articleTitle).toBe('What Are SEO Organic Keywords? Definition, Examples & How to Find Them');
+    expect(rows[2].intent).toBe('Commercial Investigation');
+  });
 });

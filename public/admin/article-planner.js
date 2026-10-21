@@ -167,10 +167,13 @@
               synced++;
             }
           } else {
+            const artTags = Array.isArray(art.tags) && art.tags.length > 0 ? art.tags : [];
+            const primaryKey = artTags.length > 0 ? artTags.join(', ') : (art.title || '').split(':')[0].trim();
             state.plans.push({
               id: 'art-' + Date.now() + Math.random().toString(36).slice(2, 6),
               articleTitle: art.title,
-              focusKeyphrase: (art.tags && art.tags[0]) || art.title.split(':')[0],
+              focusKeyphrase: primaryKey,
+              focusKeyphrases: artTags.length > 0 ? artTags : [primaryKey],
               pageRole: art.title.toLowerCase().includes('guide') ? 'Pillar Page' : 'Topic Cluster',
               status: 'Published',
               intent: 'Informational',
@@ -192,12 +195,13 @@
   }
 
   async function bulkImportCsv(csvText) {
-    showToast('📥 Memproses impor CSV ke database...', true);
+    showToast('?? Memproses impor CSV ke database...', true);
+    const parsedRows = parseClientCSV(csvText);
     try {
       const res = await fetch(API_URL + '/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'bulk', csvText }),
+        body: JSON.stringify({ action: 'bulk', csvText, plans: parsedRows }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -205,7 +209,7 @@
         else await fetchPlans();
         renderTable();
         updateStats();
-        showToast(`✓ Berhasil mengimpor ${data.inserted || 0} rencana artikel ke database!`, true);
+        showToast(`? Berhasil mengimpor ${data.inserted || 0} rencana artikel ke database!`, true);
         closeSubmodal('ap-csv-modal');
         return true;
       }
@@ -214,12 +218,11 @@
     }
 
     // Client fallback parsing
-    const parsed = parseClientCSV(csvText);
-    if (parsed.length === 0) {
-      showToast('✕ Tidak ada baris CSV yang valid.', false);
+    if (parsedRows.length === 0) {
+      showToast('? Tidak ada baris CSV yang valid.', false);
       return false;
     }
-    for (const row of parsed) {
+    for (const row of parsedRows) {
       row.id = 'plan-' + Date.now() + Math.random().toString(36).slice(2, 6);
       row.createdAt = new Date().toISOString();
       row.updatedAt = new Date().toISOString();
@@ -230,44 +233,112 @@
     } catch (_) {}
     renderTable();
     updateStats();
-    showToast(`✓ Berhasil mengimpor ${parsed.length} rencana artikel!`, true);
+    showToast(`? Berhasil mengimpor ${parsedRows.length} rencana artikel!`, true);
     closeSubmodal('ap-csv-modal');
     return true;
   }
 
   // =========================================================================
-  // 2. Client CSV Parsing Utilities
+  // 2. Client CSV Parsing Utilities (Quote-Aware RFC 4180 & Multi-Keyphrase)
   // =========================================================================
+
+  function splitClientKeyphrases(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+      return Array.from(new Set(raw.map((k) => String(k).trim().replace(/^['"]+|['"]+$/g, '').trim()).filter(Boolean)));
+    }
+    return Array.from(new Set(
+      String(raw)
+        .split(new RegExp('[,;\\n\\r]+'))
+        .map((k) => k.trim().replace(/^['"]+|['"]+$/g, '').trim())
+        .filter(Boolean)
+    ));
+  }
+
+  function parseCSVLines(text, delimiter) {
+    const result = [];
+    let row = [];
+    let inQuotes = false;
+    let currentToken = '';
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          currentToken += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === delimiter && !inQuotes) {
+        row.push(currentToken.trim());
+        currentToken = '';
+      } else if ((char === '\r' || char === '\n') && !inQuotes) {
+        if (char === '\r' && nextChar === '\n') {
+          i++;
+        }
+        row.push(currentToken.trim());
+        result.push(row);
+        row = [];
+        currentToken = '';
+      } else {
+        currentToken += char;
+      }
+    }
+
+    if (currentToken.length > 0 || row.length > 0) {
+      row.push(currentToken.trim());
+      result.push(row);
+    }
+
+    return result.filter((r) => r.length > 0 && r.some((c) => c !== ''));
+  }
 
   function parseClientCSV(text) {
     if (!text || !text.trim()) return [];
-    const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-    if (lines.length < 2) return [];
 
-    const delimiter = lines[0].includes(';') ? ';' : lines[0].includes('\t') ? '\t' : ',';
-    const headers = lines[0].split(delimiter).map((h) => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+    const firstLine = text.split(/\r?\n/)[0] || '';
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const semiCount = (firstLine.match(/;/g) || []).length;
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    let delimiter = ',';
+    if (semiCount > commaCount && semiCount >= tabCount) delimiter = ';';
+    else if (tabCount > commaCount && tabCount > semiCount) delimiter = '\t';
 
-    const findIdx = (aliases) => headers.findIndex((h) => aliases.some((a) => h.includes(a)));
+    const rawLines = parseCSVLines(text, delimiter);
+    if (rawLines.length < 2) return [];
 
-    const colKeyphrase = findIdx(['focus keyphrase', 'keyphrase', 'keyword', 'kata kunci']);
-    const colRole = findIdx(['page role', 'role', 'peran']);
-    const colTitle = findIdx(['article title', 'title', 'judul']);
-    const colStatus = findIdx(['status', 'keadaan']);
-    const colIntent = findIdx(['intent', 'niat']);
+    const headers = rawLines[0].map((h) => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+    const findIdx = (aliases) => headers.findIndex((h) => aliases.some((a) => h === a || h.includes(a)));
+
+    const colKeyphrase = findIdx(['focus keyphrase', 'focus_keyphrase', 'keyphrase', 'keyword', 'kata kunci', 'fokus kata kunci']);
+    const colRole = findIdx(['page role', 'page_role', 'role', 'peran halaman', 'peran', 'page type']);
+    const colTitle = findIdx(['article title', 'article_title', 'title', 'judul artikel', 'judul', 'topic']);
+    const colStatus = findIdx(['status', 'state', 'keadaan', 'alur']);
+    const colIntent = findIdx(['intent', 'search intent', 'search_intent', 'niat pencarian', 'maksud', 'niat']);
+    const colNotes = findIdx(['notes', 'catatan', 'keterangan', 'description']);
 
     const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(delimiter).map((p) => p.replace(/^["']|["']$/g, '').trim());
-      const title = colTitle !== -1 ? parts[colTitle] : '';
-      const keyphrase = colKeyphrase !== -1 ? parts[colKeyphrase] : '';
-      if (!title && !keyphrase) continue;
+    for (let i = 1; i < rawLines.length; i++) {
+      const parts = rawLines[i].map((p) => p.replace(/^["']|["']$/g, '').trim());
+      const rawTitle = colTitle !== -1 ? parts[colTitle] : '';
+      const rawKeyphrase = colKeyphrase !== -1 ? parts[colKeyphrase] : '';
+      if (!rawTitle && !rawKeyphrase) continue;
+
+      const keyphrasesList = splitClientKeyphrases(rawKeyphrase);
+      const title = rawTitle.trim() || (keyphrasesList[0] || '');
+      const keyphrase = keyphrasesList.join(', ') || title;
 
       rows.push({
-        articleTitle: title || keyphrase,
-        focusKeyphrase: keyphrase || title,
+        articleTitle: title,
+        focusKeyphrase: keyphrase,
+        focusKeyphrases: keyphrasesList.length > 0 ? keyphrasesList : [title],
         pageRole: normalizePageRole(colRole !== -1 ? parts[colRole] : ''),
         status: normalizeStatus(colStatus !== -1 ? parts[colStatus] : ''),
         intent: normalizeIntent(colIntent !== -1 ? parts[colIntent] : ''),
+        notes: colNotes !== -1 ? parts[colNotes] : undefined,
       });
     }
     return rows;
@@ -1064,7 +1135,13 @@
           .map(
             (r) => `
             <tr>
-              <td>${escapeHtml(r.focusKeyphrase)}</td>
+              <td>
+                <div class="ap-keyphrase-list">
+                  ${(r.focusKeyphrases && r.focusKeyphrases.length > 0 ? r.focusKeyphrases : [r.focusKeyphrase])
+                    .map((k) => `<span class="ap-keyphrase-chip">?? ${escapeHtml(k)}</span>`)
+                    .join('')}
+                </div>
+              </td>
               <td>${escapeHtml(r.pageRole)}</td>
               <td>${escapeHtml(r.articleTitle)}</td>
               <td>${escapeHtml(r.status)}</td>

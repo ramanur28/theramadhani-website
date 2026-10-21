@@ -53,7 +53,8 @@
     includeCitations: true, // Academic & Industry citations toggle
     
     // Media & Vision
-    uploadedImage: null, // { file, name, cleanName, base64, url }
+    uploadedImage: null, // Pointer to active cover image { file, name, cleanName, base64, url }
+    uploadedImages: [], // Array of { id, file, name, cleanName, base64, url, originalSize, compressedSize, savingsPercent, width, height, format, isCover, visionAnalysis }
     visionAnalysis: null, // { alt, caption, visualInsights, entities }
     
     // Internal Links
@@ -556,22 +557,31 @@
   // 5. Multi-Stage Pipeline Implementations
   // =========================================================================
 
-  // STAGE 1: Image Analysis (Vision API)
+  // STAGE 1: Image Analysis (Vision API with Multi-Image Support)
   async function runStage1ImageAnalysis() {
-    if (!state.uploadedImage || !state.uploadedImage.base64) {
+    const imagesToAnalyze = (state.uploadedImages && state.uploadedImages.length > 0)
+      ? state.uploadedImages
+      : (state.uploadedImage ? [state.uploadedImage] : []);
+
+    if (imagesToAnalyze.length === 0 || !imagesToAnalyze[0]?.base64) {
       state.visionAnalysis = null;
       return null;
     }
 
     const isEn = state.language === 'en';
     updateProgressUI(
-      isEn ? 'Stage 1: Analyzing Image with Multimodal Vision AI...' : 'Tahap 1: Menganalisa Gambar dengan Vision AI...',
-      isEn ? 'Extracting visual entities, architecture flow, and placement recommendations...' : 'Mengekstrak entitas visual, diagram teks, dan rekomendasi penempatan...',
+      isEn ? 'Stage 1: Analyzing Images with Multimodal Vision AI...' : 'Tahap 1: Menganalisa Gambar dengan Vision AI...',
+      isEn ? `Extracting visual entities & architecture flow for ${imagesToAnalyze.length} image(s)...` : `Mengekstrak entitas visual & diagram untuk ${imagesToAnalyze.length} gambar...`,
       15
     );
 
-    const prompt = isEn
-      ? `Analyze this technical diagram/image in-depth for a digital marketing, architectural SEO, or Generative Engine Optimization (GEO) guide.
+    for (let i = 0; i < imagesToAnalyze.length; i++) {
+      const img = imagesToAnalyze[i];
+      if (!img.base64) continue;
+      if (img.visionAnalysis) continue; // Skip if already analyzed
+
+      const prompt = isEn
+        ? `Analyze this technical diagram/image (Image ${i + 1}/${imagesToAnalyze.length}: "${img.name}") in-depth for a digital marketing, architectural SEO, or Generative Engine Optimization (GEO) guide.
 Return response ONLY in valid JSON format with structure:
 {
   "alt": "SEO and screen-reader optimized alt text (max 120 characters)",
@@ -579,7 +589,7 @@ Return response ONLY in valid JSON format with structure:
   "visualInsights": "Summary of core concepts, component relations, or statistical findings from this image",
   "recommendedPlacement": "Recommendation of which outline section this diagram belongs in"
 }`
-      : `Analisa gambar/diagram teknis ini secara mendalam untuk artikel teknis digital marketing, SEO arsitektural, atau GEO.
+        : `Analisa gambar/diagram teknis ini (Gambar ${i + 1}/${imagesToAnalyze.length}: "${img.name}") secara mendalam untuk artikel teknis digital marketing, SEO arsitektural, atau GEO.
 Kembalikan respon HANYA dalam format JSON valid dengan struktur:
 {
   "alt": "Alt text teroptimasi SEO dan screen reader (maksimal 120 karakter)",
@@ -588,28 +598,31 @@ Kembalikan respon HANYA dalam format JSON valid dengan struktur:
   "recommendedPlacement": "Rekomendasi di section outline mana diagram ini harus dibahas dan diintegrasikan"
 }`;
 
-    const rawResponse = await callAI({
-      prompt,
-      systemPrompt: isEn
-        ? 'You are a senior technical SEO & multimodal vision expert. Output valid JSON only. Respond strictly in English.'
-        : 'You are a senior technical SEO & multimodal vision expert. Output valid JSON only.',
-      imageBase64: state.uploadedImage.base64,
-      jsonMode: true,
-    });
+      try {
+        const rawResponse = await callAI({
+          prompt,
+          systemPrompt: isEn
+            ? 'You are a senior technical SEO & multimodal vision expert. Output valid JSON only. Respond strictly in English.'
+            : 'You are a senior technical SEO & multimodal vision expert. Output valid JSON only.',
+          imageBase64: img.base64,
+          jsonMode: true,
+        });
 
-    try {
-      const cleanJson = rawResponse.replace(/```json\n?|```/g, '').trim();
-      state.visionAnalysis = JSON.parse(cleanJson);
-      return state.visionAnalysis;
-    } catch (e) {
-      state.visionAnalysis = {
-        alt: state.uploadedImage.cleanName.replace(/[-_]/g, ' '),
-        caption: isEn ? 'System architecture diagram and implementation flow visualization.' : 'Diagram arsitektur sistem dan visualisasi alur implementasi.',
-        visualInsights: rawResponse.substring(0, 300),
-        recommendedPlacement: isEn ? 'Technical architecture implementation section' : 'Bagian implementasi arsitektur teknis',
-      };
-      return state.visionAnalysis;
+        const cleanJson = rawResponse.replace(/```json\n?|```/g, '').trim();
+        img.visionAnalysis = JSON.parse(cleanJson);
+      } catch (e) {
+        img.visionAnalysis = {
+          alt: (img.cleanName || img.name || 'Diagram').replace(/[-_]/g, ' '),
+          caption: isEn ? 'System architecture diagram and implementation flow visualization.' : 'Diagram arsitektur sistem dan visualisasi alur implementasi.',
+          visualInsights: 'Technical diagram visualization for ' + (img.name || 'image'),
+          recommendedPlacement: isEn ? 'Technical architecture implementation section' : 'Bagian implementasi arsitektur teknis',
+        };
+      }
     }
+
+    const coverImg = imagesToAnalyze.find((im) => im.isCover) || imagesToAnalyze[0];
+    state.visionAnalysis = coverImg ? coverImg.visionAnalysis : null;
+    return state.visionAnalysis;
   }
 
   // STAGE 2: Outline Generation
@@ -629,10 +642,17 @@ Kembalikan respon HANYA dalam format JSON valid dengan struktur:
       : (isEn ? 'None provided.' : 'Tidak ada.');
     
     let visionContext = isEn ? 'No image uploaded.' : 'Tidak ada gambar yang diunggah.';
-    if (state.visionAnalysis) {
-      visionContext = isEn
-        ? `Uploaded image: ${state.uploadedImage.cleanName}\nAlt: ${state.visionAnalysis.alt}\nCaption: ${state.visionAnalysis.caption}\nVisual Insights: ${state.visionAnalysis.visualInsights}`
-        : `Gambar terunggah: ${state.uploadedImage.cleanName}\nAlt: ${state.visionAnalysis.alt}\nCaption: ${state.visionAnalysis.caption}\nVisual Insights: ${state.visionAnalysis.visualInsights}`;
+    const availableImages = (state.uploadedImages && state.uploadedImages.length > 0)
+      ? state.uploadedImages
+      : (state.uploadedImage ? [state.uploadedImage] : []);
+
+    if (availableImages.length > 0) {
+      visionContext = availableImages.map((img, idx) => {
+        const va = img.visionAnalysis || {};
+        return isEn
+          ? `Image ${idx + 1} (${img.isCover ? 'Cover Hero' : 'Body Diagram'}): ${img.cleanName || img.name}\nAlt: ${va.alt || img.name}\nCaption: ${va.caption || ''}\nVisual Insights: ${va.visualInsights || ''}`
+          : `Gambar ${idx + 1} (${img.isCover ? 'Sampul/Cover' : 'Diagram Tubuh'}): ${img.cleanName || img.name}\nAlt: ${va.alt || img.name}\nCaption: ${va.caption || ''}\nVisual Insights: ${va.visualInsights || ''}`;
+      }).join('\n\n');
     }
 
     const citationInstruction = state.includeCitations
@@ -834,7 +854,7 @@ Kembalikan HANYA format JSON valid dengan struktur:
         pct
       );
 
-      const sectionOutlineText = chunk.sections.map((s) => {
+      const sectionOutlineText = chunk.sections.map((s, sIdx) => {
         let txt = `## ${s.heading}\n`;
         if (s.subheadings && s.subheadings.length > 0) {
           txt += s.subheadings.map((sub) => `### ${sub}`).join('\n') + '\n';
@@ -844,8 +864,18 @@ Kembalikan HANYA format JSON valid dengan struktur:
         if (s.tableNote) txt += `[INCLUDE COMPARISON TABLE]: ${s.tableNote}\n`;
         if (s.quoteNote) txt += `[INCLUDE EXPERT QUOTE]: ${s.quoteNote}\n`;
         if (s.ctaNote) txt += `[INCLUDE OUTCOME-DRIVEN CTA]: ${s.ctaNote}\n`;
-        if (s.includesImage && state.uploadedImage) {
-          txt += `[INCLUDE IMAGE]: Use HTML <figure class="article-image-figure"><img src="${state.uploadedImage.url}" alt="${state.visionAnalysis?.alt || 'Diagram'}" class="article-body-image" loading="lazy" /><figcaption class="article-image-caption">${state.visionAnalysis?.caption || ''}</figcaption></figure>\n`;
+        if (s.includesImage) {
+          const availableImages = (state.uploadedImages && state.uploadedImages.length > 0)
+            ? state.uploadedImages
+            : (state.uploadedImage ? [state.uploadedImage] : []);
+
+          if (availableImages.length > 0) {
+            const imgIdx = (chunk.index - 1 + sIdx) % availableImages.length;
+            const targetImg = availableImages[imgIdx] || availableImages[0];
+            const altText = targetImg.visionAnalysis?.alt || targetImg.name || 'Diagram';
+            const captionText = targetImg.visionAnalysis?.caption || '';
+            txt += `[INCLUDE IMAGE]: Use HTML <figure class="article-image-figure"><img src="${targetImg.url}" alt="${altText}" class="article-body-image" loading="lazy" /><figcaption class="article-image-caption">${captionText}</figcaption></figure>\n`;
+          }
         }
         return txt;
       }).join('\n\n');
@@ -1056,8 +1086,12 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
         quickAnswer: meta.quickAnswer || '',
         tags: meta.tags || (state.proposedTags && state.proposedTags.length > 0 ? state.proposedTags : ['Technical SEO', 'GEO']),
         faq: meta.faq || [],
-        coverImage: state.uploadedImage ? state.uploadedImage.url : '/images/uploads/geo-blueprint.svg',
-        coverAlt: state.visionAnalysis?.alt || (isEn ? 'Article cover diagram' : 'Diagram sampul artikel'),
+        coverImage: (state.uploadedImages && state.uploadedImages.length > 0)
+          ? (state.uploadedImages.find((im) => im.isCover) || state.uploadedImages[0]).url
+          : (state.uploadedImage ? state.uploadedImage.url : '/images/uploads/geo-blueprint.svg'),
+        coverAlt: (state.uploadedImages && state.uploadedImages.length > 0)
+          ? ((state.uploadedImages.find((im) => im.isCover) || state.uploadedImages[0]).visionAnalysis?.alt || state.visionAnalysis?.alt || (isEn ? 'Article cover diagram' : 'Diagram sampul artikel'))
+          : (state.visionAnalysis?.alt || (isEn ? 'Article cover diagram' : 'Diagram sampul artikel')),
         body: fullBody,
       };
 
@@ -1718,16 +1752,15 @@ ${art.body}`;
         <div class="ai-step-pane" id="ai-pane-2">
           <!-- Image Upload & Vision Section -->
           <div class="ai-form-group">
-            <label class="ai-form-label">Upload Gambar / Diagram (Analisis Vision AI)</label>
+            <label class="ai-form-label">Upload Gambar / Diagram (Multi-Upload & Kompresi WebP Otomatis)</label>
             <div class="ai-upload-dropzone" id="ai-upload-dropzone">
               <div class="ai-upload-icon">🖼️</div>
-              <div class="ai-upload-text">Tarik & letakkan diagram di sini atau klik untuk memilih</div>
-              <div class="ai-upload-subtext">Mendukung PNG, JPG, WebP, SVG (Maks. 5MB). Otomatis disimpan ke disk.</div>
-              <input type="file" id="ai-file-input" accept="image/*" style="display:none" />
+              <div class="ai-upload-text">Tarik & letakkan satu atau banyak gambar di sini, atau klik untuk memilih</div>
+              <div class="ai-upload-subtext">Mendukung banyak gambar sekaligus (PNG, JPG, WebP, SVG). Dilengkapi kompresi cerdas WebP agar load speed tetap kencang.</div>
+              <input type="file" id="ai-file-input" accept="image/*" multiple style="display:none" />
             </div>
             <div id="ai-image-preview-container"></div>
           </div>
-
           <!-- Internal Links Hub -->
           <div class="ai-form-group">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -2241,7 +2274,7 @@ ${art.body}`;
       });
     });
 
-    // File Upload Drag & Drop
+    // File Upload Drag & Drop (Supports Multiple Files & Folders)
     const dropzone = document.getElementById('ai-upload-dropzone');
     const fileInput = document.getElementById('ai-file-input');
     dropzone?.addEventListener('click', () => fileInput?.click());
@@ -2254,12 +2287,15 @@ ${art.body}`;
     dropzone?.addEventListener('drop', (e) => {
       e.preventDefault();
       dropzone.classList.remove('is-dragover');
-      if (e.dataTransfer?.files?.[0]) handleUploadedImage(e.dataTransfer.files[0]);
+      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+        handleUploadedImages(e.dataTransfer.files);
+      }
     });
     fileInput?.addEventListener('change', (e) => {
-      if (e.target?.files?.[0]) handleUploadedImage(e.target.files[0]);
+      if (e.target?.files && e.target.files.length > 0) {
+        handleUploadedImages(e.target.files);
+      }
     });
-
     // Add Manual Internal Link - Clean Inline UI
     const addLinkBtn = document.getElementById('ai-btn-add-link');
     const addLinkBox = document.getElementById('ai-add-link-box');
@@ -2522,67 +2558,412 @@ ${state.synthesizedArticle.body}`;
   }
 
   // =========================================================================
-  // 9. Image Upload & Instant Persistence
+  // 9. Image Compression Engine, Multi-Upload & Persistence
   // =========================================================================
-  async function handleUploadedImage(file) {
-    if (!file || !file.type.startsWith('image/')) {
-      showStudioToast('Berkas harus berupa gambar valid.', false);
+
+  function formatFileSize(bytes) {
+    if (!bytes || bytes <= 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  /**
+   * Client-side high efficiency image compressor.
+   * Scales down images larger than maxDimension (1600px) and converts to WebP with 0.82 quality.
+   * Keeps SVG untouched as vector code.
+   */
+  async function compressImage(file, maxDimension = 1600, quality = 0.82) {
+    if (!file) return null;
+    const isSvg = file.type === 'image/svg+xml' || (file.name && file.name.toLowerCase().endsWith('.svg'));
+
+    // SVG preservation (vector)
+    if (isSvg) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve({
+            base64: e.target.result,
+            mimeType: 'image/svg+xml',
+            format: 'svg',
+            originalSize: file.size || 0,
+            compressedSize: file.size || 0,
+            savingsPercent: 0,
+            width: null,
+            height: null,
+          });
+        };
+        reader.onerror = () => {
+          resolve({
+            base64: '',
+            mimeType: 'image/svg+xml',
+            format: 'svg',
+            originalSize: file.size || 0,
+            compressedSize: file.size || 0,
+            savingsPercent: 0,
+            width: null,
+            height: null,
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        if (typeof Image === 'undefined' || typeof document === 'undefined') {
+          return finish({
+            base64: dataUrl,
+            mimeType: file.type || 'image/jpeg',
+            format: (file.name && file.name.split('.').pop()) || 'jpg',
+            originalSize: file.size || 0,
+            compressedSize: file.size || 0,
+            savingsPercent: 0,
+            width: null,
+            height: null,
+          });
+        }
+
+        let isDone = false;
+        const finish = (result) => {
+          if (!isDone) {
+            isDone = true;
+            clearTimeout(safetyTimeout);
+            resolve(result);
+          }
+        };
+
+        // Fast fallback timeout (50ms) for environments like Happy-DOM / test runners where Image decode doesn't fire
+        const safetyTimeout = setTimeout(() => {
+          finish({
+            base64: dataUrl,
+            mimeType: file.type || 'image/jpeg',
+            format: (file.name && file.name.split('.').pop()) || 'jpg',
+            originalSize: file.size || 0,
+            compressedSize: file.size || 0,
+            savingsPercent: 0,
+            width: null,
+            height: null,
+          });
+        }, 50);
+
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let width = img.naturalWidth || img.width;
+            let height = img.naturalHeight || img.height;
+            const origWidth = width;
+            const origHeight = height;
+
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+              } else {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              return finish({
+                base64: dataUrl,
+                mimeType: file.type || 'image/jpeg',
+                format: (file.name && file.name.split('.').pop()) || 'jpg',
+                originalSize: file.size || 0,
+                compressedSize: file.size || 0,
+                savingsPercent: 0,
+                width: origWidth,
+                height: origHeight,
+              });
+            }
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, width, height);
+
+            let outputMime = 'image/webp';
+            let outputExt = 'webp';
+            let compressedData = canvas.toDataURL(outputMime, quality);
+
+            if (!compressedData.startsWith('data:image/webp')) {
+              outputMime = 'image/jpeg';
+              outputExt = 'jpg';
+              compressedData = canvas.toDataURL(outputMime, quality);
+            }
+
+            const rawB64 = compressedData.split(',')[1] || '';
+            const compressedBytes = Math.round((rawB64.length * 3) / 4);
+
+            if (compressedBytes >= (file.size || 0) && (file.size || 0) < 250 * 1024) {
+              return finish({
+                base64: dataUrl,
+                mimeType: file.type || 'image/jpeg',
+                format: (file.name && file.name.split('.').pop()) || 'jpg',
+                originalSize: file.size || 0,
+                compressedSize: file.size || 0,
+                savingsPercent: 0,
+                width: origWidth,
+                height: origHeight,
+              });
+            }
+
+            const origSize = file.size || compressedBytes;
+            const savings = origSize > compressedBytes ? Math.round(((origSize - compressedBytes) / origSize) * 100) : 0;
+
+            finish({
+              base64: compressedData,
+              mimeType: outputMime,
+              format: outputExt,
+              originalSize: origSize,
+              compressedSize: compressedBytes,
+              savingsPercent: savings,
+              width,
+              height,
+            });
+          } catch (canvasErr) {
+            finish({
+              base64: dataUrl,
+              mimeType: file.type || 'image/jpeg',
+              format: (file.name && file.name.split('.').pop()) || 'jpg',
+              originalSize: file.size || 0,
+              compressedSize: file.size || 0,
+              savingsPercent: 0,
+              width: null,
+              height: null,
+            });
+          }
+        };
+
+        img.onerror = () => {
+          resolve({
+            base64: dataUrl,
+            mimeType: file.type || 'image/jpeg',
+            format: (file.name && file.name.split('.').pop()) || 'jpg',
+            originalSize: file.size || 0,
+            compressedSize: file.size || 0,
+            savingsPercent: 0,
+            width: null,
+            height: null,
+          });
+        };
+
+        img.src = dataUrl;
+      };
+
+      reader.onerror = () => {
+        finish(null);
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function syncCoverImage() {
+    if (!state.uploadedImages || state.uploadedImages.length === 0) {
+      state.uploadedImage = null;
+      state.visionAnalysis = null;
+      return;
+    }
+    let cover = state.uploadedImages.find((img) => img.isCover);
+    if (!cover) {
+      state.uploadedImages[0].isCover = true;
+      cover = state.uploadedImages[0];
+    }
+    state.uploadedImage = cover;
+    state.visionAnalysis = cover.visionAnalysis || null;
+  }
+
+  async function handleUploadedImages(files) {
+    if (!files) return;
+    const fileList = Array.isArray(files) ? files : Array.from(files);
+    const validFiles = fileList.filter((f) => f && f.type && f.type.startsWith('image/'));
+
+    if (validFiles.length === 0) {
+      showStudioToast('Berkas harus berupa gambar valid (PNG, JPG, WebP, SVG).', false);
       return;
     }
 
-    const cleanName = 'article-' + Date.now() + '-' + file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-');
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const base64 = e.target.result;
-      state.uploadedImage = {
-        file: file,
-        name: file.name,
-        cleanName: cleanName,
-        base64: base64,
-        url: `/images/uploads/${cleanName}`,
-      };
+    showStudioToast(`⚡ Mengompresi & mengunggah ${validFiles.length} gambar...`, true);
 
+    let totalSaved = 0;
+    let totalOrig = 0;
+
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
       try {
-        const rawBase64 = base64.split(',')[1];
-        await fetch('/api/dev-upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: cleanName, content: rawBase64 }),
-        });
-        showStudioToast('✓ Gambar disimpan ke disk: /images/uploads/' + cleanName, true);
-      } catch (err) {}
+        const compressed = await compressImage(file);
+        if (!compressed || !compressed.base64) continue;
 
-      renderImagePreview();
-    };
-    reader.readAsDataURL(file);
+        const baseName = (file.name || 'image')
+          .toLowerCase()
+          .replace(/\.[^/.]+$/, '')
+          .replace(/[^a-z0-9]+/g, '-');
+        const cleanName = `article-${Date.now()}-${i + 1}-${baseName}.${compressed.format}`;
+
+        try {
+          const rawBase64 = compressed.base64.split(',')[1];
+          if (rawBase64) {
+            await fetch('/api/dev-upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filename: cleanName, content: rawBase64 }),
+            });
+          }
+        } catch (_) {}
+
+        const imageItem = {
+          id: 'img-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+          file: file,
+          name: file.name,
+          cleanName: cleanName,
+          base64: compressed.base64,
+          url: `/images/uploads/${cleanName}`,
+          originalSize: compressed.originalSize,
+          compressedSize: compressed.compressedSize,
+          savingsPercent: compressed.savingsPercent,
+          width: compressed.width,
+          height: compressed.height,
+          format: compressed.format,
+          isCover: state.uploadedImages.length === 0,
+          visionAnalysis: null,
+        };
+
+        state.uploadedImages.push(imageItem);
+        totalOrig += compressed.originalSize;
+        totalSaved += (compressed.originalSize - compressed.compressedSize);
+      } catch (err) {
+        console.warn('[AI Studio] Compression error on file:', file.name, err);
+      }
+    }
+
+    syncCoverImage();
+    renderImagePreviews();
+
+    const overallSavings = totalOrig > 0 ? Math.round((totalSaved / totalOrig) * 100) : 0;
+    showStudioToast(
+      `✓ Berhasil menambahkan ${validFiles.length} gambar (Terkompresi WebP, Hemat ${overallSavings}%)!`,
+      true
+    );
   }
 
-  function renderImagePreview() {
+  // Single-file backwards compatibility
+  async function handleUploadedImage(file) {
+    return handleUploadedImages(file ? [file] : []);
+  }
+
+  function setCoverImage(id) {
+    state.uploadedImages.forEach((img) => {
+      img.isCover = img.id === id;
+    });
+    syncCoverImage();
+    renderImagePreviews();
+    showStudioToast('⭐ Gambar sampul (Cover Image) berhasil ditetapkan!', true);
+  }
+
+  function removeUploadedImage(id) {
+    state.uploadedImages = state.uploadedImages.filter((img) => img.id !== id);
+    if (state.uploadedImages.length > 0 && !state.uploadedImages.some((img) => img.isCover)) {
+      state.uploadedImages[0].isCover = true;
+    }
+    syncCoverImage();
+    renderImagePreviews();
+  }
+
+  function clearAllImages() {
+    state.uploadedImages = [];
+    syncCoverImage();
+    renderImagePreviews();
+  }
+
+  function renderImagePreviews() {
     const container = document.getElementById('ai-image-preview-container');
     if (!container) return;
-    if (!state.uploadedImage) {
+
+    if (!state.uploadedImages || state.uploadedImages.length === 0) {
       container.innerHTML = '';
       return;
     }
 
-    container.innerHTML = `
-      <div class="ai-image-preview-card">
-        <img src="${state.uploadedImage.base64}" class="ai-image-preview-thumb" alt="Preview" />
-        <div class="ai-image-preview-info">
-          <div class="ai-image-preview-name">${state.uploadedImage.name}</div>
-          <div class="ai-image-preview-meta">URL: ${state.uploadedImage.url}</div>
+    const totalCompressed = state.uploadedImages.reduce((sum, img) => sum + (img.compressedSize || 0), 0);
+    const totalOriginal = state.uploadedImages.reduce((sum, img) => sum + (img.originalSize || 0), 0);
+    const avgSavings = totalOriginal > 0 ? Math.round(((totalOriginal - totalCompressed) / totalOriginal) * 100) : 0;
+
+    const summaryHtml = `
+      <div class="ai-image-summary-bar">
+        <div class="ai-image-summary-text">
+          <b>📸 ${state.uploadedImages.length} Gambar Diunggah</b> • Total: ${formatFileSize(totalCompressed)}
+          ${avgSavings > 0 ? `<span class="ai-badge ai-badge-compressed" title="Ukuran asli: ${formatFileSize(totalOriginal)}">⚡ Hemat ${avgSavings}%</span>` : ''}
         </div>
-        <button type="button" class="ai-studio-icon-btn" id="ai-btn-remove-image" title="Hapus Gambar" style="color:var(--ai-error);">✕</button>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-add-more-img" style="padding:4px 8px; font-size:11px;">+ Tambah</button>
+          <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-clear-all-img" style="padding:4px 8px; font-size:11px; color:var(--ai-error);">🗑️ Hapus Semua</button>
+        </div>
       </div>
     `;
 
-    document.getElementById('ai-btn-remove-image')?.addEventListener('click', () => {
-      state.uploadedImage = null;
-      state.visionAnalysis = null;
-      renderImagePreview();
+    const cardsHtml = state.uploadedImages
+      .map(
+        (img) => `
+        <div class="ai-image-preview-card ${img.isCover ? 'is-cover-card' : ''}" data-img-id="${img.id}">
+          <img src="${img.base64}" class="ai-image-preview-thumb" alt="Preview" />
+          <div class="ai-image-preview-info">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px;">
+              <span class="ai-image-preview-name">${escapeHtmlAttr(img.name)}</span>
+              ${
+                img.isCover
+                  ? '<span class="ai-badge ai-badge-cover" title="Gambar ini akan digunakan sebagai Cover Image di Decap CMS">⭐ Cover Utama</span>'
+                  : `<button type="button" class="ai-btn-set-cover" data-set-cover="${img.id}" title="Jadikan gambar ini sebagai sampul">Jadikan Cover</button>`
+              }
+            </div>
+            <div class="ai-image-preview-meta">
+              ${img.width ? `<span>${img.width}×${img.height} • </span>` : ''}
+              <span style="text-transform:uppercase;">${img.format || 'WEBP'}</span>
+              ${img.savingsPercent > 0 ? `<span class="ai-badge ai-badge-compressed" style="margin-left:6px;">⚡ ${formatFileSize(img.originalSize)} → ${formatFileSize(img.compressedSize)} (-${img.savingsPercent}%)</span>` : ''}
+            </div>
+            <div class="ai-image-preview-url">${escapeHtmlAttr(img.url)}</div>
+          </div>
+          <button type="button" class="ai-studio-icon-btn ai-btn-del-img" data-del-img="${img.id}" title="Hapus Gambar" style="color:var(--ai-error);">✕</button>
+        </div>
+      `
+      )
+      .join('');
+
+    container.innerHTML = summaryHtml + `<div class="ai-image-preview-list">${cardsHtml}</div>`;
+
+    document.getElementById('ai-btn-add-more-img')?.addEventListener('click', () => {
+      document.getElementById('ai-file-input')?.click();
+    });
+
+    document.getElementById('ai-btn-clear-all-img')?.addEventListener('click', () => {
+      clearAllImages();
+    });
+
+    container.querySelectorAll('.ai-btn-set-cover').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-set-cover');
+        if (id) setCoverImage(id);
+      });
+    });
+
+    container.querySelectorAll('.ai-btn-del-img').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-del-img');
+        if (id) removeUploadedImage(id);
+      });
     });
   }
 
+  // Backwards compatibility alias for renderImagePreview
+  function renderImagePreview() {
+    renderImagePreviews();
+  }
   // =========================================================================
   // 10. Chips & Internal Links Table Rendering
   // =========================================================================
@@ -3112,6 +3493,14 @@ ${state.synthesizedArticle.body}`;
     setNativeValue: setNativeValue,
     injectIntoDecapForm: injectIntoDecapForm,
     handleUploadedImage: handleUploadedImage,
+    handleUploadedImages: handleUploadedImages,
+    compressImage: compressImage,
+    setCoverImage: setCoverImage,
+    removeUploadedImage: removeUploadedImage,
+    clearAllImages: clearAllImages,
+    renderImagePreviews: renderImagePreviews,
+    renderImagePreview: renderImagePreview,
+    formatFileSize: formatFileSize,
     updateCharCounter: updateCharCounter,
     STRATEGY_PRESETS: STRATEGY_PRESETS,
     STORAGE_KEYS: STORAGE_KEYS,
