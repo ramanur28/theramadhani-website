@@ -226,14 +226,37 @@ function decapServerIntegration() {
                   if (urlPath === '/api/article-plans/bulk' || payload.action === 'bulk') {
                     let itemsToInsert = [];
                     let parseErrors = [];
-                    if (payload.csvText) {
+                    if (Array.isArray(payload.plans) && payload.plans.length > 0) {
+                      itemsToInsert = payload.plans;
+                    } else if (payload.csvText) {
                       const parsed = plannerDb.parseCSV(payload.csvText);
                       itemsToInsert = parsed.rows;
                       parseErrors = parsed.errors;
-                    } else if (Array.isArray(payload.plans)) {
-                      itemsToInsert = payload.plans;
                     }
+
+                    if (itemsToInsert.length === 0) {
+                      res.statusCode = 400;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({
+                        success: false,
+                        inserted: 0,
+                        errors: parseErrors.length > 0 ? parseErrors : ['Tidak ada baris data CSV yang valid untuk diimpor.'],
+                      }));
+                      return;
+                    }
+
                     const bulkResult = plannerDb.bulkCreatePlans(itemsToInsert);
+                    if (bulkResult.inserted === 0 && bulkResult.errors.length > 0) {
+                      res.statusCode = 400;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({
+                        success: false,
+                        inserted: 0,
+                        errors: [...parseErrors, ...bulkResult.errors],
+                      }));
+                      return;
+                    }
+
                     res.setHeader('Content-Type', 'application/json');
                     res.end(JSON.stringify({
                       success: true,

@@ -417,27 +417,34 @@ function parseCSV(csvText) {
     errors.push("File atau teks CSV kosong.");
     return { rows, errors };
   }
-  const firstLine = csvText.split(/\r?\n/)[0] || "";
+  const cleanText = csvText.replace(/^\uFEFF/, "").trim();
+  if (!cleanText) {
+    errors.push("File atau teks CSV kosong.");
+    return { rows, errors };
+  }
+  const firstLine = cleanText.split(/\r?\n/)[0] || "";
   const commaCount = (firstLine.match(/,/g) || []).length;
   const semiCount = (firstLine.match(/;/g) || []).length;
   const tabCount = (firstLine.match(/\t/g) || []).length;
   let delimiter = ",";
   if (semiCount > commaCount && semiCount >= tabCount) delimiter = ";";
-  else if (tabCount > commaCount && tabCount > semiCount) delimiter = "	";
-  const rawLines = parseCSVLines(csvText, delimiter);
+  else if (tabCount > commaCount && tabCount > semiCount) delimiter = "\t";
+  const rawLines = parseCSVLines(cleanText, delimiter);
   if (rawLines.length === 0) {
     errors.push("Tidak ada baris data yang ditemukan dalam CSV.");
     return { rows, errors };
   }
-  const headers = rawLines[0].map((h) => h.trim().toLowerCase());
+  const headers = rawLines[0].map((h) => h.replace(/^["']|["']$/g, "").trim().toLowerCase());
   const colMap = {
     focusKeyphrase: findHeaderIndex(headers, [
       "focus keyphrase",
       "focus_keyphrase",
       "keyphrase",
       "keyword",
+      "keywords",
       "kata kunci",
-      "fokus kata kunci"
+      "fokus kata kunci",
+      "fokus kata-kunci"
     ]),
     pageRole: findHeaderIndex(headers, [
       "page role",
@@ -445,7 +452,8 @@ function parseCSV(csvText) {
       "role",
       "peran halaman",
       "peran",
-      "page type"
+      "page type",
+      "tipe"
     ]),
     articleTitle: findHeaderIndex(headers, [
       "article title",
@@ -453,18 +461,20 @@ function parseCSV(csvText) {
       "title",
       "judul artikel",
       "judul",
-      "topic"
+      "topic",
+      "topik"
     ]),
-    status: findHeaderIndex(headers, ["status", "state", "keadaan", "alur"]),
+    status: findHeaderIndex(headers, ["status", "state", "keadaan", "alur", "tahap"]),
     intent: findHeaderIndex(headers, [
       "intent",
       "search intent",
       "search_intent",
       "niat pencarian",
+      "niat",
       "maksud"
     ]),
-    notes: findHeaderIndex(headers, ["notes", "catatan", "keterangan", "description"]),
-    targetWordCount: findHeaderIndex(headers, ["word count", "target words", "target_word_count", "kata"])
+    notes: findHeaderIndex(headers, ["notes", "catatan", "keterangan", "description", "deskripsi"]),
+    targetWordCount: findHeaderIndex(headers, ["word count", "target words", "target_word_count", "kata", "jumlah kata"])
   };
   if (colMap.articleTitle === -1 && colMap.focusKeyphrase === -1) {
     errors.push(

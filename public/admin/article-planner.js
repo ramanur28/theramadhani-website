@@ -195,8 +195,13 @@
   }
 
   async function bulkImportCsv(csvText) {
-    showToast('?? Memproses impor CSV ke database...', true);
+    showToast('⏳ Memproses impor CSV ke database...', true);
     const parsedRows = parseClientCSV(csvText);
+    if (parsedRows.length === 0) {
+      showToast('✕ Tidak ada baris CSV yang valid ditemukan. Periksa format kolom.', false);
+      return false;
+    }
+
     try {
       const res = await fetch(API_URL + '/bulk', {
         method: 'POST',
@@ -205,37 +210,30 @@
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.plans) state.plans = data.plans;
-        else await fetchPlans();
-        renderTable();
-        updateStats();
-        showToast(`? Berhasil mengimpor ${data.inserted || 0} rencana artikel ke database!`, true);
-        closeSubmodal('ap-csv-modal');
-        return true;
+        if (data.inserted > 0) {
+          if (data.plans) state.plans = data.plans;
+          else await fetchPlans();
+          renderTable();
+          updateStats();
+          showToast(`✓ Berhasil mengimpor ${data.inserted} rencana artikel ke database!`, true);
+          closeSubmodal('ap-csv-modal');
+          return true;
+        } else {
+          const errMsg = (data.errors && data.errors.length > 0) ? data.errors.join(', ') : '0 baris tersimpan.';
+          showToast(`✕ Impor gagal: ${errMsg}`, false);
+          return false;
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = errData.error || (errData.errors && errData.errors.join(', ')) || `Server error (${res.status})`;
+        showToast(`✕ Gagal menyimpan ke database server: ${errMsg}`, false);
+        return false;
       }
     } catch (err) {
-      console.warn('[Article Planner] Bulk API error, client parser fallback:', err);
-    }
-
-    // Client fallback parsing
-    if (parsedRows.length === 0) {
-      showToast('? Tidak ada baris CSV yang valid.', false);
+      console.error('[Article Planner] Bulk API error:', err);
+      showToast(`✕ Gagal terhubung ke database server: ${err.message}`, false);
       return false;
     }
-    for (const row of parsedRows) {
-      row.id = 'plan-' + Date.now() + Math.random().toString(36).slice(2, 6);
-      row.createdAt = new Date().toISOString();
-      row.updatedAt = new Date().toISOString();
-      state.plans.unshift(row);
-    }
-    try {
-      localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
-    } catch (_) {}
-    renderTable();
-    updateStats();
-    showToast(`? Berhasil mengimpor ${parsedRows.length} rencana artikel!`, true);
-    closeSubmodal('ap-csv-modal');
-    return true;
   }
 
   // =========================================================================
@@ -298,8 +296,10 @@
 
   function parseClientCSV(text) {
     if (!text || !text.trim()) return [];
+    const cleanText = text.replace(/^\uFEFF/, '').trim();
+    if (!cleanText) return [];
 
-    const firstLine = text.split(/\r?\n/)[0] || '';
+    const firstLine = cleanText.split(/\r?\n/)[0] || '';
     const commaCount = (firstLine.match(/,/g) || []).length;
     const semiCount = (firstLine.match(/;/g) || []).length;
     const tabCount = (firstLine.match(/\t/g) || []).length;
@@ -307,18 +307,18 @@
     if (semiCount > commaCount && semiCount >= tabCount) delimiter = ';';
     else if (tabCount > commaCount && tabCount > semiCount) delimiter = '\t';
 
-    const rawLines = parseCSVLines(text, delimiter);
+    const rawLines = parseCSVLines(cleanText, delimiter);
     if (rawLines.length < 2) return [];
 
     const headers = rawLines[0].map((h) => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
     const findIdx = (aliases) => headers.findIndex((h) => aliases.some((a) => h === a || h.includes(a)));
 
-    const colKeyphrase = findIdx(['focus keyphrase', 'focus_keyphrase', 'keyphrase', 'keyword', 'kata kunci', 'fokus kata kunci']);
-    const colRole = findIdx(['page role', 'page_role', 'role', 'peran halaman', 'peran', 'page type']);
-    const colTitle = findIdx(['article title', 'article_title', 'title', 'judul artikel', 'judul', 'topic']);
-    const colStatus = findIdx(['status', 'state', 'keadaan', 'alur']);
-    const colIntent = findIdx(['intent', 'search intent', 'search_intent', 'niat pencarian', 'maksud', 'niat']);
-    const colNotes = findIdx(['notes', 'catatan', 'keterangan', 'description']);
+    const colKeyphrase = findIdx(['focus keyphrase', 'focus_keyphrase', 'keyphrase', 'keyword', 'keywords', 'kata kunci', 'fokus kata kunci', 'fokus kata-kunci']);
+    const colRole = findIdx(['page role', 'page_role', 'role', 'peran halaman', 'peran', 'page type', 'tipe']);
+    const colTitle = findIdx(['article title', 'article_title', 'title', 'judul artikel', 'judul', 'topic', 'topik']);
+    const colStatus = findIdx(['status', 'state', 'keadaan', 'alur', 'tahap']);
+    const colIntent = findIdx(['intent', 'search intent', 'search_intent', 'niat pencarian', 'niat', 'maksud']);
+    const colNotes = findIdx(['notes', 'catatan', 'keterangan', 'description', 'deskripsi']);
 
     const rows = [];
     for (let i = 1; i < rawLines.length; i++) {

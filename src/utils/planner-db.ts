@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
+const nodeRequire = createRequire(import.meta.url);
 
 export type PageRole =
   | 'Pillar Page'
@@ -76,7 +76,7 @@ export function initPlannerDB(): any {
 
   try {
     // Attempt Node 22 native node:sqlite
-    const { DatabaseSync } = require('node:sqlite');
+    const { DatabaseSync } = nodeRequire('node:sqlite');
     const db = new DatabaseSync(dbPath);
 
     db.exec(`
@@ -408,22 +408,70 @@ export function bulkCreatePlans(inputs: Partial<ArticlePlan>[]): {
   if (db) {
     try {
       db.exec('BEGIN TRANSACTION');
+      const insertStmt = db.prepare(`
+        INSERT INTO article_plans (
+          id, focus_keyphrase, page_role, article_title, status, intent,
+          slug, live_url, notes, target_word_count, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
       for (const item of inputs) {
         if (!item.articleTitle && !item.focusKeyphrase) {
           errors.push('Lewati baris tanpa Judul atau Focus Keyphrase.');
           continue;
         }
-        const plan = createPlan(item);
+
+        const id = item.id || crypto.randomUUID();
+        const now = new Date().toISOString();
+        const kps = splitKeyphrases(
+          item.focusKeyphrases && item.focusKeyphrases.length > 0
+            ? item.focusKeyphrases
+            : item.focusKeyphrase
+        );
+        const focusKeyphrase = kps.join(', ');
+
+        const plan: ArticlePlan = {
+          id,
+          focusKeyphrase,
+          focusKeyphrases: kps,
+          pageRole: item.pageRole || 'Pillar Page',
+          articleTitle: (item.articleTitle || '').trim(),
+          status: item.status || 'Planned',
+          intent: item.intent || 'Informational',
+          slug: (item.slug || generateSlug(item.articleTitle || '')).trim(),
+          liveUrl: item.liveUrl || undefined,
+          notes: item.notes || undefined,
+          targetWordCount: item.targetWordCount || 2500,
+          createdAt: item.createdAt || now,
+          updatedAt: now,
+        };
+
+        insertStmt.run(
+          plan.id,
+          plan.focusKeyphrase,
+          plan.pageRole,
+          plan.articleTitle,
+          plan.status,
+          plan.intent,
+          plan.slug || null,
+          plan.liveUrl || null,
+          plan.notes || null,
+          plan.targetWordCount || 2500,
+          plan.createdAt,
+          plan.updatedAt
+        );
+
         created.push(plan);
       }
+
       db.exec('COMMIT');
       syncJsonFromDb(db);
       return { inserted: created.length, plans: created, errors };
-    } catch (err) {
+    } catch (err: any) {
       try {
         db.exec('ROLLBACK');
       } catch (_) {}
-      errors.push('Transaction error: ' + String(err));
+      errors.push('Transaction error: ' + (err.message || String(err)));
     }
   }
 
@@ -582,8 +630,14 @@ export function parseCSV(csvText: string): {
     return { rows, errors };
   }
 
+  const cleanText = csvText.replace(/^\uFEFF/, '').trim();
+  if (!cleanText) {
+    errors.push('File atau teks CSV kosong.');
+    return { rows, errors };
+  }
+
   // 1. Detect delimiter (, ; 	)
-  const firstLine = csvText.split(/\r?\n/)[0] || '';
+  const firstLine = cleanText.split(/\r?\n/)[0] || '';
   const commaCount = (firstLine.match(/,/g) || []).length;
   const semiCount = (firstLine.match(/;/g) || []).length;
   const tabCount = (firstLine.match(/\t/g) || []).length;
@@ -592,22 +646,24 @@ export function parseCSV(csvText: string): {
   else if (tabCount > commaCount && tabCount > semiCount) delimiter = '\t';
 
   // 2. Parse CSV tokens with quote handling
-  const rawLines = parseCSVLines(csvText, delimiter);
+  const rawLines = parseCSVLines(cleanText, delimiter);
   if (rawLines.length === 0) {
     errors.push('Tidak ada baris data yang ditemukan dalam CSV.');
     return { rows, errors };
   }
 
   // 3. Resolve Header Mapping
-  const headers = rawLines[0].map((h) => h.trim().toLowerCase());
+  const headers = rawLines[0].map((h) => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
   const colMap = {
     focusKeyphrase: findHeaderIndex(headers, [
       'focus keyphrase',
       'focus_keyphrase',
       'keyphrase',
       'keyword',
+      'keywords',
       'kata kunci',
       'fokus kata kunci',
+      'fokus kata-kunci',
     ]),
     pageRole: findHeaderIndex(headers, [
       'page role',
@@ -616,6 +672,7 @@ export function parseCSV(csvText: string): {
       'peran halaman',
       'peran',
       'page type',
+      'tipe',
     ]),
     articleTitle: findHeaderIndex(headers, [
       'article title',
@@ -624,17 +681,19 @@ export function parseCSV(csvText: string): {
       'judul artikel',
       'judul',
       'topic',
+      'topik',
     ]),
-    status: findHeaderIndex(headers, ['status', 'state', 'keadaan', 'alur']),
+    status: findHeaderIndex(headers, ['status', 'state', 'keadaan', 'alur', 'tahap']),
     intent: findHeaderIndex(headers, [
       'intent',
       'search intent',
       'search_intent',
       'niat pencarian',
+      'niat',
       'maksud',
     ]),
-    notes: findHeaderIndex(headers, ['notes', 'catatan', 'keterangan', 'description']),
-    targetWordCount: findHeaderIndex(headers, ['word count', 'target words', 'target_word_count', 'kata']),
+    notes: findHeaderIndex(headers, ['notes', 'catatan', 'keterangan', 'description', 'deskripsi']),
+    targetWordCount: findHeaderIndex(headers, ['word count', 'target words', 'target_word_count', 'kata', 'jumlah kata']),
   };
 
   if (colMap.articleTitle === -1 && colMap.focusKeyphrase === -1) {
