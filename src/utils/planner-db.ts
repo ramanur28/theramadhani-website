@@ -27,6 +27,7 @@ export type SearchIntent =
 export interface ArticlePlan {
   id: string;
   focusKeyphrase: string;
+  focusKeyphrases?: string[];
   pageRole: PageRole;
   articleTitle: string;
   status: PlanStatus;
@@ -156,10 +157,26 @@ function syncJsonFromDb(db: any): void {
   }
 }
 
+export function splitKeyphrases(raw: string | string[] | undefined | null): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return Array.from(new Set(raw.map((k) => String(k).trim().replace(/^['"]+|['"]+$/g, '').trim()).filter(Boolean)));
+  }
+  return Array.from(new Set(
+    String(raw)
+      .split(new RegExp('[,;\\n\\r]+'))
+      .map((k) => k.trim().replace(/^['"]+|['"]+$/g, '').trim())
+      .filter(Boolean)
+  ));
+}
+
 function mapRowToPlan(row: any): ArticlePlan {
+  const rawKeyphrase = row.focus_keyphrase || '';
+  const keyphrases = splitKeyphrases(rawKeyphrase);
   return {
     id: String(row.id),
-    focusKeyphrase: row.focus_keyphrase,
+    focusKeyphrase: rawKeyphrase,
+    focusKeyphrases: keyphrases,
     pageRole: (row.page_role as PageRole) || 'Pillar Page',
     articleTitle: row.article_title,
     status: (row.status as PlanStatus) || 'Planned',
@@ -220,9 +237,17 @@ export function createPlan(input: Partial<ArticlePlan>): ArticlePlan {
   const id = input.id || crypto.randomUUID();
   const now = new Date().toISOString();
 
+  const kps = splitKeyphrases(
+    input.focusKeyphrases && input.focusKeyphrases.length > 0
+      ? input.focusKeyphrases
+      : input.focusKeyphrase
+  );
+  const focusKeyphrase = kps.join(', ');
+
   const plan: ArticlePlan = {
     id,
-    focusKeyphrase: (input.focusKeyphrase || '').trim(),
+    focusKeyphrase,
+    focusKeyphrases: kps,
     pageRole: input.pageRole || 'Pillar Page',
     articleTitle: (input.articleTitle || '').trim(),
     status: input.status || 'Planned',
@@ -280,9 +305,23 @@ export function updatePlan(id: string, updates: Partial<ArticlePlan>): ArticlePl
   if (!existing) return null;
 
   const now = new Date().toISOString();
+  let updatedKeyphrase = existing.focusKeyphrase;
+  let updatedKeyphrases = existing.focusKeyphrases || splitKeyphrases(existing.focusKeyphrase);
+  if (updates.focusKeyphrases !== undefined || updates.focusKeyphrase !== undefined) {
+    const kps = splitKeyphrases(
+      updates.focusKeyphrases && updates.focusKeyphrases.length > 0
+        ? updates.focusKeyphrases
+        : updates.focusKeyphrase
+    );
+    updatedKeyphrase = kps.join(', ');
+    updatedKeyphrases = kps;
+  }
+
   const updated: ArticlePlan = {
     ...existing,
     ...updates,
+    focusKeyphrase: updatedKeyphrase,
+    focusKeyphrases: updatedKeyphrases,
     id: existing.id,
     updatedAt: now,
   };
@@ -447,8 +486,8 @@ export function syncWithWebsiteArticles(
       websiteArticles.find((a) => {
         const aTitle = normalizeText(a.title);
         const aTags = (a.tags || []).map((t) => normalizeText(t));
-        const keyphrase = normalizeText(plan.focusKeyphrase);
-        return aTitle.includes(keyphrase) || aTags.includes(keyphrase);
+        const planKeyphrases = splitKeyphrases(plan.focusKeyphrase).map((k) => normalizeText(k));
+        return planKeyphrases.some((kp) => aTitle.includes(kp) || aTags.includes(kp));
       });
 
     if (matchedArt) {
@@ -488,9 +527,9 @@ export function syncWithWebsiteArticles(
       const artTitle = normalizeText(art.title);
 
       if (!existingSlugs.has(artSlug) && !existingTitles.has(artTitle)) {
-        // Derive Focus Keyphrase from first tag or clean title
-        const primaryTag = art.tags && art.tags.length > 0 ? art.tags[0] : '';
-        const focusKeyphrase = primaryTag || art.title.split(':')[0].trim();
+        // Derive Focus Keyphrase(s) from all tags or clean title
+        const allTags = art.tags && art.tags.length > 0 ? art.tags.join(', ') : '';
+        const focusKeyphrase = allTags || art.title.split(':')[0].trim();
 
         // Infer Page Role based on title or tags
         let pageRole: PageRole = 'Topic Cluster';
@@ -624,9 +663,11 @@ export function parseCSV(csvText: string): {
       continue;
     }
 
+    const keyphrasesList = splitKeyphrases(rawKeyphrase);
     rows.push({
-      articleTitle: rawTitle.trim() || rawKeyphrase.trim(),
-      focusKeyphrase: rawKeyphrase.trim() || rawTitle.trim(),
+      articleTitle: rawTitle.trim() || (keyphrasesList[0] || ''),
+      focusKeyphrase: keyphrasesList.join(', ') || rawTitle.trim(),
+      focusKeyphrases: keyphrasesList.length > 0 ? keyphrasesList : [rawTitle.trim()],
       pageRole: normalizePageRole(rawRole),
       status: normalizePlanStatus(rawStatus),
       intent: normalizeIntent(rawIntent),

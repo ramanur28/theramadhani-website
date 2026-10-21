@@ -21,6 +21,7 @@
     filterIntent: 'all',
     editingPlanId: null,
     pendingCsvRows: [],
+    formKeyphrases: [],
     isOpen: false,
   };
 
@@ -303,6 +304,55 @@
   // 3. UI Construction & Mounting
   // =========================================================================
 
+  // =========================================================================
+  // Multi-Keyphrase Form Chip Helpers
+  // =========================================================================
+
+  function addFormKeyphrase(rawInput) {
+    if (!rawInput) return;
+    const parts = String(rawInput)
+      .split(/[,;\n\r]+/)
+      .map((p) => p.trim().replace(/^['"]+|['"]+$/g, '').trim())
+      .filter(Boolean);
+    parts.forEach((phrase) => {
+      if (phrase && !state.formKeyphrases.includes(phrase)) {
+        state.formKeyphrases.push(phrase);
+      }
+    });
+    renderFormChips();
+  }
+
+  function removeFormKeyphrase(index) {
+    if (index >= 0 && index < state.formKeyphrases.length) {
+      state.formKeyphrases.splice(index, 1);
+      renderFormChips();
+    }
+  }
+
+  function renderFormChips() {
+    const wrap = document.getElementById('ap-form-chips-wrap');
+    const input = document.getElementById('ap-form-chip-input');
+    const hidden = document.getElementById('ap-input-keyphrase');
+    if (!wrap || !input) return;
+
+    wrap.querySelectorAll('.ap-form-chip').forEach((c) => c.remove());
+
+    state.formKeyphrases.forEach((phrase, idx) => {
+      const chip = document.createElement('span');
+      chip.className = 'ap-form-chip';
+      chip.innerHTML = `🔑 ${escapeHtml(phrase)} <button type="button" class="ap-form-chip-remove" data-idx="${idx}" title="Hapus kata kunci">✕</button>`;
+      chip.querySelector('.ap-form-chip-remove')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeFormKeyphrase(idx);
+      });
+      wrap.insertBefore(chip, input);
+    });
+
+    if (hidden) {
+      hidden.value = state.formKeyphrases.join(', ');
+    }
+  }
+
   function initUI() {
     // 1. Floating Launcher Button
     const launcher = document.createElement('button');
@@ -431,8 +481,16 @@
               </div>
 
               <div class="ap-form-group">
-                <label class="ap-form-label">Focus Keyphrase *</label>
-                <input type="text" class="ap-form-input" id="ap-input-keyphrase" placeholder="e.g. Generative Engine Optimization" required />
+                <label class="ap-form-label">
+                  Focus Keyphrase(s) *
+                  <span style="font-size:11px; font-weight:normal; color:#94A3B8; margin-left:4px;">
+                    (Dapat berisi lebih dari 1 kata kunci. Tekan Enter, ketik koma, atau tempel teks)
+                  </span>
+                </label>
+                <div class="ap-chips-wrap" id="ap-form-chips-wrap">
+                  <input type="text" class="ap-chip-input-field" id="ap-form-chip-input" placeholder="Ketik kata kunci lalu tekan Enter atau koma (,)..." />
+                </div>
+                <input type="hidden" id="ap-input-keyphrase" value="" />
               </div>
 
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
@@ -602,19 +660,69 @@
     document.getElementById('ap-btn-close-form')?.addEventListener('click', () => closeSubmodal('ap-form-modal'));
     document.getElementById('ap-btn-cancel-form')?.addEventListener('click', () => closeSubmodal('ap-form-modal'));
 
+    const formChipInput = document.getElementById('ap-form-chip-input');
+    const formChipsWrap = document.getElementById('ap-form-chips-wrap');
+
+    formChipsWrap?.addEventListener('click', () => {
+      formChipInput?.focus();
+    });
+
+    formChipInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = formChipInput.value;
+        formChipInput.value = '';
+        addFormKeyphrase(val);
+      } else if (e.key === 'Backspace' && !formChipInput.value && state.formKeyphrases.length > 0) {
+        removeFormKeyphrase(state.formKeyphrases.length - 1);
+      }
+    });
+
+    formChipInput?.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window['clipboardData'])?.getData('text') || '';
+      if (text) {
+        addFormKeyphrase(text);
+        formChipInput.value = '';
+      }
+    });
+
+    formChipInput?.addEventListener('input', () => {
+      if (formChipInput.value.includes(',') || formChipInput.value.includes(';') || formChipInput.value.includes('\n')) {
+        const val = formChipInput.value;
+        formChipInput.value = '';
+        addFormKeyphrase(val);
+      }
+    });
+
+    formChipInput?.addEventListener('blur', () => {
+      if (formChipInput.value.trim()) {
+        const val = formChipInput.value;
+        formChipInput.value = '';
+        addFormKeyphrase(val);
+      }
+    });
+
     document.getElementById('ap-plan-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = document.getElementById('ap-input-id').value;
       const title = document.getElementById('ap-input-title').value.trim();
-      const keyphrase = document.getElementById('ap-input-keyphrase').value.trim();
       const role = document.getElementById('ap-input-role').value;
       const planStatus = document.getElementById('ap-input-status').value;
       const intent = document.getElementById('ap-input-intent').value;
       const words = parseInt(document.getElementById('ap-input-words').value, 10) || 2500;
       const notes = document.getElementById('ap-input-notes').value.trim();
 
-      if (!title || !keyphrase) {
-        showToast('✕ Harap isi Judul Artikel dan Focus Keyphrase.', false);
+      const chipInputEl = document.getElementById('ap-form-chip-input');
+      if (chipInputEl && chipInputEl.value.trim()) {
+        addFormKeyphrase(chipInputEl.value.trim());
+        chipInputEl.value = '';
+      }
+
+      const keyphrase = state.formKeyphrases.join(', ');
+
+      if (!title || state.formKeyphrases.length === 0) {
+        showToast('✕ Harap isi Judul Artikel dan minimal satu Focus Keyphrase.', false);
         return;
       }
 
@@ -622,6 +730,7 @@
         id: id || undefined,
         articleTitle: title,
         focusKeyphrase: keyphrase,
+        focusKeyphrases: [...state.formKeyphrases],
         pageRole: role,
         status: planStatus,
         intent: intent,
@@ -735,9 +844,21 @@
     filtered.forEach((plan) => {
       const tr = document.createElement('tr');
 
-      // 1. Focus Keyphrase
+      // 1. Focus Keyphrases (supports multiple chips)
       const tdKeyphrase = document.createElement('td');
-      tdKeyphrase.innerHTML = `<span class="ap-keyphrase-chip">🔑 ${escapeHtml(plan.focusKeyphrase || '-')}</span>`;
+      const kps = (plan.focusKeyphrases && plan.focusKeyphrases.length > 0)
+        ? plan.focusKeyphrases
+        : (plan.focusKeyphrase || '').split(',').map((k) => k.trim()).filter(Boolean);
+
+      if (kps.length > 0) {
+        tdKeyphrase.innerHTML = `
+          <div class="ap-keyphrase-list">
+            ${kps.map((k) => `<span class="ap-keyphrase-chip">🔑 ${escapeHtml(k)}</span>`).join('')}
+          </div>
+        `;
+      } else {
+        tdKeyphrase.innerHTML = `<span class="ap-keyphrase-chip" style="opacity:0.5;">-</span>`;
+      }
       tr.appendChild(tdKeyphrase);
 
       // 2. Page Role
@@ -860,6 +981,8 @@
     document.getElementById('ap-input-id').value = '';
     document.getElementById('ap-input-title').value = '';
     document.getElementById('ap-input-keyphrase').value = '';
+    state.formKeyphrases = [];
+    renderFormChips();
     document.getElementById('ap-input-role').value = 'Topic Cluster';
     document.getElementById('ap-input-status').value = 'Planned';
     document.getElementById('ap-input-intent').value = 'Informational';
@@ -874,6 +997,11 @@
     document.getElementById('ap-input-id').value = plan.id;
     document.getElementById('ap-input-title').value = plan.articleTitle;
     document.getElementById('ap-input-keyphrase').value = plan.focusKeyphrase;
+    const kps = (plan.focusKeyphrases && plan.focusKeyphrases.length > 0)
+      ? [...plan.focusKeyphrases]
+      : (plan.focusKeyphrase || '').split(',').map((k) => k.trim()).filter(Boolean);
+    state.formKeyphrases = kps;
+    renderFormChips();
     document.getElementById('ap-input-role').value = plan.pageRole || 'Topic Cluster';
     document.getElementById('ap-input-status').value = plan.status || 'Planned';
     document.getElementById('ap-input-intent').value = plan.intent || 'Informational';
@@ -1017,27 +1145,38 @@ Jasa Konsultan SEO,Landing Page,Layanan Konsultan SEO Teknis & GEO Profesional,P
   function writeWithAiStudio(plan) {
     closePlanner();
 
+    const kps = (plan.focusKeyphrases && plan.focusKeyphrases.length > 0)
+      ? plan.focusKeyphrases
+      : (plan.focusKeyphrase || '').split(',').map((k) => k.trim()).filter(Boolean);
+
     if (window.DecapAIStudio) {
       // Pre-fill state
       window.DecapAIStudio.state.topic = plan.articleTitle;
-      window.DecapAIStudio.state.primaryKeyword = plan.focusKeyphrase;
-      window.DecapAIStudio.state.focusKeyphrases = [plan.focusKeyphrase];
+      window.DecapAIStudio.state.primaryKeyword = kps[0] || '';
+      window.DecapAIStudio.state.focusKeyphrases = [...kps];
 
       // Update Topic input in AI Studio drawer if mounted
       const topicInput = document.getElementById('ai-topic-input');
       if (topicInput) topicInput.value = plan.articleTitle;
 
-      // Add keyphrase chip in AI Studio
-      const chipContainer = document.getElementById('ai-chips-container');
-      const hiddenInput = document.getElementById('ai-focus-keyphrases-input');
-      if (chipContainer && hiddenInput) {
-        chipContainer.innerHTML = '';
-        const chip = document.createElement('div');
-        chip.className = 'ai-chip';
-        chip.innerHTML = `${escapeHtml(plan.focusKeyphrase)} <button type="button" class="ai-chip-remove">×</button>`;
-        chip.querySelector('.ai-chip-remove')?.addEventListener('click', () => chip.remove());
-        chipContainer.appendChild(chip);
-        hiddenInput.value = plan.focusKeyphrase;
+      // Populate multiple chips in AI Studio
+      if (typeof window.DecapAIStudio.addFocusKeyphrases === 'function') {
+        window.DecapAIStudio.state.focusKeyphrases = [];
+        window.DecapAIStudio.addFocusKeyphrases(kps.join(', '));
+      } else {
+        const chipContainer = document.getElementById('ai-chips-wrap') || document.getElementById('ai-chips-container');
+        const hiddenInput = document.getElementById('ai-focus-keyphrases-input');
+        if (chipContainer) {
+          chipContainer.querySelectorAll('.ai-chip').forEach((c) => c.remove());
+          kps.forEach((kp) => {
+            const chip = document.createElement('div');
+            chip.className = 'ai-chip';
+            chip.innerHTML = `${escapeHtml(kp)} <span class="ai-chip-remove">✕</span>`;
+            chip.querySelector('.ai-chip-remove')?.addEventListener('click', () => chip.remove());
+            chipContainer.appendChild(chip);
+          });
+        }
+        if (hiddenInput) hiddenInput.value = kps.join(', ');
       }
 
       // Open AI Article Studio
@@ -1050,7 +1189,10 @@ Jasa Konsultan SEO,Landing Page,Layanan Konsultan SEO Teknis & GEO Profesional,P
       }
     } else {
       try {
-        sessionStorage.setItem('ap_tulis_ai_plan', JSON.stringify(plan));
+        sessionStorage.setItem('ap_tulis_ai_plan', JSON.stringify({
+          ...plan,
+          focusKeyphrases: kps,
+        }));
         window.location.href = '/admin/#/collections/articles/new';
       } catch (_) {
         showToast('AI Article Studio sedang dimuat, silakan coba sesaat lagi.', false);

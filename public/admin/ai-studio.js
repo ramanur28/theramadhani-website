@@ -2115,6 +2115,11 @@ ${art.body}`;
   function setupStudioEvents() {
     // Header buttons
     document.getElementById('ai-btn-close')?.addEventListener('click', closeStudioDrawer);
+    document.getElementById('ai-btn-pick-plan')?.addEventListener('click', () => {
+      if (window.ArticlePlanner && typeof window.ArticlePlanner.open === 'function') {
+        window.ArticlePlanner.open();
+      }
+    });
     document.getElementById('ai-btn-config')?.addEventListener('click', () => {
       document.querySelectorAll('.ai-step-pane').forEach((p) => p.classList.remove('is-active'));
       document.getElementById('ai-pane-config')?.classList.add('is-active');
@@ -3048,7 +3053,27 @@ ${state.synthesizedArticle.body}`;
     }, 1500);
 
     setTimeout(() => clearInterval(interval), 30000);
-    try { const pendingPlan = sessionStorage.getItem('ap_tulis_ai_plan'); if (pendingPlan) { sessionStorage.removeItem('ap_tulis_ai_plan'); const plan = JSON.parse(pendingPlan); setTimeout(() => { openStudioDrawer(); state.topic = plan.articleTitle; state.primaryKeyword = plan.focusKeyphrase; state.focusKeyphrases = [plan.focusKeyphrase]; const topicInput = document.getElementById('ai-topic-input'); if (topicInput) topicInput.value = plan.articleTitle; const chipContainer = document.getElementById('ai-chips-container'); const hiddenInput = document.getElementById('ai-focus-keyphrases-input'); if (chipContainer && hiddenInput) { chipContainer.innerHTML = ''; const chip = document.createElement('div'); chip.className = 'ai-chip'; chip.innerHTML = plan.focusKeyphrase + ' <button type="button" class="ai-chip-remove">Ã—</button>'; chip.querySelector('.ai-chip-remove')?.addEventListener('click', () => chip.remove()); chipContainer.appendChild(chip); hiddenInput.value = plan.focusKeyphrase; } }, 800); } } catch (_) {}
+    try {
+      const pendingPlan = sessionStorage.getItem('ap_tulis_ai_plan');
+      if (pendingPlan) {
+        sessionStorage.removeItem('ap_tulis_ai_plan');
+        const plan = JSON.parse(pendingPlan);
+        const kps = (plan.focusKeyphrases && plan.focusKeyphrases.length > 0)
+          ? plan.focusKeyphrases
+          : (plan.focusKeyphrase || '').split(',').map((k) => k.trim()).filter(Boolean);
+        setTimeout(() => {
+          openStudioDrawer();
+          state.topic = plan.articleTitle;
+          state.primaryKeyword = kps[0] || '';
+          state.focusKeyphrases = [];
+          const topicInput = document.getElementById('ai-topic-input');
+          if (topicInput) topicInput.value = plan.articleTitle;
+          if (typeof addFocusKeyphrases === 'function') {
+            addFocusKeyphrases(kps.join(', '));
+          }
+        }, 800);
+      }
+    } catch (_) {}
   }
 
   if (document.readyState === 'loading') {

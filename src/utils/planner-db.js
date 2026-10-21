@@ -93,10 +93,22 @@ function syncJsonFromDb(db) {
     console.warn("[Planner DB] Warning syncing JSON snapshot:", err);
   }
 }
+function splitKeyphrases(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return Array.from(new Set(raw.map((k) => String(k).trim().replace(/^['"]+|['"]+$/g, "").trim()).filter(Boolean)));
+  }
+  return Array.from(new Set(
+    String(raw).split(new RegExp("[,;\\n\\r]+")).map((k) => k.trim().replace(/^['"]+|['"]+$/g, "").trim()).filter(Boolean)
+  ));
+}
 function mapRowToPlan(row) {
+  const rawKeyphrase = row.focus_keyphrase || "";
+  const keyphrases = splitKeyphrases(rawKeyphrase);
   return {
     id: String(row.id),
-    focusKeyphrase: row.focus_keyphrase,
+    focusKeyphrase: rawKeyphrase,
+    focusKeyphrases: keyphrases,
     pageRole: row.page_role || "Pillar Page",
     articleTitle: row.article_title,
     status: row.status || "Planned",
@@ -144,9 +156,14 @@ function createPlan(input) {
   const db = initPlannerDB();
   const id = input.id || crypto.randomUUID();
   const now = (/* @__PURE__ */ new Date()).toISOString();
+  const kps = splitKeyphrases(
+    input.focusKeyphrases && input.focusKeyphrases.length > 0 ? input.focusKeyphrases : input.focusKeyphrase
+  );
+  const focusKeyphrase = kps.join(", ");
   const plan = {
     id,
-    focusKeyphrase: (input.focusKeyphrase || "").trim(),
+    focusKeyphrase,
+    focusKeyphrases: kps,
     pageRole: input.pageRole || "Pillar Page",
     articleTitle: (input.articleTitle || "").trim(),
     status: input.status || "Planned",
@@ -196,9 +213,20 @@ function updatePlan(id, updates) {
   const existing = getPlanById(id);
   if (!existing) return null;
   const now = (/* @__PURE__ */ new Date()).toISOString();
+  let updatedKeyphrase = existing.focusKeyphrase;
+  let updatedKeyphrases = existing.focusKeyphrases || splitKeyphrases(existing.focusKeyphrase);
+  if (updates.focusKeyphrases !== void 0 || updates.focusKeyphrase !== void 0) {
+    const kps = splitKeyphrases(
+      updates.focusKeyphrases && updates.focusKeyphrases.length > 0 ? updates.focusKeyphrases : updates.focusKeyphrase
+    );
+    updatedKeyphrase = kps.join(", ");
+    updatedKeyphrases = kps;
+  }
   const updated = {
     ...existing,
     ...updates,
+    focusKeyphrase: updatedKeyphrase,
+    focusKeyphrases: updatedKeyphrases,
     id: existing.id,
     updatedAt: now
   };
@@ -316,8 +344,8 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
     const matchedArt = liveBySlug.get(planSlug) || liveByTitle.get(planTitle) || websiteArticles.find((a) => {
       const aTitle = normalizeText(a.title);
       const aTags = (a.tags || []).map((t) => normalizeText(t));
-      const keyphrase = normalizeText(plan.focusKeyphrase);
-      return aTitle.includes(keyphrase) || aTags.includes(keyphrase);
+      const planKeyphrases = splitKeyphrases(plan.focusKeyphrase).map((k) => normalizeText(k));
+      return planKeyphrases.some((kp) => aTitle.includes(kp) || aTags.includes(kp));
     });
     if (matchedArt) {
       let needsUpdate = false;
@@ -350,8 +378,8 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
       const artSlug = normalizeText(art.slug);
       const artTitle = normalizeText(art.title);
       if (!existingSlugs.has(artSlug) && !existingTitles.has(artTitle)) {
-        const primaryTag = art.tags && art.tags.length > 0 ? art.tags[0] : "";
-        const focusKeyphrase = primaryTag || art.title.split(":")[0].trim();
+        const allTags = art.tags && art.tags.length > 0 ? art.tags.join(", ") : "";
+        const focusKeyphrase = allTags || art.title.split(":")[0].trim();
         let pageRole = "Topic Cluster";
         const tLower = art.title.toLowerCase();
         if (tLower.includes("guide") || tLower.includes("blueprint") || tLower.includes("panduan") || tLower.includes("complete")) {
@@ -458,9 +486,11 @@ function parseCSV(csvText) {
       errors.push(`Baris ${i + 1}: Diabaikan karena judul dan keyphrase kosong.`);
       continue;
     }
+    const keyphrasesList = splitKeyphrases(rawKeyphrase);
     rows.push({
-      articleTitle: rawTitle.trim() || rawKeyphrase.trim(),
-      focusKeyphrase: rawKeyphrase.trim() || rawTitle.trim(),
+      articleTitle: rawTitle.trim() || (keyphrasesList[0] || ""),
+      focusKeyphrase: keyphrasesList.join(", ") || rawTitle.trim(),
+      focusKeyphrases: keyphrasesList.length > 0 ? keyphrasesList : [rawTitle.trim()],
       pageRole: normalizePageRole(rawRole),
       status: normalizePlanStatus(rawStatus),
       intent: normalizeIntent(rawIntent),
@@ -548,6 +578,7 @@ export {
   getPlanById,
   initPlannerDB,
   parseCSV,
+  splitKeyphrases,
   syncWithWebsiteArticles,
   updatePlan
 };

@@ -618,3 +618,92 @@
 .ap-toast.show {
   transform: translateX(-50%) translateY(0);
 }
+
+/* Multiple Keyphrase Chips in Table */
+.ap-keyphrase-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 280px;
+}
+
+.ap-keyphrase-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(217, 119, 6, 0.12);
+  color: #FBBF24;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  font-weight: 600;
+  font-size: 11.5px;
+  line-height: 1.25;
+}
+
+/* Multi-keyphrase Tag Input in Form Modal */
+.ap-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  background: #0F172A;
+  border: 1px solid var(--ap-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-height: 42px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: text;
+}
+.ap-chips-wrap:focus-within {
+  border-color: var(--ap-primary);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.25);
+}
+.ap-form-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(217, 119, 6, 0.16);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  color: #FBBF24;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  line-height: 1.2;
+}
+.ap-form-chip-remove {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #FBBF24;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 0 0 0 3px;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.ap-form-chip-remove:hover {
+  opacity: 1;
+  transform: scale(1.2);
+  color: #EF4444;
+}
+.ap-chip-input-field {
+  flex: 1;
+  min-width: 140px;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  color: #F8FAFC !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+  padding: 4px 0 !important;
+  box-shadow: none !important;
+}
+.ap-chip-input-field::placeholder {
+  color: #64748B;
+}

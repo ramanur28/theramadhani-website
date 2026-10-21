@@ -8,6 +8,7 @@ import {
   syncWithWebsiteArticles,
   parseCSV,
   generateSlug,
+  splitKeyphrases,
 } from '../src/utils/planner-db';
 
 describe('Article Planner Database & Sync Engine', () => {
@@ -186,5 +187,68 @@ Technical SEO Consultant,Landing Page,Hire Premier Technical SEO Consultant,Sche
   it('PLN-08: generates clean URL slugs from article titles', () => {
     expect(generateSlug('Generative Engine Optimization: The 2026 Playbook!')).toBe('generative-engine-optimization-the-2026-playbook');
     expect(generateSlug('B2B SaaS Technical SEO & GEO Guide')).toBe('b2b-saas-technical-seo-geo-guide');
+  });
+  it('PLN-09: supports multiple focus keyphrases per article (array and comma-delimited)', () => {
+    // 1. Create with comma-separated string
+    const plan1 = createPlan({
+      articleTitle: 'Enterprise Technical Architecture',
+      focusKeyphrase: 'Technical SEO, Core Web Vitals, Schema Graph',
+      pageRole: 'Pillar Page',
+      status: 'Planned',
+      intent: 'Informational',
+    });
+
+    expect(plan1.focusKeyphrase).toBe('Technical SEO, Core Web Vitals, Schema Graph');
+    expect(plan1.focusKeyphrases).toEqual(['Technical SEO', 'Core Web Vitals', 'Schema Graph']);
+
+    // 2. Create with array
+    const plan2 = createPlan({
+      articleTitle: 'Advanced Server-Side Tracking',
+      focusKeyphrases: ['Server-Side GTM', 'First-Party Cookies', 'Google Ads'],
+      pageRole: 'Topic Cluster',
+    });
+
+    expect(plan2.focusKeyphrase).toBe('Server-Side GTM, First-Party Cookies, Google Ads');
+    expect(plan2.focusKeyphrases).toEqual(['Server-Side GTM', 'First-Party Cookies', 'Google Ads']);
+
+    // 3. Update with new keyphrases
+    const updated = updatePlan(plan1.id, {
+      focusKeyphrases: ['Technical SEO', 'Answer Engine Optimization'],
+    });
+    expect(updated?.focusKeyphrase).toBe('Technical SEO, Answer Engine Optimization');
+    expect(updated?.focusKeyphrases).toEqual(['Technical SEO', 'Answer Engine Optimization']);
+
+    // 4. Test splitKeyphrases utility
+    expect(splitKeyphrases('keyword 1, keyword 2; keyword 3')).toEqual(['keyword 1', 'keyword 2', 'keyword 3']);
+    expect(splitKeyphrases(['a', 'b', 'c'])).toEqual(['a', 'b', 'c']);
+  });
+
+  it('PLN-10: parses CSV with multiple keyphrases and syncs all article tags as multiple keyphrases', () => {
+    const csvContent = `Focus Keyphrase,Page Role,Article Title,Status,Intent
+"Technical SEO, Core Web Vitals, INP",Pillar Page,Enterprise INP Architecture,Planned,Informational
+"GEO, AI Overviews",Topic Cluster,Optimizing for Generative Engines,In Progress,Informational`;
+
+    const { rows, errors } = parseCSV(csvContent);
+    expect(errors.length).toBe(0);
+    expect(rows.length).toBe(2);
+    expect(rows[0].focusKeyphrases).toEqual(['Technical SEO', 'Core Web Vitals', 'INP']);
+    expect(rows[0].focusKeyphrase).toBe('Technical SEO, Core Web Vitals, INP');
+    expect(rows[1].focusKeyphrases).toEqual(['GEO', 'AI Overviews']);
+
+    // Sync live articles and ensure all tags become focus keyphrases
+    const liveArticles = [
+      {
+        title: 'Modern Web Performance Architecture',
+        slug: 'modern-web-performance-architecture',
+        url: '/articles/modern-web-performance-architecture/',
+        tags: ['Performance', 'Core Web Vitals', 'Speed Optimization'],
+      },
+    ];
+
+    syncWithWebsiteArticles(liveArticles, true);
+    const imported = getAllPlans().find(p => p.slug === 'modern-web-performance-architecture');
+    expect(imported).toBeDefined();
+    expect(imported?.focusKeyphrase).toBe('Performance, Core Web Vitals, Speed Optimization');
+    expect(imported?.focusKeyphrases).toEqual(['Performance', 'Core Web Vitals', 'Speed Optimization']);
   });
 });
