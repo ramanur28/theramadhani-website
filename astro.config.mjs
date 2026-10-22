@@ -55,6 +55,13 @@ function decapServerIntegration() {
               const targetPath = path.join(uploadsDir, cleanName);
               const buffer = Buffer.from(content, 'base64');
               fs.writeFileSync(targetPath, buffer);
+              
+              // Also mirror to dist if dist/images/uploads exists
+              const distUploads = path.resolve(process.cwd(), 'dist/images/uploads');
+              if (fs.existsSync(distUploads)) {
+                fs.writeFileSync(path.join(distUploads, cleanName), buffer);
+              }
+
               console.log(
                 '\x1b[32m[dev-upload]\x1b[0m Saved to disk: public/images/uploads/' + cleanName
               );

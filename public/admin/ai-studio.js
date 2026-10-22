@@ -1155,8 +1155,68 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
       await new Promise((r) => setTimeout(r, 250));
     }
 
+    // Ensure all uploaded images are persisted to disk and decap-server before injecting
+    const imagesToPersist = [
+      ...(state.uploadedImages || []),
+      ...(state.uploadedImage ? [state.uploadedImage] : []),
+    ];
+    if (imagesToPersist.length > 0) {
+      setInjectLoading(true, 'Menyimpan Berkas Media...', `Mengunggah & memverifikasi ${imagesToPersist.length} gambar ke media library...`);
+      for (const img of imagesToPersist) {
+        await persistImageFile(img);
+      }
+      await new Promise((r) => setTimeout(r, 60));
+    }
+
     let injectedCount = 0;
     const populatedFields = [];
+
+    // Helper to find field React Fiber onChange handler (fallback when native input is not present)
+    function findFieldFiberOnChange(fieldName) {
+      const labels = Array.from(document.querySelectorAll('label'));
+      const targetVariants = [
+        fieldName.toLowerCase(),
+        fieldName.replace(/([A-Z])/g, ' $1').toLowerCase().trim(),
+        fieldName.replace(/([A-Z])/g, '-$1').toLowerCase(),
+      ];
+
+      for (const label of labels) {
+        const labelText = (label.textContent || '').trim().toLowerCase();
+        const labelFor = (label.getAttribute('for') || '').toLowerCase();
+        if (targetVariants.some((v) => labelText.includes(v) || labelFor.includes(v))) {
+          const pane =
+            label.closest('[class*="ControlPane"], [class*="control"], [class*="Field"]') ||
+            label.parentElement?.parentElement ||
+            label.parentElement;
+          if (!pane) continue;
+
+          let dom = pane;
+          while (dom && dom !== document.body) {
+            const fiberKey = Object.keys(dom).find(
+              (k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance')
+            );
+            if (fiberKey && dom[fiberKey]) {
+              let curr = dom[fiberKey];
+              let depth = 0;
+              while (curr && depth < 35) {
+                if (curr.memoizedProps && typeof curr.memoizedProps.onChange === 'function') {
+                  const fn = curr.memoizedProps.field?.get
+                    ? curr.memoizedProps.field.get('name')
+                    : curr.memoizedProps.field?.name;
+                  if (fn === fieldName || (curr.memoizedProps.value !== undefined && curr.memoizedProps.field)) {
+                    return curr.memoizedProps.onChange;
+                  }
+                }
+                curr = curr.return;
+                depth++;
+              }
+            }
+            dom = dom.parentElement;
+          }
+        }
+      }
+      return null;
+    }
 
     // Helper to find field inputs across various Decap CMS DOM variations
     function findFieldInput(fieldName, widgetType = 'input') {
@@ -1234,8 +1294,26 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
     await new Promise((r) => setTimeout(r, 25));
 
     // 5. Cover Image & Alt
+    let coverInjected = false;
     const coverEl = findFieldInput('coverImage', 'input');
     if (coverEl && setNativeValue(coverEl, art.coverImage)) {
+      coverInjected = true;
+    }
+
+    // React Fiber fallback for Decap CMS image widget (which uses button interface when set)
+    if (!coverInjected) {
+      const coverFiberOnChange = findFieldFiberOnChange('coverImage');
+      if (typeof coverFiberOnChange === 'function') {
+        try {
+          coverFiberOnChange(art.coverImage);
+          coverInjected = true;
+        } catch (fibErr) {
+          console.warn('[AI Studio] Cover image fiber injection warning:', fibErr);
+        }
+      }
+    }
+
+    if (coverInjected) {
       injectedCount++;
       populatedFields.push('Gambar Sampul');
     }
@@ -2668,7 +2746,7 @@ ${state.synthesizedArticle.body}`;
           }
         };
 
-        // Fast fallback timeout (50ms) for environments like Happy-DOM / test runners where Image decode doesn't fire
+        // Fallback timeout for environments like Happy-DOM / test runners where Image decode doesn't fire
         const safetyTimeout = setTimeout(() => {
           finish({
             base64: dataUrl,
@@ -2680,7 +2758,7 @@ ${state.synthesizedArticle.body}`;
             width: null,
             height: null,
           });
-        }, 50);
+        }, 2500);
 
         const img = new Image();
         img.onload = () => {
@@ -2813,6 +2891,106 @@ ${state.synthesizedArticle.body}`;
     state.visionAnalysis = cover.visionAnalysis || null;
   }
 
+  /**
+   * Persist an image item simultaneously through:
+   * 1. Cross-frame blob cache (instant preview without 404 in Decap CMS)
+   * 2. Astro / Vite dev server endpoint (/api/dev-upload) directly to public/images/uploads/
+   * 3. Decap CMS proxy server (http://localhost:8081/api/v1) for media library sync
+   */
+  async function persistImageFile(imageItem) {
+    if (!imageItem) return false;
+    const cleanName = imageItem.cleanName || (imageItem.name || 'image.webp');
+    const url = imageItem.url || `/images/uploads/${cleanName}`;
+    const rawBase64 = (imageItem.base64 || '').includes(',')
+      ? imageItem.base64.split(',')[1]
+      : (imageItem.base64 || '');
+
+    // 1. Cross-frame Blob URL registration (immediate zero-404 in Decap CMS editor & preview)
+    try {
+      let blobUrl = null;
+      if (imageItem.file instanceof Blob) {
+        blobUrl = URL.createObjectURL(imageItem.file);
+      } else if (imageItem.base64 && imageItem.base64.startsWith('data:')) {
+        blobUrl = imageItem.base64;
+      }
+      if (blobUrl) {
+        const wins = [window, window.parent, window.top].filter(Boolean);
+        const keys = [
+          cleanName,
+          imageItem.name,
+          url,
+          `/images/uploads/${cleanName}`,
+          `images/uploads/${cleanName}`,
+          `/${cleanName}`,
+        ].filter(Boolean);
+
+        for (const w of wins) {
+          try {
+            w.__decap_blob_urls = w.__decap_blob_urls || {};
+            for (const k of keys) {
+              w.__decap_blob_urls[k] = blobUrl;
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (e) {
+      console.warn('[AI Studio] Blob registration warning:', e);
+    }
+
+    if (!rawBase64) {
+      console.warn('[AI Studio] Cannot persist image without base64:', cleanName);
+      return false;
+    }
+
+    let persisted = false;
+
+    // 2. Direct instant disk persistence via Astro/Vite dev server (/api/dev-upload)
+    try {
+      const res = await fetch('/api/dev-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: cleanName, content: rawBase64 }),
+      });
+      if (res.ok) {
+        persisted = true;
+        console.log('[AI Studio] Saved image to disk via /api/dev-upload:', cleanName);
+      } else {
+        console.warn('[AI Studio] /api/dev-upload responded with status:', res.status);
+      }
+    } catch (err) {
+      console.warn('[AI Studio] /api/dev-upload failed:', err);
+    }
+
+    // 3. Persist via Decap CMS proxy server on 8081 if active
+    try {
+      const payload = {
+        action: 'persistMedia',
+        params: {
+          branch: 'main',
+          asset: {
+            path: 'public/images/uploads/' + cleanName,
+            content: rawBase64,
+            encoding: 'base64',
+          },
+          options: {
+            commitMessage: 'Upload ' + cleanName + ' via AI Studio',
+          },
+        },
+      };
+      const decapRes = await fetch('http://localhost:8081/api/v1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (decapRes.ok) {
+        persisted = true;
+        console.log('[AI Studio] Synced image with decap-server (8081):', cleanName);
+      }
+    } catch (_) {}
+
+    return persisted;
+  }
+
   async function handleUploadedImages(files) {
     if (!files) return;
     const fileList = Array.isArray(files) ? files : Array.from(files);
@@ -2840,17 +3018,6 @@ ${state.synthesizedArticle.body}`;
           .replace(/[^a-z0-9]+/g, '-');
         const cleanName = `article-${Date.now()}-${i + 1}-${baseName}.${compressed.format}`;
 
-        try {
-          const rawBase64 = compressed.base64.split(',')[1];
-          if (rawBase64) {
-            await fetch('/api/dev-upload', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ filename: cleanName, content: rawBase64 }),
-            });
-          }
-        } catch (_) {}
-
         const imageItem = {
           id: 'img-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
           file: file,
@@ -2867,6 +3034,9 @@ ${state.synthesizedArticle.body}`;
           isCover: state.uploadedImages.length === 0,
           visionAnalysis: null,
         };
+
+        // Persist immediately to disk, decap-server, and cross-frame blob cache
+        await persistImageFile(imageItem);
 
         state.uploadedImages.push(imageItem);
         totalOrig += compressed.originalSize;
