@@ -2093,11 +2093,44 @@ ${art.body}`;
     state.isOpen = true;
     drawerEl.classList.add('is-open');
     backdropEl.classList.add('is-open');
+    // Sync chips from state (state may have been filled before the drawer DOM existed)
+    renderChips();
     loadCustomStrategies().then(() => renderStrategyCards());
     updateActiveModelBadge();
     loadSiteCatalog().then(() => {
+      autoSuggestInternalLinks();
       renderInternalLinksTable();
     });
+  }
+
+  /**
+   * Open the studio and pre-fill Topic + Focus Keyphrases (used by Article Planner).
+   * The drawer is rendered first so the inputs/chips exist in the DOM before populating.
+   */
+  function prefillStudio({ topic = '', focusKeyphrases = [] } = {}) {
+    openStudioDrawer();
+
+    const kps = (Array.isArray(focusKeyphrases) ? focusKeyphrases : String(focusKeyphrases || '').split(','))
+      .map((k) => String(k).trim())
+      .filter(Boolean);
+
+    state.topic = topic || '';
+    state.primaryKeyword = kps[0] || '';
+    state.focusKeyphrases = [];
+
+    const topicInput = document.getElementById('ai-topic-input');
+    if (topicInput) {
+      topicInput.value = state.topic;
+      topicInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    const chipInput = document.getElementById('ai-chip-input');
+    if (chipInput) chipInput.value = '';
+
+    if (kps.length > 0) addFocusKeyphrases(kps.join(', '));
+    renderChips();
+
+    if (!state.isGenerating && state.currentStep !== 1) switchStep(1);
   }
 
   function closeStudioDrawer() {
@@ -3443,15 +3476,7 @@ ${state.synthesizedArticle.body}`;
           ? plan.focusKeyphrases
           : (plan.focusKeyphrase || '').split(',').map((k) => k.trim()).filter(Boolean);
         setTimeout(() => {
-          openStudioDrawer();
-          state.topic = plan.articleTitle;
-          state.primaryKeyword = kps[0] || '';
-          state.focusKeyphrases = [];
-          const topicInput = document.getElementById('ai-topic-input');
-          if (topicInput) topicInput.value = plan.articleTitle;
-          if (typeof addFocusKeyphrases === 'function') {
-            addFocusKeyphrases(kps.join(', '));
-          }
+          prefillStudio({ topic: plan.articleTitle, focusKeyphrases: kps });
         }, 800);
       }
     } catch (_) {}
@@ -3465,6 +3490,7 @@ ${state.synthesizedArticle.body}`;
 
   const studioAPI = {
     open: openStudioDrawer,
+    prefill: prefillStudio,
     close: closeStudioDrawer,
     state: state,
     callAI: callAI,

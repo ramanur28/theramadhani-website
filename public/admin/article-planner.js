@@ -1266,7 +1266,15 @@ Jasa Konsultan SEO,Landing Page,Layanan Konsultan SEO Teknis & GEO Profesional,P
       ? plan.focusKeyphrases
       : (plan.focusKeyphrase || '').split(',').map((k) => k.trim()).filter(Boolean);
 
-    if (window.DecapAIStudio) {
+    if (window.DecapAIStudio && typeof window.DecapAIStudio.prefill === 'function') {
+      // Open drawer first, then populate Topic + Focus Keyphrases (DOM must exist)
+      window.DecapAIStudio.prefill({ topic: plan.articleTitle, focusKeyphrases: kps });
+      showToast(`⚡ Membuka AI Article Studio untuk "${plan.articleTitle}"...`, true);
+
+      if (plan.status === 'Planned') {
+        savePlanToDb({ id: plan.id, status: 'In Progress' });
+      }
+    } else if (window.DecapAIStudio) {
       // Pre-fill state
       window.DecapAIStudio.state.topic = plan.articleTitle;
       window.DecapAIStudio.state.primaryKeyword = kps[0] || '';
