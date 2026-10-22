@@ -1,9 +1,15 @@
 [
   {
-    "id": "13d20051-4e72-4832-9cd5-a0ddb17bc291",
-    "focusKeyphrase": "Technical SEO Services",
+    "id": "4b39c565-afc4-4bfd-8cc1-642caf3d602f",
+    "focusKeyphrase": "Technical SEO, Technical SEO Services, Core Web Vitals, Crawl Budget, JavaScript SEO, Site Architecture, SEO Audit",
     "focusKeyphrases": [
-      "Technical SEO Services"
+      "Technical SEO",
+      "Technical SEO Services",
+      "Core Web Vitals",
+      "Crawl Budget",
+      "JavaScript SEO",
+      "Site Architecture",
+      "SEO Audit"
     ],
     "pageRole": "Pillar Page",
     "articleTitle": "Technical SEO Services: The Definitive Guide to Architecture,",
@@ -13,11 +19,11 @@
     "liveUrl": "/articles/technical-seo-services/",
     "notes": "Ringkasan: Discover how professional technical SEO services resolve crawl",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.366Z",
-    "updatedAt": "2026-10-22T05:04:57.366Z"
+    "createdAt": "2026-10-22T09:00:17.434Z",
+    "updatedAt": "2026-10-22T09:00:17.434Z"
   },
   {
-    "id": "5821501a-46c6-4c5d-8ca9-a4b6808c240d",
+    "id": "4f915806-2439-418e-842a-25ec0e1d4d98",
     "focusKeyphrase": "Technical SEO, Core Web Vitals, Structured Data, Google Ads",
     "focusKeyphrases": [
       "Technical SEO",
@@ -33,14 +39,20 @@
     "liveUrl": "/articles/technical-seo-mastery-for-ai-overviews/",
     "notes": "Ringkasan: Actionable technical SEO framework to optimize Core Web Vitals (LCP < 2.0s, CLS < 0.1), structured JSON-LD schemas, and AI search engine crawlability.",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.354Z",
-    "updatedAt": "2026-10-22T05:04:57.354Z"
+    "createdAt": "2026-10-22T09:00:17.428Z",
+    "updatedAt": "2026-10-22T09:00:17.428Z"
   },
   {
-    "id": "af8b6c1d-d307-45bf-adc2-d044c0d10689",
-    "focusKeyphrase": "Technical SEO Consultant",
+    "id": "df3fc663-8e19-46f7-b9e6-0eb423b3e705",
+    "focusKeyphrase": "Technical SEO Consultant, SEO Consultant, Technical SEO Audits Consultant, Website Architecture, Core Web Vitals, Crawlability, JavaScript SEO",
     "focusKeyphrases": [
-      "Technical SEO Consultant"
+      "Technical SEO Consultant",
+      "SEO Consultant",
+      "Technical SEO Audits Consultant",
+      "Website Architecture",
+      "Core Web Vitals",
+      "Crawlability",
+      "JavaScript SEO"
     ],
     "pageRole": "Topic Cluster",
     "articleTitle": "Technical SEO Consultant: Strategic Architecture, Crawlability, and",
@@ -50,14 +62,20 @@
     "liveUrl": "/articles/technical-seo-consultant/",
     "notes": "Ringkasan: Hire a technical SEO consultant to resolve deep site infrastructure",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.338Z",
-    "updatedAt": "2026-10-22T05:04:57.338Z"
+    "createdAt": "2026-10-22T09:00:17.424Z",
+    "updatedAt": "2026-10-22T09:00:17.424Z"
   },
   {
-    "id": "a8588580-8b89-4cee-9623-b60629132566",
-    "focusKeyphrase": "Technical SEO Audit Service",
+    "id": "af1c39e5-74ad-4973-a14e-3d3f3e8527f6",
+    "focusKeyphrase": "Technical SEO Audit Service, Technical SEO Site Audit Agency, Technical Website Audit, Enterprise SEO Audit, Crawlability Audit, Core Web Vitals Audit, Indexation Audit",
     "focusKeyphrases": [
-      "Technical SEO Audit Service"
+      "Technical SEO Audit Service",
+      "Technical SEO Site Audit Agency",
+      "Technical Website Audit",
+      "Enterprise SEO Audit",
+      "Crawlability Audit",
+      "Core Web Vitals Audit",
+      "Indexation Audit"
     ],
     "pageRole": "Topic Cluster",
     "articleTitle": "Technical SEO Audit Service: Enterprise Infrastructure Diagnostics and",
@@ -67,14 +85,20 @@
     "liveUrl": "/articles/technical-seo-audit-service/",
     "notes": "Ringkasan: Commission a specialized technical SEO audit service. Discover how",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.327Z",
-    "updatedAt": "2026-10-22T05:04:57.327Z"
+    "createdAt": "2026-10-22T09:00:17.419Z",
+    "updatedAt": "2026-10-22T09:00:17.419Z"
   },
   {
-    "id": "168d6c3e-7b4d-4fa0-902d-7f377811cc49",
-    "focusKeyphrase": "SEO for Technology Companies",
+    "id": "f24eccb5-f124-4b4b-847a-9ec707d5f102",
+    "focusKeyphrase": "SEO for Technology Companies, SEO Services for Tech Startups, Technology SEO Agency, SaaS SEO, B2B Tech SEO, Tech Startup Organic Growth, Product-Led SEO",
     "focusKeyphrases": [
-      "SEO for Technology Companies"
+      "SEO for Technology Companies",
+      "SEO Services for Tech Startups",
+      "Technology SEO Agency",
+      "SaaS SEO",
+      "B2B Tech SEO",
+      "Tech Startup Organic Growth",
+      "Product-Led SEO"
     ],
     "pageRole": "Topic Cluster",
     "articleTitle": "SEO for Technology Companies: The Scaling Playbook for High-Growth Startups",
@@ -84,14 +108,40 @@
     "liveUrl": "/articles/seo-for-technology-companies/",
     "notes": "Ringkasan: Accelerate SaaS growth with specialized SEO for technology",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.314Z",
-    "updatedAt": "2026-10-22T05:04:57.314Z"
+    "createdAt": "2026-10-22T09:00:17.414Z",
+    "updatedAt": "2026-10-22T09:00:17.414Z"
   },
   {
-    "id": "6544dbcd-7fec-4192-8288-8e617e61bddf",
-    "focusKeyphrase": "Metrics SEO",
+    "id": "96e312e7-99d2-47e8-bd68-23a8cf3839e0",
+    "focusKeyphrase": "Organic SEO, Technical SEO, Search Visibility, AI Search Optimization",
     "focusKeyphrases": [
-      "Metrics SEO"
+      "Organic SEO",
+      "Technical SEO",
+      "Search Visibility",
+      "AI Search Optimization"
+    ],
+    "pageRole": "Topic Cluster",
+    "articleTitle": "Organic SEO Fundamentals: How Organic Search Works",
+    "status": "Published",
+    "intent": "Informational",
+    "slug": "organic-seo-fundamentals-how-organic-search-works",
+    "liveUrl": "/articles/organic-seo-fundamentals-how-organic-search-works/",
+    "notes": "Ringkasan: Learn organic SEO fundamentals, what organic search is, how organic",
+    "targetWordCount": 2500,
+    "createdAt": "2026-10-22T09:00:17.410Z",
+    "updatedAt": "2026-10-22T09:00:17.410Z"
+  },
+  {
+    "id": "2fe2f05d-92c9-4539-8d6d-9b384d2abfb1",
+    "focusKeyphrase": "SEO Metrics, SEO KPIs, Metrics SEO, SEO Performance Tracking, Search Console KPIs, Organic Conversion Rate, Technical SEO Metrics",
+    "focusKeyphrases": [
+      "SEO Metrics",
+      "SEO KPIs",
+      "Metrics SEO",
+      "SEO Performance Tracking",
+      "Search Console KPIs",
+      "Organic Conversion Rate",
+      "Technical SEO Metrics"
     ],
     "pageRole": "Topic Cluster",
     "articleTitle": "Metrics SEO: The Definitive Framework for Tracking KPIs and Organic ROI",
@@ -101,14 +151,20 @@
     "liveUrl": "/articles/seo-metrics-and-kpis/",
     "notes": "Ringkasan: Master metrics SEO with this strategic framework. Discover how",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.307Z",
-    "updatedAt": "2026-10-22T05:04:57.307Z"
+    "createdAt": "2026-10-22T09:00:17.405Z",
+    "updatedAt": "2026-10-22T09:00:17.405Z"
   },
   {
-    "id": "be15d20b-99c9-45ec-8233-34eea764755f",
-    "focusKeyphrase": "Measuring SEO Performance",
+    "id": "7ad40fba-b42a-4a59-a7bd-bb766b13e837",
+    "focusKeyphrase": "Measure SEO, Tracking SEO Performance, Website SEO Score, SEO KPIs, Search Console Analytics, Organic Traffic Measurement, SEO ROI",
     "focusKeyphrases": [
-      "Measuring SEO Performance"
+      "Measure SEO",
+      "Tracking SEO Performance",
+      "Website SEO Score",
+      "SEO KPIs",
+      "Search Console Analytics",
+      "Organic Traffic Measurement",
+      "SEO ROI"
     ],
     "pageRole": "Pillar Page",
     "articleTitle": "Measuring SEO Performance: The Strategic Guide to Tracking Organic",
@@ -118,14 +174,20 @@
     "liveUrl": "/articles/measuring-seo-performance/",
     "notes": "Ringkasan: Learn how to measure SEO performance beyond vanity rankings. Track",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.290Z",
-    "updatedAt": "2026-10-22T05:04:57.290Z"
+    "createdAt": "2026-10-22T09:00:17.400Z",
+    "updatedAt": "2026-10-22T09:00:17.400Z"
   },
   {
-    "id": "e19a8019-736a-4bef-9e08-fefa685ce00e",
-    "focusKeyphrase": "How to Do an SEO Audit",
+    "id": "dd91d617-6335-4528-a03e-6619dbac6230",
+    "focusKeyphrase": "SEO Audit, How to Do an SEO Audit, Technical SEO Audit, Website Audit Checklist, Crawlability, Core Web Vitals, On-Page SEO",
     "focusKeyphrases": [
-      "How to Do an SEO Audit"
+      "SEO Audit",
+      "How to Do an SEO Audit",
+      "Technical SEO Audit",
+      "Website Audit Checklist",
+      "Crawlability",
+      "Core Web Vitals",
+      "On-Page SEO"
     ],
     "pageRole": "Topic Cluster",
     "articleTitle": "How to Do an SEO Audit: Step-by-Step Technical Framework for Organic Growth",
@@ -135,14 +197,17 @@
     "liveUrl": "/articles/how-to-do-an-seo-audit/",
     "notes": "Ringkasan: Learn how to do an SEO audit with this comprehensive technical",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.254Z",
-    "updatedAt": "2026-10-22T05:04:57.254Z"
+    "createdAt": "2026-10-22T09:00:17.396Z",
+    "updatedAt": "2026-10-22T09:00:17.396Z"
   },
   {
-    "id": "085433d3-d765-4768-acf2-5d528257280c",
-    "focusKeyphrase": "Google Ads Smart Bidding & Server-Side Tracking",
+    "id": "ae419ad2-c6d7-46c3-bb5e-8ba910d7655d",
+    "focusKeyphrase": "Google Ads, Conversion Tracking, PPC, Measurement",
     "focusKeyphrases": [
-      "Google Ads Smart Bidding & Server-Side Tracking"
+      "Google Ads",
+      "Conversion Tracking",
+      "PPC",
+      "Measurement"
     ],
     "pageRole": "Topic Cluster",
     "articleTitle": "Google Ads Smart Bidding & Server-Side Tracking: The 2026 Architecture",
@@ -152,11 +217,11 @@
     "liveUrl": "/articles/google-ads-smart-bidding-server-side-tracking/",
     "notes": "Ringkasan: How to configure server-side GTM, enhanced conversions, and",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.241Z",
-    "updatedAt": "2026-10-22T05:04:57.241Z"
+    "createdAt": "2026-10-22T09:00:17.391Z",
+    "updatedAt": "2026-10-22T09:00:17.391Z"
   },
   {
-    "id": "c04a1d4a-fdca-4a60-80e5-e722c4515241",
+    "id": "a1918d36-c183-447f-96aa-ac067b52031a",
     "focusKeyphrase": "GEO, AI Search, Technical SEO, LLM Optimization",
     "focusKeyphrases": [
       "GEO",
@@ -172,14 +237,20 @@
     "liveUrl": "/articles/generative-engine-optimization-guide/",
     "notes": "Ringkasan: Master Generative Engine Optimization (GEO) to dominate AI answers in ChatGPT, Perplexity, Claude, and Google AI Overviews with entity structuring.",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.202Z",
-    "updatedAt": "2026-10-22T05:04:57.202Z"
+    "createdAt": "2026-10-22T09:00:17.385Z",
+    "updatedAt": "2026-10-22T09:00:17.385Z"
   },
   {
-    "id": "47e23f93-daf6-4159-8cd6-be8626befaf5",
-    "focusKeyphrase": "Free SEO Audit Tools",
+    "id": "35c6bd9a-b014-4830-ac89-63e6646067ed",
+    "focusKeyphrase": "Free SEO Audit Tools, SEO Audit Tools, Free SEO Consultant, SEO Ranking Checker, Best Free SEO Tools, Technical SEO Audit, Search Console Diagnostic",
     "focusKeyphrases": [
-      "Free SEO Audit Tools"
+      "Free SEO Audit Tools",
+      "SEO Audit Tools",
+      "Free SEO Consultant",
+      "SEO Ranking Checker",
+      "Best Free SEO Tools",
+      "Technical SEO Audit",
+      "Search Console Diagnostic"
     ],
     "pageRole": "Topic Cluster",
     "articleTitle": "Free SEO Audit Tools: Diagnostic Stack, Ranking Checkers, and",
@@ -189,14 +260,20 @@
     "liveUrl": "/articles/free-seo-audit-and-diagnostic-tools/",
     "notes": "Ringkasan: Master technical diagnostics with the best free SEO audit tools.",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.177Z",
-    "updatedAt": "2026-10-22T05:04:57.177Z"
+    "createdAt": "2026-10-22T09:00:17.379Z",
+    "updatedAt": "2026-10-22T09:00:17.379Z"
   },
   {
-    "id": "d89404b5-0f37-45cc-9f37-0c2fb54990d9",
-    "focusKeyphrase": "B2B SEO Services",
+    "id": "61a5c3d9-932f-4189-8a80-7e02f9db8427",
+    "focusKeyphrase": "B2B SEO, B2B SEO Services, B2B SEO Agency, Enterprise SEO, Lead Generation, Pipeline Marketing, Technical SEO",
     "focusKeyphrases": [
-      "B2B SEO Services"
+      "B2B SEO",
+      "B2B SEO Services",
+      "B2B SEO Agency",
+      "Enterprise SEO",
+      "Lead Generation",
+      "Pipeline Marketing",
+      "Technical SEO"
     ],
     "pageRole": "Pillar Page",
     "articleTitle": "B2B SEO Services: The Complete Strategy for Enterprise Pipeline and",
@@ -206,7 +283,60 @@
     "liveUrl": "/articles/b2b-seo-services/",
     "notes": "Ringkasan: Scale enterprise pipeline with specialized B2B SEO services. Learn",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T05:04:57.138Z",
-    "updatedAt": "2026-10-22T05:04:57.138Z"
+    "createdAt": "2026-10-22T09:00:17.373Z",
+    "updatedAt": "2026-10-22T09:00:17.373Z"
+  },
+  {
+    "id": "cfb3286f-6005-4e9d-a66a-bc170a78ae94",
+    "focusKeyphrase": "",
+    "focusKeyphrases": [],
+    "pageRole": "Pillar Page",
+    "articleTitle": "Future Algorithm Predictions 2027",
+    "status": "Planned",
+    "intent": "Informational",
+    "slug": "future-algorithm-predictions-2027",
+    "targetWordCount": 2500,
+    "createdAt": "2026-10-22T08:56:28.474Z",
+    "updatedAt": "2026-10-22T09:00:17.365Z"
+  },
+  {
+    "id": "1b0ab341-a674-4de3-a864-d57da3491c36",
+    "focusKeyphrase": "",
+    "focusKeyphrases": [],
+    "pageRole": "Pillar Page",
+    "articleTitle": "Advanced Technical SEO Architecture",
+    "status": "Planned",
+    "intent": "Informational",
+    "slug": "advanced-technical-seo-architecture",
+    "targetWordCount": 2500,
+    "createdAt": "2026-10-22T08:56:28.468Z",
+    "updatedAt": "2026-10-22T09:00:17.358Z"
+  },
+  {
+    "id": "96f81d6d-6bae-4730-9000-37b7b8f1141f",
+    "focusKeyphrase": "",
+    "focusKeyphrases": [],
+    "pageRole": "Pillar Page",
+    "articleTitle": "Draft WIP Guide on Indexing",
+    "status": "In Progress",
+    "intent": "Informational",
+    "slug": "draft-wip-guide-on-indexing",
+    "liveUrl": "/articles/draft-wip-guide-on-indexing/",
+    "targetWordCount": 2500,
+    "createdAt": "2026-10-22T08:56:28.480Z",
+    "updatedAt": "2026-10-22T08:56:28.502Z"
+  },
+  {
+    "id": "cfb9478b-7a5d-4812-b811-ff1d1a931ec0",
+    "focusKeyphrase": "",
+    "focusKeyphrases": [],
+    "pageRole": "Pillar Page",
+    "articleTitle": "Deleted or Unwritten Guide",
+    "status": "Planned",
+    "intent": "Informational",
+    "slug": "deleted-or-unwritten-guide",
+    "targetWordCount": 2500,
+    "createdAt": "2026-10-22T08:56:28.491Z",
+    "updatedAt": "2026-10-22T08:56:28.497Z"
   }
 ]

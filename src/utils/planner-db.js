@@ -326,18 +326,39 @@ function bulkCreatePlans(inputs) {
   }
   return { inserted: created.length, plans: created, errors };
 }
+function determineArticleStatus(art) {
+  const s = (art.status || "").toLowerCase().trim();
+  const isDraft = art.draft === true || s === "draft";
+  if (isDraft) return "In Progress";
+  if (s === "scheduled") return "Scheduled";
+  if (art.publishDate) {
+    const pubTime = new Date(art.publishDate).getTime();
+    if (!isNaN(pubTime) && pubTime > Date.now()) {
+      return "Scheduled";
+    }
+  }
+  if (s === "published" || !s) {
+    return "Published";
+  }
+  return "In Progress";
+}
+
 function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
   const currentPlans = getAllPlans();
   let syncedCount = 0;
   let newImportedCount = 0;
-  const liveBySlug = /* @__PURE__ */ new Map();
-  const liveByTitle = /* @__PURE__ */ new Map();
+  const updatedPlanIds = [];
+  const importedPlanIds = [];
+
+  const liveBySlug = new Map();
+  const liveByTitle = new Map();
   for (const art of websiteArticles) {
     const normSlug = normalizeText(art.slug);
     const normTitle = normalizeText(art.title);
     liveBySlug.set(normSlug, art);
     liveByTitle.set(normTitle, art);
   }
+
   for (const plan of currentPlans) {
     const planSlug = normalizeText(plan.slug || generateSlug(plan.articleTitle));
     const planTitle = normalizeText(plan.articleTitle);
@@ -347,11 +368,14 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
       const planKeyphrases = splitKeyphrases(plan.focusKeyphrase).map((k) => normalizeText(k));
       return planKeyphrases.some((kp) => aTitle.includes(kp) || aTags.includes(kp));
     });
+
     if (matchedArt) {
       let needsUpdate = false;
       const updates = {};
-      if (plan.status !== "Published") {
-        updates.status = "Published";
+      const targetStatus = determineArticleStatus(matchedArt);
+
+      if (plan.status !== targetStatus) {
+        updates.status = targetStatus;
         needsUpdate = true;
       }
       if (!plan.liveUrl || plan.liveUrl !== matchedArt.url) {
@@ -365,15 +389,29 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
       if (needsUpdate) {
         updatePlan(plan.id, updates);
         syncedCount++;
+        updatedPlanIds.push(plan.id);
+      }
+    } else {
+      // If plan has no corresponding article file on the website:
+      // If it was marked Published or Scheduled, revert to Planned!
+      if (plan.status === "Published" || plan.status === "Scheduled") {
+        updatePlan(plan.id, {
+          status: "Planned",
+          liveUrl: void 0
+        });
+        syncedCount++;
+        updatedPlanIds.push(plan.id);
       }
     }
   }
+
   if (autoImportMissing) {
     const refreshedPlans = getAllPlans();
     const existingSlugs = new Set(
       refreshedPlans.map((p) => normalizeText(p.slug || generateSlug(p.articleTitle)))
     );
     const existingTitles = new Set(refreshedPlans.map((p) => normalizeText(p.articleTitle)));
+
     for (const art of websiteArticles) {
       const artSlug = normalizeText(art.slug);
       const artTitle = normalizeText(art.title);
@@ -387,11 +425,12 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
         } else if (tLower.includes("case study") || art.type === "case-study") {
           pageRole = "Case Study";
         }
-        createPlan({
+        const targetStatus = determineArticleStatus(art);
+        const newPlan = createPlan({
           articleTitle: art.title,
           focusKeyphrase,
           pageRole,
-          status: "Published",
+          status: targetStatus,
           intent: "Informational",
           slug: art.slug,
           liveUrl: art.url,
@@ -399,17 +438,30 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
           targetWordCount: 2500
         });
         newImportedCount++;
+        importedPlanIds.push(newPlan.id);
         existingSlugs.add(artSlug);
         existingTitles.add(artTitle);
       }
     }
   }
+
+  const allRefreshed = getAllPlans();
   return {
     syncedCount,
     newImportedCount,
-    plans: getAllPlans()
+    updatedPlanIds,
+    importedPlanIds,
+    statusSummary: {
+      total: allRefreshed.length,
+      published: allRefreshed.filter((p) => p.status === "Published").length,
+      scheduled: allRefreshed.filter((p) => p.status === "Scheduled").length,
+      inProgress: allRefreshed.filter((p) => p.status === "In Progress").length,
+      planned: allRefreshed.filter((p) => p.status === "Planned").length
+    },
+    plans: allRefreshed
   };
 }
+
 function parseCSV(csvText) {
   const errors = [];
   const rows = [];
@@ -580,6 +632,7 @@ function generateSlug(title) {
   return (title || "").toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/[\s_]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 }
 export {
+  determineArticleStatus,
   bulkCreatePlans,
   createPlan,
   deletePlan,

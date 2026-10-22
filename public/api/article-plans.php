@@ -467,12 +467,220 @@ if ($method === 'POST') {
     }
 
     if ($isSync) {
-        $plans = getAllPlans($pdo, $jsonPath);
+        $articlesDir = $parentDir . '/src/content/articles';
+        if (!is_dir($articlesDir) && is_dir($publicDir . '/../src/content/articles')) {
+            $articlesDir = realpath($publicDir . '/../src/content/articles');
+        }
+
+        $websiteArticles = [];
+        if ($articlesDir && is_dir($articlesDir)) {
+            $files = scandir($articlesDir);
+            foreach ($files as $f) {
+                if (preg_match('/\.(md|mdx)$/i', $f)) {
+                    $filePath = $articlesDir . '/' . $f;
+                    $text = @file_get_contents($filePath);
+                    if (!$text) continue;
+
+                    preg_match('/^title:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $titleM);
+                    preg_match('/^slug:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $slugM);
+                    preg_match('/^description:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $descM);
+                    preg_match('/^status:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $statusM);
+                    preg_match('/^draft:\s*(true|false)/im', $text, $draftM);
+                    preg_match('/^publishDate:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $pubDateM);
+
+                    $fileSlug = pathinfo($filePath, PATHINFO_FILENAME);
+                    $slug = !empty($slugM[1]) ? trim($slugM[1]) : $fileSlug;
+
+                    $tags = [];
+                    if (preg_match('/^tags:\s*\[(.*?)\]/m', $text, $tagsBracketM)) {
+                        $rawTags = explode(',', $tagsBracketM[1]);
+                        foreach ($rawTags as $rt) {
+                            $t = trim(trim($rt), "\x22\x27");
+                            if ($t !== '') $tags[] = $t;
+                        }
+                    } elseif (preg_match('/^tags:\s*\n((?:\s*-\s*.+\n?)+)/m', $text, $tagsBlockM)) {
+                        $lines = explode("\n", $tagsBlockM[1]);
+                        foreach ($lines as $line) {
+                            $t = trim(trim(preg_replace('/^\s*-\s*/', '', $line)), "\x22\x27");
+                            if ($t !== '') $tags[] = $t;
+                        }
+                    }
+
+                    $rawStatus = !empty($statusM[1]) ? strtolower(trim($statusM[1])) : 'published';
+                    $isDraft = (!empty($draftM[1]) && strtolower($draftM[1]) === 'true') || ($rawStatus === 'draft');
+                    $publishDate = !empty($pubDateM[1]) ? trim($pubDateM[1]) : null;
+
+                    // Determine real status
+                    $determinedStatus = 'Published';
+                    if ($isDraft) {
+                        $determinedStatus = 'In Progress';
+                    } elseif ($rawStatus === 'scheduled') {
+                        $determinedStatus = 'Scheduled';
+                    } elseif ($publishDate) {
+                        $pubTime = strtotime($publishDate);
+                        if ($pubTime && $pubTime > time()) {
+                            $determinedStatus = 'Scheduled';
+                        }
+                    }
+
+                    $websiteArticles[] = [
+                        'title' => !empty($titleM[1]) ? trim($titleM[1]) : $fileSlug,
+                        'slug' => $slug,
+                        'url' => '/articles/' . $slug . '/',
+                        'description' => !empty($descM[1]) ? trim($descM[1]) : '',
+                        'tags' => array_values($tags),
+                        'status' => $determinedStatus,
+                    ];
+                }
+            }
+        }
+
+        $currentPlans = getAllPlans($pdo, $jsonPath);
+        $syncedCount = 0;
+        $newImportedCount = 0;
+        $updatedPlanIds = [];
+        $importedPlanIds = [];
+
+        $liveBySlug = [];
+        $liveByTitle = [];
+        foreach ($websiteArticles as $art) {
+            $liveBySlug[normalizeText($art['slug'])] = $art;
+            $liveByTitle[normalizeText($art['title'])] = $art;
+        }
+
+        foreach ($currentPlans as &$plan) {
+            $pSlug = normalizeText($plan['slug'] ?? generateSlug($plan['articleTitle']));
+            $pTitle = normalizeText($plan['articleTitle']);
+
+            $matchedArt = $liveBySlug[$pSlug] ?? ($liveByTitle[$pTitle] ?? null);
+            if ($matchedArt) {
+                $needsUpdate = false;
+                $targetStatus = $matchedArt['status'];
+
+                if ($plan['status'] !== $targetStatus) {
+                    $plan['status'] = $targetStatus;
+                    $needsUpdate = true;
+                }
+                if (($plan['liveUrl'] ?? '') !== $matchedArt['url']) {
+                    $plan['liveUrl'] = $matchedArt['url'];
+                    $needsUpdate = true;
+                }
+                if (($plan['slug'] ?? '') !== $matchedArt['slug']) {
+                    $plan['slug'] = $matchedArt['slug'];
+                    $needsUpdate = true;
+                }
+                if ($needsUpdate) {
+                    $plan['updatedAt'] = date('c');
+                    $syncedCount++;
+                    $updatedPlanIds[] = $plan['id'];
+
+                    if ($pdo) {
+                        $stmt = $pdo->prepare("UPDATE article_plans SET status = ?, live_url = ?, slug = ?, updated_at = ? WHERE id = ?");
+                        $stmt->execute([$plan['status'], $plan['liveUrl'], $plan['slug'], $plan['updatedAt'], $plan['id']]);
+                    }
+                }
+            } else {
+                if ($plan['status'] === 'Published' || $plan['status'] === 'Scheduled') {
+                    $plan['status'] = 'Planned';
+                    $plan['liveUrl'] = null;
+                    $plan['updatedAt'] = date('c');
+                    $syncedCount++;
+                    $updatedPlanIds[] = $plan['id'];
+
+                    if ($pdo) {
+                        $stmt = $pdo->prepare("UPDATE article_plans SET status = 'Planned', live_url = NULL, updated_at = ? WHERE id = ?");
+                        $stmt->execute([$plan['updatedAt'], $plan['id']]);
+                    }
+                }
+            }
+        }
+        unset($plan);
+
+        // Auto-import missing articles
+        $existingSlugs = [];
+        $existingTitles = [];
+        foreach ($currentPlans as $p) {
+            $existingSlugs[normalizeText($p['slug'] ?? generateSlug($p['articleTitle']))] = true;
+            $existingTitles[normalizeText($p['articleTitle'])] = true;
+        }
+
+        foreach ($websiteArticles as $art) {
+            $aSlug = normalizeText($art['slug']);
+            $aTitle = normalizeText($art['title']);
+
+            if (!isset($existingSlugs[$aSlug]) && !isset($existingTitles[$aTitle])) {
+                $focusKeyphrase = count($art['tags']) > 0 ? implode(', ', $art['tags']) : explode(':', $art['title'])[0];
+                $kps = splitKeyphrases($focusKeyphrase);
+
+                $pageRole = 'Topic Cluster';
+                $tLower = strtolower($art['title']);
+                if (strpos($tLower, 'guide') !== false || strpos($tLower, 'blueprint') !== false || strpos($tLower, 'complete') !== false) {
+                    $pageRole = 'Pillar Page';
+                }
+
+                $newId = 'plan-' . round(microtime(true) * 1000) . '-' . substr(md5(uniqid('', true)), 0, 4);
+                $now = date('c');
+                $newPlan = [
+                    'id' => $newId,
+                    'focusKeyphrase' => $focusKeyphrase,
+                    'focusKeyphrases' => count($kps) > 0 ? $kps : [$art['title']],
+                    'pageRole' => $pageRole,
+                    'articleTitle' => $art['title'],
+                    'status' => $art['status'],
+                    'intent' => 'Informational',
+                    'slug' => $art['slug'],
+                    'liveUrl' => $art['url'],
+                    'notes' => !empty($art['description']) ? ('Ringkasan: ' . $art['description']) : null,
+                    'targetWordCount' => 2500,
+                    'createdAt' => $now,
+                    'updatedAt' => $now
+                ];
+
+                if ($pdo) {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO article_plans (id, focus_keyphrase, page_role, article_title, status, intent, slug, live_url, notes, target_word_count, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmt->execute([
+                        $newPlan['id'], $newPlan['focusKeyphrase'], $newPlan['pageRole'], $newPlan['articleTitle'],
+                        $newPlan['status'], $newPlan['intent'], $newPlan['slug'], $newPlan['liveUrl'],
+                        $newPlan['notes'], $newPlan['targetWordCount'], $newPlan['createdAt'], $newPlan['updatedAt']
+                    ]);
+                }
+
+                array_unshift($currentPlans, $newPlan);
+                $newImportedCount++;
+                $importedPlanIds[] = $newId;
+                $existingSlugs[$aSlug] = true;
+                $existingTitles[$aTitle] = true;
+            }
+        }
+
+        @file_put_contents($jsonPath, json_encode($currentPlans, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+        $publishedCount = 0; $scheduledCount = 0; $inProgressCount = 0; $plannedCount = 0;
+        foreach ($currentPlans as $p) {
+            $st = $p['status'] ?? 'Planned';
+            if ($st === 'Published') $publishedCount++;
+            elseif ($st === 'Scheduled') $scheduledCount++;
+            elseif ($st === 'In Progress') $inProgressCount++;
+            else $plannedCount++;
+        }
+
         echo json_encode([
             'success' => true,
-            'syncedCount' => 0,
-            'newImportedCount' => 0,
-            'plans' => $plans
+            'syncedCount' => $syncedCount,
+            'newImportedCount' => $newImportedCount,
+            'updatedPlanIds' => $updatedPlanIds,
+            'importedPlanIds' => $importedPlanIds,
+            'statusSummary' => [
+                'total' => count($currentPlans),
+                'published' => $publishedCount,
+                'scheduled' => $scheduledCount,
+                'inProgress' => $inProgressCount,
+                'planned' => $plannedCount,
+            ],
+            'plans' => $currentPlans
         ]);
         exit;
     }

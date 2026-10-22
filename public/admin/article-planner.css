@@ -707,3 +707,30 @@
 .ap-chip-input-field::placeholder {
   color: #64748B;
 }
+
+/* Scheduled Stat Pill in Header */
+.ap-stat-pill.active-scheduled {
+  border-color: rgba(249, 115, 22, 0.35);
+  background: rgba(249, 115, 22, 0.12);
+  color: #FDBA74;
+}
+
+/* Row Flash / Glow Animation on Website Sync */
+@keyframes apRowPulse {
+  0% {
+    background-color: rgba(217, 119, 6, 0.3);
+    box-shadow: inset 0 0 16px rgba(217, 119, 6, 0.35);
+  }
+  50% {
+    background-color: rgba(16, 185, 129, 0.22);
+    box-shadow: inset 0 0 12px rgba(16, 185, 129, 0.3);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.ap-row-highlight {
+  animation: apRowPulse 3s ease-out forwards;
+}

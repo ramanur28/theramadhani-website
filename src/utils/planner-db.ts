@@ -47,6 +47,35 @@ export interface WebsiteArticle {
   description?: string;
   tags?: string[];
   type?: string;
+  status?: string; // 'published' | 'scheduled' | 'draft'
+  draft?: boolean;
+  publishDate?: string | Date;
+}
+
+/**
+ * Accurately determines article status from website/database metadata:
+ * - 'In Progress': draft === true or status === 'draft'
+ * - 'Scheduled': status === 'scheduled' or future publishDate
+ * - 'Published': status === 'published' (with publishDate <= now)
+ */
+export function determineArticleStatus(art: Partial<WebsiteArticle>): PlanStatus {
+  const s = (art.status || '').toLowerCase().trim();
+  const isDraft = art.draft === true || s === 'draft';
+  if (isDraft) return 'In Progress';
+  if (s === 'scheduled') return 'Scheduled';
+
+  if (art.publishDate) {
+    const pubTime = new Date(art.publishDate).getTime();
+    if (!isNaN(pubTime) && pubTime > Date.now()) {
+      return 'Scheduled';
+    }
+  }
+
+  if (s === 'published' || !s) {
+    return 'Published';
+  }
+
+  return 'In Progress';
 }
 
 let sqliteDbInstance: any = null;
@@ -506,11 +535,22 @@ export function syncWithWebsiteArticles(
 ): {
   syncedCount: number;
   newImportedCount: number;
+  updatedPlanIds: string[];
+  importedPlanIds: string[];
+  statusSummary: {
+    total: number;
+    published: number;
+    scheduled: number;
+    inProgress: number;
+    planned: number;
+  };
   plans: ArticlePlan[];
 } {
   const currentPlans = getAllPlans();
   let syncedCount = 0;
   let newImportedCount = 0;
+  const updatedPlanIds: string[] = [];
+  const importedPlanIds: string[] = [];
 
   // Build lookup index of live website articles
   const liveBySlug = new Map<string, WebsiteArticle>();
@@ -541,9 +581,10 @@ export function syncWithWebsiteArticles(
     if (matchedArt) {
       let needsUpdate = false;
       const updates: Partial<ArticlePlan> = {};
+      const targetStatus = determineArticleStatus(matchedArt);
 
-      if (plan.status !== 'Published') {
-        updates.status = 'Published';
+      if (plan.status !== targetStatus) {
+        updates.status = targetStatus;
         needsUpdate = true;
       }
       if (!plan.liveUrl || plan.liveUrl !== matchedArt.url) {
@@ -558,6 +599,18 @@ export function syncWithWebsiteArticles(
       if (needsUpdate) {
         updatePlan(plan.id, updates);
         syncedCount++;
+        updatedPlanIds.push(plan.id);
+      }
+    } else {
+      // If plan has no corresponding article file on the website:
+      // If it was marked Published or Scheduled, revert to Planned!
+      if (plan.status === 'Published' || plan.status === 'Scheduled') {
+        updatePlan(plan.id, {
+          status: 'Planned',
+          liveUrl: undefined,
+        });
+        syncedCount++;
+        updatedPlanIds.push(plan.id);
       }
     }
   }
@@ -588,11 +641,13 @@ export function syncWithWebsiteArticles(
           pageRole = 'Case Study';
         }
 
-        createPlan({
+        const targetStatus = determineArticleStatus(art);
+
+        const newPlan = createPlan({
           articleTitle: art.title,
           focusKeyphrase,
           pageRole,
-          status: 'Published',
+          status: targetStatus,
           intent: 'Informational',
           slug: art.slug,
           liveUrl: art.url,
@@ -601,16 +656,28 @@ export function syncWithWebsiteArticles(
         });
 
         newImportedCount++;
+        importedPlanIds.push(newPlan.id);
         existingSlugs.add(artSlug);
         existingTitles.add(artTitle);
       }
     }
   }
 
+  const allRefreshed = getAllPlans();
+
   return {
     syncedCount,
     newImportedCount,
-    plans: getAllPlans(),
+    updatedPlanIds,
+    importedPlanIds,
+    statusSummary: {
+      total: allRefreshed.length,
+      published: allRefreshed.filter((p) => p.status === 'Published').length,
+      scheduled: allRefreshed.filter((p) => p.status === 'Scheduled').length,
+      inProgress: allRefreshed.filter((p) => p.status === 'In Progress').length,
+      planned: allRefreshed.filter((p) => p.status === 'Planned').length,
+    },
+    plans: allRefreshed,
   };
 }
 

@@ -188,13 +188,30 @@ function decapServerIntegration() {
                     const titleM = text.match(/^title:\s*["']?([^"'\r\n]+)["']?/m);
                     const descM = text.match(/^description:\s*["']?([^"'\r\n]+)["']?/m);
                     const slugM = text.match(/^slug:\s*["']?([^"'\r\n]+)["']?/m);
-                    const tagsM = text.match(/^tags:\s*\[(.*?)\]/m);
+                    const statusM = text.match(/^status:\s*["']?([^"'\r\n]+)["']?/m);
+                    const draftM = text.match(/^draft:\s*(true|false)/im);
+                    const pubDateM = text.match(/^publishDate:\s*["']?([^"'\r\n]+)["']?/m);
+
+                    let tags = [];
+                    const tagsBracketM = text.match(/^tags:\s*\[(.*?)\]/m);
+                    if (tagsBracketM) {
+                      tags = tagsBracketM[1].split(',').map((t) => t.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+                    } else {
+                      const tagsBlockM = text.match(/^tags:\s*\n((?:\s*-\s*.+\n?)+)/m);
+                      if (tagsBlockM) {
+                        tags = tagsBlockM[1]
+                          .split('\n')
+                          .map((line) => line.replace(/^\s*-\s*/, '').trim().replace(/^["']|["']$/g, ''))
+                          .filter(Boolean);
+                      }
+                    }
+
                     const fileSlug = path.basename(filePath, path.extname(filePath));
                     const slug = slugM ? slugM[1].trim() : fileSlug;
-                    let tags = [];
-                    if (tagsM) {
-                      tags = tagsM[1].split(',').map((t) => t.trim().replace(/^["']|["']$/g, ''));
-                    }
+                    const status = statusM ? statusM[1].trim().toLowerCase() : 'published';
+                    const draft = draftM ? draftM[1].toLowerCase() === 'true' : false;
+                    const publishDate = pubDateM ? pubDateM[1].trim() : undefined;
+
                     items.push({
                       type: 'article',
                       title: titleM ? titleM[1].trim() : fileSlug,
@@ -202,6 +219,9 @@ function decapServerIntegration() {
                       url: `/articles/${slug}/`,
                       description: descM ? descM[1].trim() : '',
                       tags,
+                      status,
+                      draft,
+                      publishDate,
                     });
                   }
                 }

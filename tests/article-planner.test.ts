@@ -278,4 +278,77 @@ Technical SEO Consultant,Landing Page,Hire Premier Technical SEO Consultant,Sche
     expect(rows[2].articleTitle).toBe('What Are SEO Organic Keywords? Definition, Examples & How to Find Them');
     expect(rows[2].intent).toBe('Commercial Investigation');
   });
+  it('PLN-12: verifies multi-status sync (Published, Scheduled, In Progress, Planned)', () => {
+    // 1. Create 4 plans to test all 4 status scenarios
+    const p1 = createPlan({
+      articleTitle: 'Advanced Technical SEO Architecture',
+      slug: 'advanced-technical-seo-architecture',
+      status: 'Planned', // Should become Published
+    });
+    const p2 = createPlan({
+      articleTitle: 'Future Algorithm Predictions 2027',
+      slug: 'future-algorithm-predictions-2027',
+      status: 'Planned', // Should become Scheduled
+    });
+    const p3 = createPlan({
+      articleTitle: 'Draft WIP Guide on Indexing',
+      slug: 'draft-wip-guide-on-indexing',
+      status: 'Planned', // Should become In Progress
+    });
+    const p4 = createPlan({
+      articleTitle: 'Deleted or Unwritten Guide',
+      slug: 'deleted-or-unwritten-guide',
+      status: 'Published', // File no longer exists, should revert to Planned
+    });
+
+    // 2. Mock website articles representing different frontmatter states
+    const futureDate = new Date(Date.now() + 86400000 * 5).toISOString(); // 5 days in future
+    const pastDate = new Date(Date.now() - 86400000 * 2).toISOString(); // 2 days ago
+
+    const liveArticles = [
+      {
+        title: 'Advanced Technical SEO Architecture',
+        slug: 'advanced-technical-seo-architecture',
+        url: '/articles/advanced-technical-seo-architecture/',
+        status: 'published',
+        draft: false,
+        publishDate: pastDate,
+      },
+      {
+        title: 'Future Algorithm Predictions 2027',
+        slug: 'future-algorithm-predictions-2027',
+        url: '/articles/future-algorithm-predictions-2027/',
+        status: 'scheduled',
+        publishDate: futureDate,
+      },
+      {
+        title: 'Draft WIP Guide on Indexing',
+        slug: 'draft-wip-guide-on-indexing',
+        url: '/articles/draft-wip-guide-on-indexing/',
+        status: 'draft',
+        draft: true,
+      },
+      // Note: p4 has no matching file in liveArticles
+    ];
+
+    // 3. Execute sync
+    const res = syncWithWebsiteArticles(liveArticles, false);
+
+    expect(res.syncedCount).toBe(4);
+    expect(res.updatedPlanIds).toContain(p1.id);
+    expect(res.updatedPlanIds).toContain(p2.id);
+    expect(res.updatedPlanIds).toContain(p3.id);
+    expect(res.updatedPlanIds).toContain(p4.id);
+
+    const all = getAllPlans();
+    const up1 = all.find(p => p.id === p1.id);
+    const up2 = all.find(p => p.id === p2.id);
+    const up3 = all.find(p => p.id === p3.id);
+    const up4 = all.find(p => p.id === p4.id);
+
+    expect(up1?.status).toBe('Published');
+    expect(up2?.status).toBe('Scheduled');
+    expect(up3?.status).toBe('In Progress');
+    expect(up4?.status).toBe('Planned');
+  });
 });

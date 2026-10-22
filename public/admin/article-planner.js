@@ -159,7 +159,7 @@
   }
 
   async function syncWebsiteArticles() {
-    showToast('🔄 Menyelaraskan dengan artikel website...', true);
+    showToast('🔄 Menyelaraskan status dengan artikel website...', true);
     try {
       const res = await callApi('/sync', {
         method: 'POST',
@@ -170,12 +170,39 @@
         const data = await res.json();
         if (data.plans) state.plans = data.plans;
         else await fetchPlans();
-        renderTable();
+
+        try {
+          localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
+        } catch (_) {}
+
+        const highlightIds = [
+          ...(data.updatedPlanIds || []),
+          ...(data.importedPlanIds || []),
+        ];
+
+        renderTable(highlightIds);
         updateStats();
-        showToast(
-          `✓ Sinkronisasi selesai: ${data.syncedCount || 0} status diperbarui, ${data.newImportedCount || 0} artikel baru diimpor dari website!`,
-          true
-        );
+
+        const s = data.statusSummary || {
+          published: state.plans.filter((p) => p.status === 'Published').length,
+          scheduled: state.plans.filter((p) => p.status === 'Scheduled').length,
+          inProgress: state.plans.filter((p) => p.status === 'In Progress').length,
+          planned: state.plans.filter((p) => p.status === 'Planned').length,
+        };
+
+        const breakdown = `Published: ${s.published} • Scheduled: ${s.scheduled} • In Progress: ${s.inProgress} • Planned: ${s.planned}`;
+
+        if ((data.syncedCount || 0) > 0 || (data.newImportedCount || 0) > 0) {
+          showToast(
+            `✓ Database diperbarui! ${data.syncedCount || 0} status disinkronkan, ${data.newImportedCount || 0} artikel baru diimpor. (${breakdown})`,
+            true
+          );
+        } else {
+          showToast(
+            `✓ Seluruh rencana artikel sudah sinkron dengan website. (${breakdown})`,
+            true
+          );
+        }
         return;
       }
     } catch (err) {
@@ -189,6 +216,21 @@
         const articles = await res.json();
         let synced = 0;
         let imported = 0;
+        const highlightIds = [];
+
+        function clientDetermineStatus(art) {
+          const s = (art.status || '').toLowerCase().trim();
+          const isDraft = art.draft === true || s === 'draft';
+          if (isDraft) return 'In Progress';
+          if (s === 'scheduled') return 'Scheduled';
+          if (art.publishDate) {
+            const pubTime = new Date(art.publishDate).getTime();
+            if (!isNaN(pubTime) && pubTime > Date.now()) return 'Scheduled';
+          }
+          if (s === 'published' || !s) return 'Published';
+          return 'In Progress';
+        }
+
         for (const art of articles) {
           const match = state.plans.find((p) => {
             const pSlug = (p.slug || '').toLowerCase();
@@ -197,22 +239,26 @@
             const aTitle = (art.title || '').toLowerCase();
             return pSlug === aSlug || pTitle === aTitle;
           });
+          const targetStatus = clientDetermineStatus(art);
+
           if (match) {
-            if (match.status !== 'Published') {
-              match.status = 'Published';
+            if (match.status !== targetStatus || match.liveUrl !== art.url) {
+              match.status = targetStatus;
               match.liveUrl = art.url;
               synced++;
+              highlightIds.push(match.id);
             }
           } else {
             const artTags = Array.isArray(art.tags) && art.tags.length > 0 ? art.tags : [];
             const primaryKey = artTags.length > 0 ? artTags.join(', ') : (art.title || '').split(':')[0].trim();
+            const newId = 'art-' + Date.now() + Math.random().toString(36).slice(2, 6);
             state.plans.push({
-              id: 'art-' + Date.now() + Math.random().toString(36).slice(2, 6),
+              id: newId,
               articleTitle: art.title,
               focusKeyphrase: primaryKey,
               focusKeyphrases: artTags.length > 0 ? artTags : [primaryKey],
               pageRole: art.title.toLowerCase().includes('guide') ? 'Pillar Page' : 'Topic Cluster',
-              status: 'Published',
+              status: targetStatus,
               intent: 'Informational',
               slug: art.slug,
               liveUrl: art.url,
@@ -220,11 +266,17 @@
               updatedAt: new Date().toISOString(),
             });
             imported++;
+            highlightIds.push(newId);
           }
         }
-        renderTable();
+
+        try {
+          localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
+        } catch (_) {}
+
+        renderTable(highlightIds);
         updateStats();
-        showToast(`✓ Berhasil menyelaraskan ${synced} artikel & mengimpor ${imported} artikel baru!`, true);
+        showToast(`✓ Sinkronisasi selesai: ${synced} status diselaraskan & ${imported} artikel baru diimpor!`, true);
       }
     } catch (e) {
       showToast('✕ Gagal menyinkronkan data website: ' + e.message, false);
@@ -496,6 +548,7 @@
             <div class="ap-stat-pill" id="ap-stat-total">Total: <strong>0</strong></div>
             <div class="ap-stat-pill active-planned" id="ap-stat-planned">Planned: <strong>0</strong></div>
             <div class="ap-stat-pill active-progress" id="ap-stat-progress">In Progress: <strong>0</strong></div>
+            <div class="ap-stat-pill active-scheduled" id="ap-stat-scheduled">Scheduled: <strong>0</strong></div>
             <div class="ap-stat-pill active-published" id="ap-stat-published">Published: <strong>0</strong></div>
           </div>
           <div class="ap-header-actions">
@@ -1049,16 +1102,19 @@
     const total = state.plans.length;
     const planned = state.plans.filter((p) => p.status === 'Planned').length;
     const progress = state.plans.filter((p) => p.status === 'In Progress').length;
+    const scheduled = state.plans.filter((p) => p.status === 'Scheduled').length;
     const published = state.plans.filter((p) => p.status === 'Published').length;
 
     const elTotal = document.getElementById('ap-stat-total');
     const elPlanned = document.getElementById('ap-stat-planned');
     const elProgress = document.getElementById('ap-stat-progress');
+    const elScheduled = document.getElementById('ap-stat-scheduled');
     const elPublished = document.getElementById('ap-stat-published');
 
     if (elTotal) elTotal.innerHTML = `Total: <strong>${total}</strong>`;
     if (elPlanned) elPlanned.innerHTML = `Planned: <strong>${planned}</strong>`;
     if (elProgress) elProgress.innerHTML = `In Progress: <strong>${progress}</strong>`;
+    if (elScheduled) elScheduled.innerHTML = `Scheduled: <strong>${scheduled}</strong>`;
     if (elPublished) elPublished.innerHTML = `Published: <strong>${published}</strong>`;
   }
 
