@@ -33,33 +33,83 @@
    * 1. Attempts clean endpoint (/api/article-plans or /api/article-plans/bulk)
    * 2. If 404 (e.g. shared hosting without rewrite), falls back to direct PHP endpoint (/api/article-plans.php/bulk then /api/article-plans.php)
    */
-  async function callApi(subPath = '', options = {}) {
-    const primaryUrl = API_URL + subPath;
-    try {
-      const res = await fetch(primaryUrl, options);
-      if (res && res.status !== 404) {
-        return res;
-      }
-    } catch (e) {
-      console.warn('[Article Planner] Primary fetch failed:', primaryUrl, e);
+    function normalizeTextClient(s) {
+    return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+  }
+
+  function clientMatchesArticle(plan, art) {
+    const pSlug = normalizeTextClient(plan.slug || '');
+    const pGenSlug = normalizeTextClient((plan.articleTitle || '').toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/[\s_]+/g, '-').slice(0, 60));
+    const aSlug = normalizeTextClient(art.slug || '');
+    const pTitle = normalizeTextClient(plan.articleTitle || '');
+    const aTitle = normalizeTextClient(art.title || '');
+    const pColon = normalizeTextClient((plan.articleTitle || '').split(':')[0]);
+    const pUrl = (plan.liveUrl || '').trim().replace(/\/+$/, '');
+    const aUrl = (art.url || '').trim().replace(/\/+$/, '');
+
+    // 1. Direct or partial slug match
+    if (aSlug && pSlug) {
+      if (aSlug === pSlug || aSlug.startsWith(pSlug) || pSlug.startsWith(aSlug)) return true;
+    }
+    if (aSlug && pGenSlug) {
+      if (aSlug === pGenSlug || aSlug.startsWith(pGenSlug) || pGenSlug.startsWith(aSlug)) return true;
     }
 
-    if (subPath) {
+    // 2. Direct liveUrl match
+    if (pUrl && aUrl && pUrl === aUrl) return true;
+
+    // 3. Exact normalized title match
+    if (pTitle && aTitle && pTitle === aTitle) return true;
+
+    // 4. Prefix / Substring title match (min 8 chars)
+    if (pTitle && aTitle && pTitle.length >= 8 && aTitle.length >= 8) {
+      if (aTitle.startsWith(pTitle) || pTitle.startsWith(aTitle)) return true;
+    }
+
+    // 5. Title before colon match (min 6 chars)
+    if (pColon && pColon.length >= 6) {
+      const aColon = normalizeTextClient((art.title || '').split(':')[0]);
+      if (aColon && pColon === aColon) return true;
+    }
+
+    // 6. Focus Keyphrase match with article title or slug
+    const kps = Array.isArray(plan.focusKeyphrases) && plan.focusKeyphrases.length > 0
+      ? plan.focusKeyphrases
+      : (plan.focusKeyphrase || '').split(/[,;\n\r]+/);
+
+    for (const kp of kps) {
+      const normKp = normalizeTextClient(kp);
+      if (normKp && normKp.length >= 6) {
+        if (aTitle.includes(normKp) || aSlug.includes(normKp) || normKp.includes(aSlug)) return true;
+      }
+    }
+
+    return false;
+  }
+
+  async function callApi(subPath = '', options = {}) {
+    const urlsToTry = [
+      API_URL + subPath,
+      subPath ? (API_URL + '?action=' + subPath.replace(/^\//, '')) : API_URL,
+      PHP_API_URL + subPath,
+      subPath ? (PHP_API_URL + '?action=' + subPath.replace(/^\//, '')) : PHP_API_URL,
+    ];
+
+    for (const url of urlsToTry) {
       try {
-        const phpSubUrl = PHP_API_URL + subPath;
-        const res = await fetch(phpSubUrl, options);
-        if (res && res.status !== 404) {
+        const res = await fetch(url, options);
+        if (res && res.status !== 404 && res.status !== 405) {
           return res;
         }
       } catch (e) {
-        console.warn('[Article Planner] PHP subpath fetch failed:', PHP_API_URL + subPath, e);
+        // Continue fallback
       }
     }
 
     try {
       return await fetch(PHP_API_URL, options);
     } catch (e) {
-      console.warn('[Article Planner] PHP direct fetch failed:', e);
+      console.warn('[Article Planner] All API fallbacks exhausted:', e);
       return null;
     }
   }
@@ -69,24 +119,60 @@
   // =========================================================================
 
   async function fetchPlans() {
+    let serverPlans = null;
     try {
       const res = await callApi('');
-      if (res.ok) {
-        state.plans = await res.json();
+      if (res && res.ok) {
+        serverPlans = await res.json();
       } else {
-        // Fallback to static JSON mirror
         const fallbackRes = await fetch('/admin/article-plans.json');
         if (fallbackRes.ok) {
-          state.plans = await fallbackRes.json();
+          serverPlans = await fallbackRes.json();
         }
       }
     } catch (err) {
       console.warn('[Article Planner] Offline/fallback mode:', err);
-      try {
-        const local = localStorage.getItem('ap_article_plans');
-        if (local) state.plans = JSON.parse(local);
-      } catch (_) {}
     }
+
+    if (Array.isArray(serverPlans)) {
+      state.plans = serverPlans;
+    }
+
+    // Merge or recover from localStorage so locally created/synced plans are never lost
+    try {
+      const local = localStorage.getItem('ap_article_plans');
+      if (local) {
+        const localPlans = JSON.parse(local);
+        if (Array.isArray(localPlans) && localPlans.length > 0) {
+          if (!state.plans || state.plans.length === 0) {
+            state.plans = localPlans;
+          } else {
+            const serverIds = new Set(state.plans.map((p) => p.id));
+            const serverTitles = new Set(state.plans.map((p) => normalizeTextClient(p.articleTitle)));
+            let hasNewLocal = false;
+            for (const lp of localPlans) {
+              if (!serverIds.has(lp.id) && !serverTitles.has(normalizeTextClient(lp.articleTitle))) {
+                state.plans.push(lp);
+                hasNewLocal = true;
+              }
+            }
+            if (hasNewLocal) {
+              // Push merged plans back to server in background
+              callApi('/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'bulk', plans: state.plans }),
+              }).catch(() => {});
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    try {
+      localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
+    } catch (_) {}
+
     updateLauncherBadge();
     renderTable();
     updateStats();
@@ -100,10 +186,13 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(planData),
       });
-      if (res.ok) {
+      if (res && res.ok) {
         const data = await res.json();
         if (data.plans) state.plans = data.plans;
         else await fetchPlans();
+        try {
+          localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
+        } catch (_) {}
         renderTable();
         updateStats();
         return true;
@@ -138,10 +227,13 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
-      if (res.ok) {
+      if (res && res.ok) {
         const data = await res.json();
         if (data.plans) state.plans = data.plans;
         else await fetchPlans();
+        try {
+          localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
+        } catch (_) {}
         renderTable();
         updateStats();
         return true;
@@ -166,7 +258,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'sync', autoImport: true }),
       });
-      if (res.ok) {
+      if (res && res.ok) {
         const data = await res.json();
         if (data.plans) state.plans = data.plans;
         else await fetchPlans();
@@ -206,7 +298,7 @@
         return;
       }
     } catch (err) {
-      console.warn('[Article Planner] Direct sync API failed, attempting client articles-index:', err);
+      console.warn('[Article Planner] Direct sync API failed, attempting client articles-index fallback:', err);
     }
 
     // Client-side fallback sync using /api/articles-index.json
@@ -217,6 +309,7 @@
         let synced = 0;
         let imported = 0;
         const highlightIds = [];
+        const matchedSlugs = new Set();
 
         function clientDetermineStatus(art) {
           const s = (art.status || '').toLowerCase().trim();
@@ -231,28 +324,49 @@
           return 'In Progress';
         }
 
-        for (const art of articles) {
-          const match = state.plans.find((p) => {
-            const pSlug = (p.slug || '').toLowerCase();
-            const aSlug = (art.slug || '').toLowerCase();
-            const pTitle = (p.articleTitle || '').toLowerCase();
-            const aTitle = (art.title || '').toLowerCase();
-            return pSlug === aSlug || pTitle === aTitle;
-          });
-          const targetStatus = clientDetermineStatus(art);
+        // 1. Match and update existing plans
+        for (const plan of state.plans) {
+          const matchedArt = articles.find((art) => clientMatchesArticle(plan, art));
+          if (matchedArt) {
+            matchedSlugs.add(normalizeTextClient(matchedArt.slug));
+            const targetStatus = clientDetermineStatus(matchedArt);
+            let needsUpdate = false;
 
-          if (match) {
-            if (match.status !== targetStatus || match.liveUrl !== art.url) {
-              match.status = targetStatus;
-              match.liveUrl = art.url;
-              synced++;
-              highlightIds.push(match.id);
+            if (plan.status !== targetStatus) {
+              plan.status = targetStatus;
+              needsUpdate = true;
             }
-          } else {
+            if (!plan.liveUrl || plan.liveUrl !== matchedArt.url) {
+              plan.liveUrl = matchedArt.url;
+              needsUpdate = true;
+            }
+            if (!plan.slug || plan.slug !== matchedArt.slug) {
+              plan.slug = matchedArt.slug;
+              needsUpdate = true;
+            }
+            if (needsUpdate) {
+              plan.updatedAt = new Date().toISOString();
+              synced++;
+              highlightIds.push(plan.id);
+            }
+          }
+        }
+
+        // 2. Auto-import missing articles that were NOT matched
+        const existingSlugs = new Set(state.plans.map((p) => normalizeTextClient(p.slug || '')));
+        const existingTitles = new Set(state.plans.map((p) => normalizeTextClient(p.articleTitle || '')));
+
+        for (const art of articles) {
+          const aSlug = normalizeTextClient(art.slug || '');
+          const aTitle = normalizeTextClient(art.title || '');
+
+          if (!matchedSlugs.has(aSlug) && !existingSlugs.has(aSlug) && !existingTitles.has(aTitle)) {
             const artTags = Array.isArray(art.tags) && art.tags.length > 0 ? art.tags : [];
             const primaryKey = artTags.length > 0 ? artTags.join(', ') : (art.title || '').split(':')[0].trim();
             const newId = 'art-' + Date.now() + Math.random().toString(36).slice(2, 6);
-            state.plans.push({
+            const targetStatus = clientDetermineStatus(art);
+
+            state.plans.unshift({
               id: newId,
               articleTitle: art.title,
               focusKeyphrase: primaryKey,
@@ -267,16 +381,37 @@
             });
             imported++;
             highlightIds.push(newId);
+            existingSlugs.add(aSlug);
+            existingTitles.add(aTitle);
           }
         }
 
+        // Save immediately to localStorage
         try {
           localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
         } catch (_) {}
 
+        // Persist immediately to server via /bulk or PUT so data is NEVER lost on refresh!
+        try {
+          await callApi('/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'bulk', plans: state.plans }),
+          });
+        } catch (persistErr) {
+          console.warn('[Article Planner] Background save of fallback sync to server:', persistErr);
+        }
+
         renderTable(highlightIds);
         updateStats();
-        showToast(`✓ Sinkronisasi selesai: ${synced} status diselaraskan & ${imported} artikel baru diimpor!`, true);
+
+        const pubCount = state.plans.filter((p) => p.status === 'Published').length;
+        const schedCount = state.plans.filter((p) => p.status === 'Scheduled').length;
+        const progCount = state.plans.filter((p) => p.status === 'In Progress').length;
+        const planCount = state.plans.filter((p) => p.status === 'Planned').length;
+        const breakdown = `Published: ${pubCount} • Scheduled: ${schedCount} • In Progress: ${progCount} • Planned: ${planCount}`;
+
+        showToast(`✓ Sinkronisasi selesai: ${synced} status diselaraskan & ${imported} artikel baru diimpor! (${breakdown})`, true);
       }
     } catch (e) {
       showToast('✕ Gagal menyinkronkan data website: ' + e.message, false);

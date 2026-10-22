@@ -81,6 +81,15 @@ export function determineArticleStatus(art: Partial<WebsiteArticle>): PlanStatus
 let sqliteDbInstance: any = null;
 
 function getDbPaths() {
+  if (process.env.PLANNER_DB_PATH && process.env.PLANNER_JSON_PATH) {
+    const dbPath = path.resolve(process.env.PLANNER_DB_PATH);
+    const jsonPath = path.resolve(process.env.PLANNER_JSON_PATH);
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+    const jsonDir = path.dirname(jsonPath);
+    if (!fs.existsSync(jsonDir)) fs.mkdirSync(jsonDir, { recursive: true });
+    return { dbPath, jsonPath };
+  }
   const root = process.cwd();
   const dataDir = path.resolve(root, 'data');
   if (!fs.existsSync(dataDir)) {
@@ -529,6 +538,93 @@ export function bulkCreatePlans(inputs: Partial<ArticlePlan>[]): {
  *    - Connects liveUrl (e.g. /articles/slug/)
  * 3. Can optionally auto-import existing website articles that don't yet exist in the planner!
  */
+/**
+ * Resilient article matcher that links a planned item to a live website article.
+ * Handles direct slugs, generated slugs, full titles, prefix/subtitles, colon titles, and keyphrases.
+ */
+export function findMatchingArticle(
+  plan: { articleTitle: string; slug?: string; liveUrl?: string; focusKeyphrase?: string; focusKeyphrases?: string[] },
+  websiteArticles: WebsiteArticle[]
+): WebsiteArticle | undefined {
+  const pSlug = normalizeText(plan.slug || '');
+  const pGenSlug = normalizeText(generateSlug(plan.articleTitle || ''));
+  const pTitle = normalizeText(plan.articleTitle || '');
+  const pColon = normalizeText((plan.articleTitle || '').split(':')[0]);
+  const pUrl = (plan.liveUrl || '').trim().replace(/\/+$/, '');
+
+  // 1. Direct or partial slug match
+  for (const art of websiteArticles) {
+    const aSlug = normalizeText(art.slug || '');
+    if (aSlug && pSlug) {
+      if (aSlug === pSlug || aSlug.startsWith(pSlug) || pSlug.startsWith(aSlug)) {
+        return art;
+      }
+    }
+    if (aSlug && pGenSlug) {
+      if (aSlug === pGenSlug || aSlug.startsWith(pGenSlug) || pGenSlug.startsWith(aSlug)) {
+        return art;
+      }
+    }
+  }
+
+  // 2. Direct liveUrl match
+  if (pUrl) {
+    for (const art of websiteArticles) {
+      const aUrl = (art.url || '').trim().replace(/\/+$/, '');
+      if (aUrl && pUrl === aUrl) {
+        return art;
+      }
+    }
+  }
+
+  // 3. Exact normalized title match
+  for (const art of websiteArticles) {
+    const aTitle = normalizeText(art.title || '');
+    if (pTitle && aTitle && pTitle === aTitle) {
+      return art;
+    }
+  }
+
+  // 4. Prefix / Substring title match (min 8 chars)
+  for (const art of websiteArticles) {
+    const aTitle = normalizeText(art.title || '');
+    if (pTitle && aTitle && pTitle.length >= 8 && aTitle.length >= 8) {
+      if (aTitle.startsWith(pTitle) || pTitle.startsWith(aTitle)) {
+        return art;
+      }
+    }
+  }
+
+  // 5. Title before colon match (min 6 chars)
+  if (pColon && pColon.length >= 6) {
+    for (const art of websiteArticles) {
+      const aColon = normalizeText((art.title || '').split(':')[0]);
+      if (aColon && pColon === aColon) {
+        return art;
+      }
+    }
+  }
+
+  // 6. Focus Keyphrase match with article title or tags
+  const keyphrases = (plan.focusKeyphrases && plan.focusKeyphrases.length > 0)
+    ? plan.focusKeyphrases
+    : splitKeyphrases(plan.focusKeyphrase);
+
+  for (const kp of keyphrases) {
+    const normKp = normalizeText(kp);
+    if (!normKp || normKp.length < 6) continue;
+    for (const art of websiteArticles) {
+      const aTitle = normalizeText(art.title || '');
+      const aSlug = normalizeText(art.slug || '');
+      if (aTitle.includes(normKp) || aSlug.includes(normKp) || normKp.includes(aSlug)) {
+        return art;
+      }
+    }
+  }
+
+  return undefined;
+}
+
 export function syncWithWebsiteArticles(
   websiteArticles: WebsiteArticle[],
   autoImportMissing: boolean = true
@@ -551,34 +647,14 @@ export function syncWithWebsiteArticles(
   let newImportedCount = 0;
   const updatedPlanIds: string[] = [];
   const importedPlanIds: string[] = [];
-
-  // Build lookup index of live website articles
-  const liveBySlug = new Map<string, WebsiteArticle>();
-  const liveByTitle = new Map<string, WebsiteArticle>();
-
-  for (const art of websiteArticles) {
-    const normSlug = normalizeText(art.slug);
-    const normTitle = normalizeText(art.title);
-    liveBySlug.set(normSlug, art);
-    liveByTitle.set(normTitle, art);
-  }
+  const matchedArticleSlugs = new Set<string>();
 
   // 1. Update existing plans with live website matching
   for (const plan of currentPlans) {
-    const planSlug = normalizeText(plan.slug || generateSlug(plan.articleTitle));
-    const planTitle = normalizeText(plan.articleTitle);
-
-    const matchedArt =
-      liveBySlug.get(planSlug) ||
-      liveByTitle.get(planTitle) ||
-      websiteArticles.find((a) => {
-        const aTitle = normalizeText(a.title);
-        const aTags = (a.tags || []).map((t) => normalizeText(t));
-        const planKeyphrases = splitKeyphrases(plan.focusKeyphrase).map((k) => normalizeText(k));
-        return planKeyphrases.some((kp) => aTitle.includes(kp) || aTags.includes(kp));
-      });
+    const matchedArt = findMatchingArticle(plan, websiteArticles);
 
     if (matchedArt) {
+      matchedArticleSlugs.add(normalizeText(matchedArt.slug));
       let needsUpdate = false;
       const updates: Partial<ArticlePlan> = {};
       const targetStatus = determineArticleStatus(matchedArt);
@@ -602,8 +678,7 @@ export function syncWithWebsiteArticles(
         updatedPlanIds.push(plan.id);
       }
     } else {
-      // If plan has no corresponding article file on the website:
-      // If it was marked Published or Scheduled, revert to Planned!
+      // Only revert if it previously had a liveUrl that no longer exists on website
       if (plan.status === 'Published' || plan.status === 'Scheduled') {
         updatePlan(plan.id, {
           status: 'Planned',
@@ -626,6 +701,11 @@ export function syncWithWebsiteArticles(
     for (const art of websiteArticles) {
       const artSlug = normalizeText(art.slug);
       const artTitle = normalizeText(art.title);
+
+      // Skip if already matched to an existing plan
+      if (matchedArticleSlugs.has(artSlug)) {
+        continue;
+      }
 
       if (!existingSlugs.has(artSlug) && !existingTitles.has(artTitle)) {
         // Derive Focus Keyphrase(s) from all tags or clean title

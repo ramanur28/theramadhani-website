@@ -172,12 +172,28 @@ function decapServerIntegration() {
         // 2d. Article Plans & Content Planner API (SQLite & Sync)
         server.middlewares.use(async (req, res, next) => {
           const urlPath = (req.url || '').split('?')[0];
-          if (urlPath === '/api/article-plans' || urlPath.startsWith('/api/article-plans/')) {
+          const isPlannerApi =
+            urlPath === '/api/article-plans' ||
+            urlPath.startsWith('/api/article-plans/') ||
+            urlPath === '/api/article-plans.php' ||
+            urlPath.startsWith('/api/article-plans.php/');
+
+          if (isPlannerApi) {
             const plannerDb = await import('./src/utils/planner-db.js');
 
+            function extractYamlField(yamlText, fieldName) {
+              const quotedMatch = yamlText.match(new RegExp(`^${fieldName}:\\s*["']([\\s\\S]*?)["']\\s*(?:$|\\r?\\n[a-zA-Z0-9_-]+:)`, 'm'));
+              if (quotedMatch) {
+                return quotedMatch[1].replace(/\\r?\\n\\s*/g, ' ').trim();
+              }
+              const singleLineMatch = yamlText.match(new RegExp(`^${fieldName}:\\s*([^\\r\\n]+)`, 'm'));
+              if (singleLineMatch) {
+                return singleLineMatch[1].trim().replace(/^["']|["']$/g, '');
+              }
+              return null;
+            }
+
             function getWebsiteArticles() {
-              // fs imported
-              // path imported
               const articlesDir = path.resolve(process.cwd(), 'src/content/articles');
               const items = [];
               if (fs.existsSync(articlesDir)) {
@@ -185,12 +201,15 @@ function decapServerIntegration() {
                   if (f.endsWith('.md') || f.endsWith('.mdx')) {
                     const filePath = path.join(articlesDir, f);
                     const text = fs.readFileSync(filePath, 'utf-8');
-                    const titleM = text.match(/^title:\s*["']?([^"'\r\n]+)["']?/m);
-                    const descM = text.match(/^description:\s*["']?([^"'\r\n]+)["']?/m);
-                    const slugM = text.match(/^slug:\s*["']?([^"'\r\n]+)["']?/m);
-                    const statusM = text.match(/^status:\s*["']?([^"'\r\n]+)["']?/m);
-                    const draftM = text.match(/^draft:\s*(true|false)/im);
-                    const pubDateM = text.match(/^publishDate:\s*["']?([^"'\r\n]+)["']?/m);
+                    const fileSlug = path.basename(filePath, path.extname(filePath));
+
+                    const title = extractYamlField(text, 'title') || fileSlug;
+                    const slug = extractYamlField(text, 'slug') || fileSlug;
+                    const description = extractYamlField(text, 'description') || '';
+                    const rawStatus = (extractYamlField(text, 'status') || 'published').toLowerCase();
+                    const draftVal = extractYamlField(text, 'draft');
+                    const draft = draftVal ? draftVal.toLowerCase() === 'true' : false;
+                    const publishDate = extractYamlField(text, 'publishDate') || undefined;
 
                     let tags = [];
                     const tagsBracketM = text.match(/^tags:\s*\[(.*?)\]/m);
@@ -206,20 +225,14 @@ function decapServerIntegration() {
                       }
                     }
 
-                    const fileSlug = path.basename(filePath, path.extname(filePath));
-                    const slug = slugM ? slugM[1].trim() : fileSlug;
-                    const status = statusM ? statusM[1].trim().toLowerCase() : 'published';
-                    const draft = draftM ? draftM[1].toLowerCase() === 'true' : false;
-                    const publishDate = pubDateM ? pubDateM[1].trim() : undefined;
-
                     items.push({
                       type: 'article',
-                      title: titleM ? titleM[1].trim() : fileSlug,
+                      title,
                       slug,
                       url: `/articles/${slug}/`,
-                      description: descM ? descM[1].trim() : '',
+                      description,
                       tags,
-                      status,
+                      status: rawStatus,
                       draft,
                       publishDate,
                     });
@@ -242,7 +255,7 @@ function decapServerIntegration() {
               req.on('end', () => {
                 try {
                   const payload = JSON.parse(body || '{}');
-                  if (urlPath === '/api/article-plans/sync' || payload.action === 'sync') {
+                  if (urlPath.includes('/sync') || payload.action === 'sync') {
                     const liveArticles = getWebsiteArticles();
                     const result = plannerDb.syncWithWebsiteArticles(liveArticles, payload.autoImport !== false);
                     res.setHeader('Content-Type', 'application/json');
@@ -250,7 +263,7 @@ function decapServerIntegration() {
                     return;
                   }
 
-                  if (urlPath === '/api/article-plans/bulk' || payload.action === 'bulk') {
+                  if (urlPath.includes('/bulk') || payload.action === 'bulk') {
                     let itemsToInsert = [];
                     let parseErrors = [];
                     if (Array.isArray(payload.plans) && payload.plans.length > 0) {

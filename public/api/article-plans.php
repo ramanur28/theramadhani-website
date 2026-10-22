@@ -122,6 +122,100 @@ try {
 // 3. Helper Functions
 // -----------------------------------------------------------------------------
 
+function normalizeText($text): string {
+    return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$text));
+}
+
+function extractYamlField(string $yamlText, string $fieldName): ?string {
+    if (preg_match('/^' . preg_quote($fieldName, '/') . ':\s*[\x22\x27]([\s\S]*?)[\x22\x27]\s*(?:$|\r?\n[a-zA-Z0-9_-]+:)/m', $yamlText, $m)) {
+        return trim(preg_replace('/\r?\n\s*/', ' ', $m[1]));
+    }
+    if (preg_match('/^' . preg_quote($fieldName, '/') . ':\s*([^\r\n]+)/m', $yamlText, $m)) {
+        return trim(trim($m[1]), "\x22\x27");
+    }
+    return null;
+}
+
+function findMatchingArticlePHP(array $plan, array $websiteArticles): ?array {
+    $pSlug = normalizeText($plan['slug'] ?? '');
+    $pGenSlug = normalizeText(generateSlug($plan['articleTitle'] ?? ''));
+    $pTitle = normalizeText($plan['articleTitle'] ?? '');
+    $pColon = normalizeText(explode(':', $plan['articleTitle'] ?? '')[0]);
+    $pUrl = trim($plan['liveUrl'] ?? '', '/');
+
+    // 1. Direct or partial slug match
+    foreach ($websiteArticles as $art) {
+        $aSlug = normalizeText($art['slug'] ?? '');
+        if ($aSlug && $pSlug) {
+            if ($aSlug === $pSlug || strpos($aSlug, $pSlug) === 0 || strpos($pSlug, $aSlug) === 0) {
+                return $art;
+            }
+        }
+        if ($aSlug && $pGenSlug) {
+            if ($aSlug === $pGenSlug || strpos($aSlug, $pGenSlug) === 0 || strpos($pGenSlug, $aSlug) === 0) {
+                return $art;
+            }
+        }
+    }
+
+    // 2. Direct liveUrl match
+    if ($pUrl) {
+        foreach ($websiteArticles as $art) {
+            $aUrl = trim($art['url'] ?? '', '/');
+            if ($aUrl && $pUrl === $aUrl) {
+                return $art;
+            }
+        }
+    }
+
+    // 3. Exact normalized title match
+    foreach ($websiteArticles as $art) {
+        $aTitle = normalizeText($art['title'] ?? '');
+        if ($pTitle && $aTitle && $pTitle === $aTitle) {
+            return $art;
+        }
+    }
+
+    // 4. Prefix / Substring title match (min 8 chars)
+    foreach ($websiteArticles as $art) {
+        $aTitle = normalizeText($art['title'] ?? '');
+        if ($pTitle && $aTitle && strlen($pTitle) >= 8 && strlen($aTitle) >= 8) {
+            if (strpos($aTitle, $pTitle) === 0 || strpos($pTitle, $aTitle) === 0) {
+                return $art;
+            }
+        }
+    }
+
+    // 5. Title before colon match (min 6 chars)
+    if ($pColon && strlen($pColon) >= 6) {
+        foreach ($websiteArticles as $art) {
+            $aColon = normalizeText(explode(':', $art['title'] ?? '')[0]);
+            if ($aColon && $pColon === $aColon) {
+                return $art;
+            }
+        }
+    }
+
+    // 6. Focus Keyphrase match with article title or slug
+    $keyphrases = !empty($plan['focusKeyphrases']) && is_array($plan['focusKeyphrases'])
+        ? $plan['focusKeyphrases']
+        : splitKeyphrases($plan['focusKeyphrase'] ?? '');
+
+    foreach ($keyphrases as $kp) {
+        $normKp = normalizeText($kp);
+        if (!$normKp || strlen($normKp) < 6) continue;
+        foreach ($websiteArticles as $art) {
+            $aTitle = normalizeText($art['title'] ?? '');
+            $aSlug = normalizeText($art['slug'] ?? '');
+            if (strpos($aTitle, $normKp) !== false || strpos($aSlug, $normKp) !== false || strpos($normKp, $aSlug) !== false) {
+                return $art;
+            }
+        }
+    }
+
+    return null;
+}
+
 function splitKeyphrases($raw): array {
     if (empty($raw)) return [];
     if (is_array($raw)) {
@@ -466,7 +560,7 @@ if ($method === 'POST') {
         exit;
     }
 
-    if ($isSync) {
+        if ($isSync) {
         $articlesDir = $parentDir . '/src/content/articles';
         if (!is_dir($articlesDir) && is_dir($publicDir . '/../src/content/articles')) {
             $articlesDir = realpath($publicDir . '/../src/content/articles');
@@ -481,15 +575,14 @@ if ($method === 'POST') {
                     $text = @file_get_contents($filePath);
                     if (!$text) continue;
 
-                    preg_match('/^title:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $titleM);
-                    preg_match('/^slug:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $slugM);
-                    preg_match('/^description:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $descM);
-                    preg_match('/^status:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $statusM);
-                    preg_match('/^draft:\s*(true|false)/im', $text, $draftM);
-                    preg_match('/^publishDate:\s*[\x22\x27]?([^\x22\x27\r\n]+)[\x22\x27]?/m', $text, $pubDateM);
-
                     $fileSlug = pathinfo($filePath, PATHINFO_FILENAME);
-                    $slug = !empty($slugM[1]) ? trim($slugM[1]) : $fileSlug;
+                    $title = extractYamlField($text, 'title') ?: $fileSlug;
+                    $slug = extractYamlField($text, 'slug') ?: $fileSlug;
+                    $desc = extractYamlField($text, 'description') ?: '';
+                    $rawStatus = strtolower(extractYamlField($text, 'status') ?: 'published');
+                    $draftVal = strtolower(extractYamlField($text, 'draft') ?: '');
+                    $isDraft = ($draftVal === 'true') || ($rawStatus === 'draft');
+                    $pubDateStr = extractYamlField($text, 'publishDate');
 
                     $tags = [];
                     if (preg_match('/^tags:\s*\[(.*?)\]/m', $text, $tagsBracketM)) {
@@ -506,28 +599,24 @@ if ($method === 'POST') {
                         }
                     }
 
-                    $rawStatus = !empty($statusM[1]) ? strtolower(trim($statusM[1])) : 'published';
-                    $isDraft = (!empty($draftM[1]) && strtolower($draftM[1]) === 'true') || ($rawStatus === 'draft');
-                    $publishDate = !empty($pubDateM[1]) ? trim($pubDateM[1]) : null;
-
                     // Determine real status
                     $determinedStatus = 'Published';
                     if ($isDraft) {
                         $determinedStatus = 'In Progress';
                     } elseif ($rawStatus === 'scheduled') {
                         $determinedStatus = 'Scheduled';
-                    } elseif ($publishDate) {
-                        $pubTime = strtotime($publishDate);
+                    } elseif ($pubDateStr) {
+                        $pubTime = strtotime($pubDateStr);
                         if ($pubTime && $pubTime > time()) {
                             $determinedStatus = 'Scheduled';
                         }
                     }
 
                     $websiteArticles[] = [
-                        'title' => !empty($titleM[1]) ? trim($titleM[1]) : $fileSlug,
+                        'title' => $title,
                         'slug' => $slug,
                         'url' => '/articles/' . $slug . '/',
-                        'description' => !empty($descM[1]) ? trim($descM[1]) : '',
+                        'description' => $desc,
                         'tags' => array_values($tags),
                         'status' => $determinedStatus,
                     ];
@@ -540,20 +629,12 @@ if ($method === 'POST') {
         $newImportedCount = 0;
         $updatedPlanIds = [];
         $importedPlanIds = [];
-
-        $liveBySlug = [];
-        $liveByTitle = [];
-        foreach ($websiteArticles as $art) {
-            $liveBySlug[normalizeText($art['slug'])] = $art;
-            $liveByTitle[normalizeText($art['title'])] = $art;
-        }
+        $matchedArticleSlugs = [];
 
         foreach ($currentPlans as &$plan) {
-            $pSlug = normalizeText($plan['slug'] ?? generateSlug($plan['articleTitle']));
-            $pTitle = normalizeText($plan['articleTitle']);
-
-            $matchedArt = $liveBySlug[$pSlug] ?? ($liveByTitle[$pTitle] ?? null);
+            $matchedArt = findMatchingArticlePHP($plan, $websiteArticles);
             if ($matchedArt) {
+                $matchedArticleSlugs[normalizeText($matchedArt['slug'])] = true;
                 $needsUpdate = false;
                 $targetStatus = $matchedArt['status'];
 
@@ -580,7 +661,8 @@ if ($method === 'POST') {
                     }
                 }
             } else {
-                if ($plan['status'] === 'Published' || $plan['status'] === 'Scheduled') {
+                // Only revert if it had a liveUrl that no longer exists
+                if (!empty($plan['liveUrl']) && ($plan['status'] === 'Published' || $plan['status'] === 'Scheduled')) {
                     $plan['status'] = 'Planned';
                     $plan['liveUrl'] = null;
                     $plan['updatedAt'] = date('c');
@@ -607,6 +689,11 @@ if ($method === 'POST') {
         foreach ($websiteArticles as $art) {
             $aSlug = normalizeText($art['slug']);
             $aTitle = normalizeText($art['title']);
+
+            // Skip if already mapped to an existing plan
+            if (isset($matchedArticleSlugs[$aSlug])) {
+                continue;
+            }
 
             if (!isset($existingSlugs[$aSlug]) && !isset($existingTitles[$aTitle])) {
                 $focusKeyphrase = count($art['tags']) > 0 ? implode(', ', $art['tags']) : explode(':', $art['title'])[0];

@@ -1,3 +1,6 @@
+process.env.PLANNER_DB_PATH = 'data/test-article-plans.db';
+process.env.PLANNER_JSON_PATH = 'data/test-article-plans.json';
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   getAllPlans,
@@ -350,5 +353,46 @@ Technical SEO Consultant,Landing Page,Hire Premier Technical SEO Consultant,Sche
     expect(up2?.status).toBe('Scheduled');
     expect(up3?.status).toBe('In Progress');
     expect(up4?.status).toBe('Planned');
+  });
+  it('PLN-13: accurately matches plan with short title/omitted slug to published website article and prevents duplicates', () => {
+    // User created a plan with short title, no slug, status In Progress
+    const userPlan = createPlan({
+      articleTitle: 'Organic SEO Fundamentals',
+      focusKeyphrase: 'Organic SEO, Search Visibility',
+      pageRole: 'Topic Cluster',
+      status: 'In Progress',
+      intent: 'Informational',
+    });
+
+    expect(userPlan.status).toBe('In Progress');
+
+    // Website article was published with full title and specific slug
+    const liveArticles = [
+      {
+        type: 'article' as const,
+        title: 'Organic SEO Fundamentals: How Organic Search Works',
+        slug: 'organic-seo-fundamentals-how-organic-search-works',
+        url: '/articles/organic-seo-fundamentals-how-organic-search-works/',
+        description: 'Comprehensive guide to organic SEO fundamentals.',
+        tags: ['Organic SEO', 'Search Visibility'],
+        status: 'published',
+        draft: false,
+        publishDate: '2026-10-22T14:53:00+07:00',
+      },
+    ];
+
+    const result = syncWithWebsiteArticles(liveArticles, true);
+
+    expect(result.syncedCount).toBe(1);
+    expect(result.newImportedCount).toBe(0); // MUST NOT create duplicate!
+
+    const plans = getAllPlans();
+    expect(plans.length).toBe(1);
+
+    const updatedPlan = plans.find((p) => p.id === userPlan.id);
+    expect(updatedPlan).toBeDefined();
+    expect(updatedPlan?.status).toBe('Published');
+    expect(updatedPlan?.slug).toBe('organic-seo-fundamentals-how-organic-search-works');
+    expect(updatedPlan?.liveUrl).toBe('/articles/organic-seo-fundamentals-how-organic-search-works/');
   });
 });

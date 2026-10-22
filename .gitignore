@@ -67,3 +67,4 @@ coverage/
 .env.oauth
 *.oauth
 *.zip
+data/test-article-plans.*

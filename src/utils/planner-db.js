@@ -2,9 +2,34 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { createRequire } from "node:module";
-const require2 = createRequire(import.meta.url);
+const nodeRequire = createRequire(import.meta.url);
+function determineArticleStatus(art) {
+  const s = (art.status || "").toLowerCase().trim();
+  const isDraft = art.draft === true || s === "draft";
+  if (isDraft) return "In Progress";
+  if (s === "scheduled") return "Scheduled";
+  if (art.publishDate) {
+    const pubTime = new Date(art.publishDate).getTime();
+    if (!isNaN(pubTime) && pubTime > Date.now()) {
+      return "Scheduled";
+    }
+  }
+  if (s === "published" || !s) {
+    return "Published";
+  }
+  return "In Progress";
+}
 let sqliteDbInstance = null;
 function getDbPaths() {
+  if (process.env.PLANNER_DB_PATH && process.env.PLANNER_JSON_PATH) {
+    const dbPath2 = path.resolve(process.env.PLANNER_DB_PATH);
+    const jsonPath2 = path.resolve(process.env.PLANNER_JSON_PATH);
+    const dbDir = path.dirname(dbPath2);
+    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+    const jsonDir = path.dirname(jsonPath2);
+    if (!fs.existsSync(jsonDir)) fs.mkdirSync(jsonDir, { recursive: true });
+    return { dbPath: dbPath2, jsonPath: jsonPath2 };
+  }
   const root = process.cwd();
   const dataDir = path.resolve(root, "data");
   if (!fs.existsSync(dataDir)) {
@@ -22,7 +47,7 @@ function initPlannerDB() {
   if (sqliteDbInstance) return sqliteDbInstance;
   const { dbPath, jsonPath } = getDbPaths();
   try {
-    const { DatabaseSync } = require2("node:sqlite");
+    const { DatabaseSync } = nodeRequire("node:sqlite");
     const db = new DatabaseSync(dbPath);
     db.exec(`
       CREATE TABLE IF NOT EXISTS article_plans (
@@ -297,12 +322,52 @@ function bulkCreatePlans(inputs) {
   if (db) {
     try {
       db.exec("BEGIN TRANSACTION");
+      const insertStmt = db.prepare(`
+        INSERT INTO article_plans (
+          id, focus_keyphrase, page_role, article_title, status, intent,
+          slug, live_url, notes, target_word_count, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
       for (const item of inputs) {
         if (!item.articleTitle && !item.focusKeyphrase) {
           errors.push("Lewati baris tanpa Judul atau Focus Keyphrase.");
           continue;
         }
-        const plan = createPlan(item);
+        const id = item.id || crypto.randomUUID();
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const kps = splitKeyphrases(
+          item.focusKeyphrases && item.focusKeyphrases.length > 0 ? item.focusKeyphrases : item.focusKeyphrase
+        );
+        const focusKeyphrase = kps.join(", ");
+        const plan = {
+          id,
+          focusKeyphrase,
+          focusKeyphrases: kps,
+          pageRole: item.pageRole || "Pillar Page",
+          articleTitle: (item.articleTitle || "").trim(),
+          status: item.status || "Planned",
+          intent: item.intent || "Informational",
+          slug: (item.slug || generateSlug(item.articleTitle || "")).trim(),
+          liveUrl: item.liveUrl || void 0,
+          notes: item.notes || void 0,
+          targetWordCount: item.targetWordCount || 2500,
+          createdAt: item.createdAt || now,
+          updatedAt: now
+        };
+        insertStmt.run(
+          plan.id,
+          plan.focusKeyphrase,
+          plan.pageRole,
+          plan.articleTitle,
+          plan.status,
+          plan.intent,
+          plan.slug || null,
+          plan.liveUrl || null,
+          plan.notes || null,
+          plan.targetWordCount || 2500,
+          plan.createdAt,
+          plan.updatedAt
+        );
         created.push(plan);
       }
       db.exec("COMMIT");
@@ -313,7 +378,7 @@ function bulkCreatePlans(inputs) {
         db.exec("ROLLBACK");
       } catch (_) {
       }
-      errors.push("Transaction error: " + String(err));
+      errors.push("Transaction error: " + (err.message || String(err)));
     }
   }
   for (const item of inputs) {
@@ -326,54 +391,83 @@ function bulkCreatePlans(inputs) {
   }
   return { inserted: created.length, plans: created, errors };
 }
-function determineArticleStatus(art) {
-  const s = (art.status || "").toLowerCase().trim();
-  const isDraft = art.draft === true || s === "draft";
-  if (isDraft) return "In Progress";
-  if (s === "scheduled") return "Scheduled";
-  if (art.publishDate) {
-    const pubTime = new Date(art.publishDate).getTime();
-    if (!isNaN(pubTime) && pubTime > Date.now()) {
-      return "Scheduled";
+function findMatchingArticle(plan, websiteArticles) {
+  const pSlug = normalizeText(plan.slug || "");
+  const pGenSlug = normalizeText(generateSlug(plan.articleTitle || ""));
+  const pTitle = normalizeText(plan.articleTitle || "");
+  const pColon = normalizeText((plan.articleTitle || "").split(":")[0]);
+  const pUrl = (plan.liveUrl || "").trim().replace(/\/+$/, "");
+  for (const art of websiteArticles) {
+    const aSlug = normalizeText(art.slug || "");
+    if (aSlug && pSlug) {
+      if (aSlug === pSlug || aSlug.startsWith(pSlug) || pSlug.startsWith(aSlug)) {
+        return art;
+      }
+    }
+    if (aSlug && pGenSlug) {
+      if (aSlug === pGenSlug || aSlug.startsWith(pGenSlug) || pGenSlug.startsWith(aSlug)) {
+        return art;
+      }
     }
   }
-  if (s === "published" || !s) {
-    return "Published";
+  if (pUrl) {
+    for (const art of websiteArticles) {
+      const aUrl = (art.url || "").trim().replace(/\/+$/, "");
+      if (aUrl && pUrl === aUrl) {
+        return art;
+      }
+    }
   }
-  return "In Progress";
+  for (const art of websiteArticles) {
+    const aTitle = normalizeText(art.title || "");
+    if (pTitle && aTitle && pTitle === aTitle) {
+      return art;
+    }
+  }
+  for (const art of websiteArticles) {
+    const aTitle = normalizeText(art.title || "");
+    if (pTitle && aTitle && pTitle.length >= 8 && aTitle.length >= 8) {
+      if (aTitle.startsWith(pTitle) || pTitle.startsWith(aTitle)) {
+        return art;
+      }
+    }
+  }
+  if (pColon && pColon.length >= 6) {
+    for (const art of websiteArticles) {
+      const aColon = normalizeText((art.title || "").split(":")[0]);
+      if (aColon && pColon === aColon) {
+        return art;
+      }
+    }
+  }
+  const keyphrases = plan.focusKeyphrases && plan.focusKeyphrases.length > 0 ? plan.focusKeyphrases : splitKeyphrases(plan.focusKeyphrase);
+  for (const kp of keyphrases) {
+    const normKp = normalizeText(kp);
+    if (!normKp || normKp.length < 6) continue;
+    for (const art of websiteArticles) {
+      const aTitle = normalizeText(art.title || "");
+      const aSlug = normalizeText(art.slug || "");
+      if (aTitle.includes(normKp) || aSlug.includes(normKp) || normKp.includes(aSlug)) {
+        return art;
+      }
+    }
+  }
+  return void 0;
 }
-
 function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
   const currentPlans = getAllPlans();
   let syncedCount = 0;
   let newImportedCount = 0;
   const updatedPlanIds = [];
   const importedPlanIds = [];
-
-  const liveBySlug = new Map();
-  const liveByTitle = new Map();
-  for (const art of websiteArticles) {
-    const normSlug = normalizeText(art.slug);
-    const normTitle = normalizeText(art.title);
-    liveBySlug.set(normSlug, art);
-    liveByTitle.set(normTitle, art);
-  }
-
+  const matchedArticleSlugs = /* @__PURE__ */ new Set();
   for (const plan of currentPlans) {
-    const planSlug = normalizeText(plan.slug || generateSlug(plan.articleTitle));
-    const planTitle = normalizeText(plan.articleTitle);
-    const matchedArt = liveBySlug.get(planSlug) || liveByTitle.get(planTitle) || websiteArticles.find((a) => {
-      const aTitle = normalizeText(a.title);
-      const aTags = (a.tags || []).map((t) => normalizeText(t));
-      const planKeyphrases = splitKeyphrases(plan.focusKeyphrase).map((k) => normalizeText(k));
-      return planKeyphrases.some((kp) => aTitle.includes(kp) || aTags.includes(kp));
-    });
-
+    const matchedArt = findMatchingArticle(plan, websiteArticles);
     if (matchedArt) {
+      matchedArticleSlugs.add(normalizeText(matchedArt.slug));
       let needsUpdate = false;
       const updates = {};
       const targetStatus = determineArticleStatus(matchedArt);
-
       if (plan.status !== targetStatus) {
         updates.status = targetStatus;
         needsUpdate = true;
@@ -392,8 +486,6 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
         updatedPlanIds.push(plan.id);
       }
     } else {
-      // If plan has no corresponding article file on the website:
-      // If it was marked Published or Scheduled, revert to Planned!
       if (plan.status === "Published" || plan.status === "Scheduled") {
         updatePlan(plan.id, {
           status: "Planned",
@@ -404,17 +496,18 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
       }
     }
   }
-
   if (autoImportMissing) {
     const refreshedPlans = getAllPlans();
     const existingSlugs = new Set(
       refreshedPlans.map((p) => normalizeText(p.slug || generateSlug(p.articleTitle)))
     );
     const existingTitles = new Set(refreshedPlans.map((p) => normalizeText(p.articleTitle)));
-
     for (const art of websiteArticles) {
       const artSlug = normalizeText(art.slug);
       const artTitle = normalizeText(art.title);
+      if (matchedArticleSlugs.has(artSlug)) {
+        continue;
+      }
       if (!existingSlugs.has(artSlug) && !existingTitles.has(artTitle)) {
         const allTags = art.tags && art.tags.length > 0 ? art.tags.join(", ") : "";
         const focusKeyphrase = allTags || art.title.split(":")[0].trim();
@@ -444,7 +537,6 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
       }
     }
   }
-
   const allRefreshed = getAllPlans();
   return {
     syncedCount,
@@ -461,7 +553,6 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
     plans: allRefreshed
   };
 }
-
 function parseCSV(csvText) {
   const errors = [];
   const rows = [];
@@ -480,7 +571,7 @@ function parseCSV(csvText) {
   const tabCount = (firstLine.match(/\t/g) || []).length;
   let delimiter = ",";
   if (semiCount > commaCount && semiCount >= tabCount) delimiter = ";";
-  else if (tabCount > commaCount && tabCount > semiCount) delimiter = "\t";
+  else if (tabCount > commaCount && tabCount > semiCount) delimiter = "	";
   const rawLines = parseCSVLines(cleanText, delimiter);
   if (rawLines.length === 0) {
     errors.push("Tidak ada baris data yang ditemukan dalam CSV.");
@@ -632,10 +723,11 @@ function generateSlug(title) {
   return (title || "").toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/[\s_]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 }
 export {
-  determineArticleStatus,
   bulkCreatePlans,
   createPlan,
   deletePlan,
+  determineArticleStatus,
+  findMatchingArticle,
   generateSlug,
   getAllPlans,
   getPlanById,
