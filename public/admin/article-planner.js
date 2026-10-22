@@ -26,6 +26,43 @@
   };
 
   const API_URL = '/api/article-plans';
+  const PHP_API_URL = '/api/article-plans.php';
+
+  /**
+   * Unified API caller with dual-layer fallback:
+   * 1. Attempts clean endpoint (/api/article-plans or /api/article-plans/bulk)
+   * 2. If 404 (e.g. shared hosting without rewrite), falls back to direct PHP endpoint (/api/article-plans.php/bulk then /api/article-plans.php)
+   */
+  async function callApi(subPath = '', options = {}) {
+    const primaryUrl = API_URL + subPath;
+    try {
+      const res = await fetch(primaryUrl, options);
+      if (res && res.status !== 404) {
+        return res;
+      }
+    } catch (e) {
+      console.warn('[Article Planner] Primary fetch failed:', primaryUrl, e);
+    }
+
+    if (subPath) {
+      try {
+        const phpSubUrl = PHP_API_URL + subPath;
+        const res = await fetch(phpSubUrl, options);
+        if (res && res.status !== 404) {
+          return res;
+        }
+      } catch (e) {
+        console.warn('[Article Planner] PHP subpath fetch failed:', PHP_API_URL + subPath, e);
+      }
+    }
+
+    try {
+      return await fetch(PHP_API_URL, options);
+    } catch (e) {
+      console.warn('[Article Planner] PHP direct fetch failed:', e);
+      return null;
+    }
+  }
 
   // =========================================================================
   // 1. Data Fetching & Sync
@@ -33,7 +70,7 @@
 
   async function fetchPlans() {
     try {
-      const res = await fetch(API_URL);
+      const res = await callApi('');
       if (res.ok) {
         state.plans = await res.json();
       } else {
@@ -58,7 +95,7 @@
   async function savePlanToDb(planData) {
     try {
       const isEdit = !!planData.id;
-      const res = await fetch(API_URL, {
+      const res = await callApi('', {
         method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(planData),
@@ -96,7 +133,7 @@
 
   async function deletePlanFromDb(id) {
     try {
-      const res = await fetch(API_URL, {
+      const res = await callApi('', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
@@ -124,7 +161,7 @@
   async function syncWebsiteArticles() {
     showToast('🔄 Menyelaraskan dengan artikel website...', true);
     try {
-      const res = await fetch(API_URL + '/sync', {
+      const res = await callApi('/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'sync', autoImport: true }),
@@ -203,7 +240,7 @@
     }
 
     try {
-      const res = await fetch(API_URL + '/bulk', {
+      const res = await callApi('/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'bulk', csvText, plans: parsedRows }),
@@ -223,10 +260,13 @@
           showToast(`✕ Impor gagal: ${errMsg}`, false);
           return false;
         }
-      } else {
+      } else if (res) {
         const errData = await res.json().catch(() => ({}));
         const errMsg = errData.error || (errData.errors && errData.errors.join(', ')) || `Server error (${res.status})`;
         showToast(`✕ Gagal menyimpan ke database server: ${errMsg}`, false);
+        return false;
+      } else {
+        showToast('✕ Gagal terhubung ke database server.', false);
         return false;
       }
     } catch (err) {

@@ -62,6 +62,9 @@ Options -MultiViews -Indexes +FollowSymLinks
     # Contact Form API Handler
     RewriteRule ^api/contact/?$ /api/contact.php [L,QSA]
 
+    # Article Plans API Handler (SQLite & JSON snapshot for Shared Hosting)
+    RewriteRule ^api/article-plans(/.*)?$ /api/article-plans.php [L,QSA]
+
     # Clean URLs & Directory Slashing for Astro Static Files
     # If request is an existing directory and missing trailing slash, redirect with slash
     RewriteCond %{REQUEST_FILENAME} -d
@@ -190,3 +193,14 @@ Options -MultiViews -Indexes +FollowSymLinks
         Deny from all
     </IfModule>
 </Files>
+
+# Prevent direct web access to SQLite database files
+<FilesMatch "\.(db|sqlite|sqlite3)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
