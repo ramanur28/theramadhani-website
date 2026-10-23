@@ -525,4 +525,142 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
 
     coverPane.remove();
   });
+
+  it('INJ-14: dispatches DRAFT_CHANGE_FIELD directly to Decap CMS Redux store (Tier 1)', async () => {
+    let dispatchedAction: any = null;
+    const reduxState = {
+      entryDraft: {
+        fields: [{ get: (k: string) => (k === 'name' ? 'coverImage' : null) }],
+        get: (key: string) => (key === 'fields' ? [{ get: (k: string) => (k === 'name' ? 'coverImage' : null) }] : null),
+        getIn: (path: string[]) => (path.join('.') === 'entry.data.coverImage' ? dispatchedAction?.payload?.value : null),
+      },
+    };
+
+    const mockStore = {
+      dispatch: (action: any) => {
+        dispatchedAction = action;
+      },
+      getState: () => reduxState,
+    };
+
+    (window as any).store = mockStore;
+
+    document.querySelectorAll('input[id*="coverImage-field-"], input[name="coverImage"]').forEach((el) => el.remove());
+
+    studio.state.synthesizedArticle = {
+      title: 'Redux Dispatch Cover Test',
+      slug: 'redux-dispatch-cover-test',
+      description: 'Testing direct Redux draft update',
+      quickAnswer: 'Quick answer',
+      coverImage: '/images/uploads/article-redux-tier1.webp',
+      coverAlt: 'Redux Alt Text',
+      body: '# Test Article',
+      tags: ['GEO'],
+      faq: [],
+    };
+
+    const injected = await studio.injectIntoDecapForm();
+    expect(injected).toBe(true);
+
+    expect(dispatchedAction).toBeDefined();
+    expect(dispatchedAction.type).toBe('DRAFT_CHANGE_FIELD');
+    expect(dispatchedAction.payload.value).toBe('/images/uploads/article-redux-tier1.webp');
+    expect(dispatchedAction.payload.field.get('name')).toBe('coverImage');
+
+    delete (window as any).store;
+  });
+
+  it('INJ-15: invokes ControlHOC React Fiber onChange with (field, value) signature when arity >= 2 (Tier 2)', async () => {
+    const form = document.querySelector('.decap-editor-form');
+    const coverPane = document.createElement('div');
+    coverPane.className = 'control-pane cover-pane';
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'TopBarLabel';
+    labelSpan.textContent = 'Cover Image';
+    coverPane.appendChild(labelSpan);
+
+    let receivedField: any = null;
+    let receivedValue = '';
+
+    const mockField = { get: (k: string) => (k === 'name' ? 'coverImage' : null), name: 'coverImage' };
+
+    const fiberKey = '__reactFiber$test_hoc';
+    (coverPane as any)[fiberKey] = {
+      memoizedProps: {
+        field: mockField,
+        value: '/images/uploads/default-geo.svg',
+        onChange: (f: any, val: string) => {
+          receivedField = f;
+          receivedValue = val;
+        },
+      },
+      return: null,
+    };
+
+    form?.appendChild(coverPane);
+    document.querySelectorAll('input[id*="coverImage-field-"], input[name="coverImage"]').forEach((el) => el.remove());
+
+    studio.state.synthesizedArticle = {
+      title: 'HOC Signature Test',
+      slug: 'hoc-signature-test',
+      description: 'Testing HOC 2-argument signature',
+      quickAnswer: 'Quick answer',
+      coverImage: '/images/uploads/article-hoc-signature.webp',
+      coverAlt: 'HOC Alt Text',
+      body: '# Test Article',
+      tags: ['GEO'],
+      faq: [],
+    };
+
+    const injected = await studio.injectIntoDecapForm();
+    expect(injected).toBe(true);
+
+    expect(receivedField).toBe(mockField);
+    expect(receivedValue).toBe('/images/uploads/article-hoc-signature.webp');
+
+    coverPane.remove();
+  });
+
+  it('INJ-16: triggers native Decap CMS Replace with URL button with prompt interception (Tier 4)', async () => {
+    const form = document.querySelector('.decap-editor-form');
+    const coverPane = document.createElement('div');
+    coverPane.className = 'control-pane cover-pane';
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'TopBarLabel';
+    labelSpan.textContent = 'Cover Image';
+    coverPane.appendChild(labelSpan);
+
+    const replaceUrlBtn = document.createElement('button');
+    replaceUrlBtn.type = 'button';
+    replaceUrlBtn.textContent = 'Replace with URL';
+    let promptCapturedValue = '';
+    replaceUrlBtn.addEventListener('click', () => {
+      promptCapturedValue = (window as any).prompt('Enter URL:');
+    });
+    coverPane.appendChild(replaceUrlBtn);
+
+    form?.appendChild(coverPane);
+    document.querySelectorAll('input[id*="coverImage-field-"], input[name="coverImage"]').forEach((el) => el.remove());
+
+    studio.state.synthesizedArticle = {
+      title: 'URL Button Simulation Test',
+      slug: 'url-button-simulation-test',
+      description: 'Testing URL prompt simulation',
+      quickAnswer: 'Quick answer',
+      coverImage: '/images/uploads/article-url-prompt.webp',
+      coverAlt: 'Prompt Alt Text',
+      body: '# Test Article',
+      tags: ['GEO'],
+      faq: [],
+    };
+
+    const injected = await studio.injectIntoDecapForm();
+    expect(injected).toBe(true);
+
+    expect(promptCapturedValue).toBe('/images/uploads/article-url-prompt.webp');
+
+    coverPane.remove();
+  });
 });

@@ -1148,6 +1148,307 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
     }
   }
 
+  // =========================================================================
+  // Decap CMS Redux Store Discovery & Direct Field Dispatch (Tier 1)
+  // =========================================================================
+  function getDecapReduxStore() {
+    if (typeof window !== 'undefined') {
+      if (window.store && typeof window.store.dispatch === 'function') return window.store;
+      if (window.CMS && typeof window.CMS.getStore === 'function') {
+        try {
+          const cmsStore = window.CMS.getStore();
+          if (cmsStore && typeof cmsStore.dispatch === 'function') return cmsStore;
+        } catch (e) { /* ignore */ }
+      }
+    }
+
+    const ncRoot = typeof document !== 'undefined' ? document.getElementById('nc-root') : null;
+    if (ncRoot) {
+      const rootKeys = Object.keys(ncRoot).filter(
+        (k) => k.startsWith('_reactRootContainer') || k.startsWith('__reactContainer$') || k.startsWith('__reactFiber$')
+      );
+      for (const key of rootKeys) {
+        let fiber = ncRoot[key];
+        if (fiber && fiber._internalRoot) fiber = fiber._internalRoot.current;
+        if (!fiber) continue;
+
+        const queue = [fiber];
+        let visited = 0;
+        while (queue.length > 0 && visited < 1000) {
+          const node = queue.shift();
+          visited++;
+          if (!node) continue;
+
+          if (node.memoizedProps && node.memoizedProps.store && typeof node.memoizedProps.store.dispatch === 'function') {
+            return node.memoizedProps.store;
+          }
+          if (node.stateNode && node.stateNode.store && typeof node.stateNode.store.dispatch === 'function') {
+            return node.stateNode.store;
+          }
+          if (node.child) queue.push(node.child);
+          if (node.sibling) queue.push(node.sibling);
+        }
+      }
+    }
+
+    if (typeof document !== 'undefined') {
+      const candidates = document.querySelectorAll(
+        '.decap-editor-form, [class*="EditorContainer"], [class*="CollectionPage"], [class*="AppHeader"], form'
+      );
+      for (const el of Array.from(candidates)) {
+        const fKey = Object.keys(el).find((k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance'));
+        if (fKey && el[fKey]) {
+          let curr = el[fKey];
+          let depth = 0;
+          while (curr && depth < 80) {
+            if (curr.memoizedProps && curr.memoizedProps.store && typeof curr.memoizedProps.store.dispatch === 'function') {
+              return curr.memoizedProps.store;
+            }
+            if (curr.stateNode && curr.stateNode.store && typeof curr.stateNode.store.dispatch === 'function') {
+              return curr.stateNode.store;
+            }
+            curr = curr.return;
+            depth++;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function setCoverImageViaRedux(imageUrl) {
+    const store = getDecapReduxStore();
+    if (!store || typeof store.dispatch !== 'function') return false;
+
+    try {
+      const state = typeof store.getState === 'function' ? store.getState() : null;
+      const entryDraft = state && state.entryDraft;
+      let coverField = null;
+
+      if (entryDraft && typeof entryDraft.get === 'function') {
+        const fields = entryDraft.get('fields');
+        if (fields) {
+          if (typeof fields.find === 'function') {
+            coverField = fields.find((f) => {
+              const name = f && f.get ? f.get('name') : f && f.name;
+              return name === 'coverImage';
+            });
+          } else if (typeof fields.forEach === 'function') {
+            fields.forEach((f) => {
+              const name = f && f.get ? f.get('name') : f && f.name;
+              if (name === 'coverImage') coverField = f;
+            });
+          }
+        }
+      }
+
+      if (!coverField) {
+        coverField = {
+          get: (k) => (k === 'name' ? 'coverImage' : k === 'meta' ? false : null),
+          name: 'coverImage',
+          widget: 'image',
+        };
+      }
+
+      store.dispatch({
+        type: 'DRAFT_CHANGE_FIELD',
+        payload: {
+          field: coverField,
+          value: imageUrl,
+        },
+      });
+
+      console.log('[AI Studio] Cover image dispatched via Decap Redux store:', imageUrl);
+      return true;
+    } catch (err) {
+      console.warn('[AI Studio] Error in setCoverImageViaRedux:', err);
+      return false;
+    }
+  }
+
+  function setCoverImageViaFiber(imageUrl) {
+    const candidates = [
+      ...Array.from(document.querySelectorAll('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane, .cover-pane')),
+      ...Array.from(document.querySelectorAll('label, [class*="TopBarLabel"], [class*="ControlLabel"], span'))
+        .filter((el) => {
+          const txt = (el.textContent || '').trim().toLowerCase();
+          return txt === 'cover image' || txt === 'cover image / diagram' || txt.startsWith('cover image');
+        })
+        .map((el) => el.closest('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane') || el.parentElement?.parentElement || el.parentElement)
+        .filter(Boolean),
+      ...Array.from(document.querySelectorAll('button'))
+        .filter((b) => {
+          const bt = (b.textContent || '').toLowerCase();
+          return bt.includes('choose different image') || bt.includes('choose an image') || bt.includes('replace with url') || bt.includes('remove image');
+        })
+        .map((b) => b.closest('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane') || b.parentElement?.parentElement || b.parentElement)
+        .filter(Boolean),
+    ];
+
+    for (const el of candidates) {
+      let dom = el;
+      while (dom && dom !== document.body) {
+        const fiberKey = Object.keys(dom).find(
+          (k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance')
+        );
+        if (fiberKey && dom[fiberKey]) {
+          let curr = dom[fiberKey];
+          let depth = 0;
+          while (curr && depth < 45) {
+            const props = curr.memoizedProps;
+            if (props && typeof props.onChange === 'function') {
+              const fName = props.field && props.field.get ? props.field.get('name') : props.field && props.field.name;
+              const isCover = fName === 'coverImage' || (props.forID && props.forID.includes('coverImage'));
+              if (isCover) {
+                try {
+                  if (props.field && props.onChange.length >= 2) {
+                    props.onChange(props.field, imageUrl);
+                    console.log('[AI Studio] Cover image injected via React Fiber (ControlHOC signature):', imageUrl);
+                    return true;
+                  }
+                } catch (e1) {
+                  console.warn('[AI Studio] Fiber (field, value) invocation error:', e1);
+                }
+
+                try {
+                  props.onChange(imageUrl);
+                  console.log('[AI Studio] Cover image injected via React Fiber (FileControl signature):', imageUrl);
+                  return true;
+                } catch (e2) {
+                  console.warn('[AI Studio] Fiber (value) invocation error:', e2);
+                }
+
+                if (props.field) {
+                  try {
+                    props.onChange(props.field, imageUrl);
+                    return true;
+                  } catch (e3) { /* ignore */ }
+                }
+              }
+            }
+
+            if (curr.stateNode && curr.stateNode.props && typeof curr.stateNode.props.onChange === 'function') {
+              const snProps = curr.stateNode.props;
+              const fName = snProps.field && snProps.field.get ? snProps.field.get('name') : snProps.field && snProps.field.name;
+              if (fName === 'coverImage') {
+                try {
+                  snProps.onChange(imageUrl);
+                  console.log('[AI Studio] Cover image injected via Fiber stateNode.props.onChange:', imageUrl);
+                  return true;
+                } catch (eSn) { /* ignore */ }
+              }
+            }
+
+            curr = curr.return;
+            depth++;
+          }
+        }
+        dom = dom.parentElement;
+      }
+    }
+
+    return false;
+  }
+
+  function setCoverImageViaUrlButton(imageUrl) {
+    const candidates = [
+      ...Array.from(document.querySelectorAll('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane, .cover-pane')),
+      ...Array.from(document.querySelectorAll('label, [class*="TopBarLabel"], [class*="ControlLabel"], span'))
+        .filter((el) => {
+          const txt = (el.textContent || '').trim().toLowerCase();
+          return txt === 'cover image' || txt === 'cover image / diagram' || txt.startsWith('cover image');
+        })
+        .map((el) => el.closest('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane') || el.parentElement?.parentElement || el.parentElement)
+        .filter(Boolean),
+    ];
+
+    for (const pane of candidates) {
+      const buttons = Array.from(pane.querySelectorAll('button'));
+      const urlBtn = buttons.find((b) => {
+        const txt = (b.textContent || '').trim().toLowerCase();
+        return txt.includes('url') || txt.includes('replace with url') || txt.includes('insert from url') || txt.includes('choose from url');
+      });
+
+      if (urlBtn) {
+        const origPrompt = window.prompt;
+        try {
+          window.prompt = () => imageUrl;
+          urlBtn.click();
+          console.log('[AI Studio] Cover image set via Decap native URL button prompt:', imageUrl);
+          return true;
+        } catch (bErr) {
+          console.warn('[AI Studio] Error triggering URL button:', bErr);
+        } finally {
+          window.prompt = origPrompt;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function findCoverImageFiberOnChange() {
+    const candidates = [
+      ...Array.from(document.querySelectorAll('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane, .cover-pane')),
+      ...Array.from(document.querySelectorAll('label, [class*="TopBarLabel"], [class*="ControlLabel"], span'))
+        .filter((el) => {
+          const txt = (el.textContent || '').trim().toLowerCase();
+          return txt === 'cover image' || txt === 'cover image / diagram' || txt.startsWith('cover image');
+        })
+        .map((el) => el.closest('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane') || el.parentElement?.parentElement || el.parentElement)
+        .filter(Boolean),
+      ...Array.from(document.querySelectorAll('button'))
+        .filter((b) => {
+          const bt = (b.textContent || '').toLowerCase();
+          return bt.includes('choose different image') || bt.includes('choose an image') || bt.includes('replace with url') || bt.includes('remove image');
+        })
+        .map((b) => b.closest('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane') || b.parentElement?.parentElement || b.parentElement)
+        .filter(Boolean),
+    ];
+
+    for (const el of candidates) {
+      let dom = el;
+      while (dom && dom !== document.body) {
+        const fiberKey = Object.keys(dom).find(
+          (k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance')
+        );
+        if (fiberKey && dom[fiberKey]) {
+          let curr = dom[fiberKey];
+          let depth = 0;
+          while (curr && depth < 45) {
+            if (curr.memoizedProps) {
+              const props = curr.memoizedProps;
+              const fName = props.field && props.field.get ? props.field.get('name') : props.field && props.field.name;
+              const isCover = fName === 'coverImage' || (props.forID && props.forID.includes('coverImage'));
+              if (isCover && typeof props.onChange === 'function') {
+                return function(val, optVal) {
+                  const actualVal = optVal !== undefined ? optVal : val;
+                  try {
+                    if (props.field && props.onChange.length >= 2) {
+                      props.onChange(props.field, actualVal);
+                      return;
+                    }
+                  } catch (e1) {}
+                  try {
+                    props.onChange(actualVal);
+                  } catch (e2) {
+                    if (props.field) props.onChange(props.field, actualVal);
+                  }
+                };
+              }
+            }
+            curr = curr.return;
+            depth++;
+          }
+        }
+        dom = dom.parentElement;
+      }
+    }
+
+    return null;
+  }
+
   async function injectIntoDecapForm() {
     const art = state.synthesizedArticle;
     if (!art) {
@@ -1309,11 +1610,21 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
               if (curr.memoizedProps) {
                 const props = curr.memoizedProps;
                 const fName = props.field?.get ? props.field.get('name') : props.field?.name;
-                if (fName === 'coverImage' && typeof props.onChange === 'function') {
-                  return props.onChange;
-                }
-                if (props.forID && props.forID.includes('coverImage') && typeof props.onChange === 'function') {
-                  return props.onChange;
+                if ((fName === 'coverImage' || (props.forID && props.forID.includes('coverImage'))) && typeof props.onChange === 'function') {
+                  return function(val, optVal) {
+                    const actualVal = optVal !== undefined ? optVal : val;
+                    try {
+                      if (props.field && props.onChange.length >= 2) {
+                        props.onChange(props.field, actualVal);
+                        return;
+                      }
+                    } catch (e1) {}
+                    try {
+                      props.onChange(actualVal);
+                    } catch (e2) {
+                      if (props.field) props.onChange(props.field, actualVal);
+                    }
+                  };
                 }
               }
               curr = curr.return;
@@ -1402,24 +1713,47 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
     }
     await new Promise((r) => setTimeout(r, 25));
 
-    // 5. Cover Image & Alt
+    // 5. Cover Image & Alt (Multi-Tier Injector)
     let coverInjected = false;
+
+    // Check if normal input exists
     const coverEl = findFieldInput('coverImage', 'input');
     if (coverEl && coverEl.type !== 'file' && setNativeValue(coverEl, art.coverImage)) {
       coverInjected = true;
     }
 
-    // React Fiber injection for Decap CMS image widget (which uses button interface)
+    // Tier 1: Redux Store Direct Dispatch (100% reliable for Decap core draft)
+    if (!coverInjected) {
+      if (setCoverImageViaRedux(art.coverImage)) {
+        coverInjected = true;
+      }
+    }
+
+    // Tier 2: React Fiber Smart Invocation (supporting both ControlHOC and FileControl)
+    if (!coverInjected) {
+      if (setCoverImageViaFiber(art.coverImage)) {
+        coverInjected = true;
+      }
+    }
+
+    // Tier 3: React Fiber onChange fallback lookup
     if (!coverInjected) {
       const coverFiberOnChange = findCoverImageFiberOnChange() || findFieldFiberOnChange('coverImage');
       if (typeof coverFiberOnChange === 'function') {
         try {
           coverFiberOnChange(art.coverImage);
           coverInjected = true;
-          console.log('[AI Studio] Cover image injected successfully via React Fiber:', art.coverImage);
+          console.log('[AI Studio] Cover image injected successfully via fallback React Fiber:', art.coverImage);
         } catch (fibErr) {
           console.warn('[AI Studio] Cover image fiber injection warning:', fibErr);
         }
+      }
+    }
+
+    // Tier 4: Native Decap CMS URL Button Click Simulation
+    if (!coverInjected) {
+      if (setCoverImageViaUrlButton(art.coverImage)) {
+        coverInjected = true;
       }
     }
 
@@ -3887,6 +4221,11 @@ ${state.synthesizedArticle.body}`;
     setInjectLoading: setInjectLoading,
     setNativeValue: setNativeValue,
     injectIntoDecapForm: injectIntoDecapForm,
+    getDecapReduxStore: getDecapReduxStore,
+    setCoverImageViaRedux: setCoverImageViaRedux,
+    setCoverImageViaFiber: setCoverImageViaFiber,
+    setCoverImageViaUrlButton: setCoverImageViaUrlButton,
+    findCoverImageFiberOnChange: findCoverImageFiberOnChange,
     handleUploadedImage: handleUploadedImage,
     handleUploadedImages: handleUploadedImages,
     compressImage: compressImage,
