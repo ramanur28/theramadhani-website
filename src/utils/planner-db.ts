@@ -711,7 +711,7 @@ export function syncWithWebsiteArticles(
       }
     } else {
       // Only revert if it previously had a liveUrl that no longer exists on website
-      if (plan.status === 'Published' || plan.status === 'Scheduled') {
+      if (websiteArticles.length > 0 && (plan.status === 'Published' || plan.status === 'Scheduled')) {
         updatePlan(plan.id, {
           status: 'Planned',
           liveUrl: undefined,

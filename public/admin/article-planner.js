@@ -231,60 +231,92 @@
 
   async function syncWebsiteArticles() {
     showToast('🔄 Menyelaraskan status dengan artikel website...', true);
+
+    // 1. Fetch live articles catalog from /api/articles-index.json on the client first
+    let liveArticles = [];
+    try {
+      const idxRes = await fetch(`/api/articles-index.json?_t=${Date.now()}`);
+      if (idxRes.ok) {
+        const rawItems = await idxRes.json();
+        if (Array.isArray(rawItems)) {
+          liveArticles = rawItems.filter((i) => (i.type || 'article') === 'article');
+        }
+      }
+    } catch (err) {
+      console.warn('[Article Planner] Could not fetch /api/articles-index.json in browser:', err);
+    }
+
+    // 2. Call backend sync API, passing liveArticles in payload
+    let serverSuccess = false;
     try {
       const res = await callApi('/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'sync', autoImport: true }),
+        body: JSON.stringify({ action: 'sync', autoImport: true, liveArticles }),
       });
       if (res && res.ok) {
         const data = await res.json();
-        if (data.plans) state.plans = data.plans;
-        else await fetchPlans();
+        const serverPublished = (data.plans || []).filter((p) => p.status === 'Published').length;
 
-        try {
-          localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
-        } catch (_) {}
+        // If server successfully processed articles or we had no live articles to match
+        if (data.success && (serverPublished > 0 || liveArticles.length === 0)) {
+          serverSuccess = true;
+          if (data.plans) state.plans = data.plans;
+          else await fetchPlans();
 
-        const highlightIds = [
-          ...(data.updatedPlanIds || []),
-          ...(data.importedPlanIds || []),
-        ];
+          try {
+            localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
+          } catch (_) {}
 
-        renderTable(highlightIds);
-        updateStats();
+          const highlightIds = [
+            ...(data.updatedPlanIds || []),
+            ...(data.importedPlanIds || []),
+          ];
 
-        const s = data.statusSummary || {
-          published: state.plans.filter((p) => p.status === 'Published').length,
-          scheduled: state.plans.filter((p) => p.status === 'Scheduled').length,
-          inProgress: state.plans.filter((p) => p.status === 'In Progress').length,
-          planned: state.plans.filter((p) => p.status === 'Planned').length,
-        };
+          renderTable(highlightIds);
+          updateStats();
 
-        const breakdown = `Published: ${s.published} • Scheduled: ${s.scheduled} • In Progress: ${s.inProgress} • Planned: ${s.planned}`;
+          const s = data.statusSummary || {
+            published: state.plans.filter((p) => p.status === 'Published').length,
+            scheduled: state.plans.filter((p) => p.status === 'Scheduled').length,
+            inProgress: state.plans.filter((p) => p.status === 'In Progress').length,
+            planned: state.plans.filter((p) => p.status === 'Planned').length,
+          };
 
-        if ((data.syncedCount || 0) > 0 || (data.newImportedCount || 0) > 0) {
-          showToast(
-            `✓ Database diperbarui! ${data.syncedCount || 0} status disinkronkan, ${data.newImportedCount || 0} artikel baru diimpor. (${breakdown})`,
-            true
-          );
+          const breakdown = `Published: ${s.published} • Scheduled: ${s.scheduled} • In Progress: ${s.inProgress} • Planned: ${s.planned}`;
+
+          if ((data.syncedCount || 0) > 0 || (data.newImportedCount || 0) > 0) {
+            showToast(
+              `✓ Database diperbarui! ${data.syncedCount || 0} status disinkronkan, ${data.newImportedCount || 0} artikel baru diimpor. (${breakdown})`,
+              true
+            );
+          } else {
+            showToast(
+              `✓ Seluruh rencana artikel sudah sinkron dengan website. (${breakdown})`,
+              true
+            );
+          }
+          return;
         } else {
-          showToast(
-            `✓ Seluruh rencana artikel sudah sinkron dengan website. (${breakdown})`,
-            true
-          );
+          console.warn('[Article Planner] Server sync responded but returned 0 published articles. Activating client matcher.');
         }
-        return;
       }
     } catch (err) {
       console.warn('[Article Planner] Direct sync API failed, attempting client articles-index fallback:', err);
     }
 
-    // Client-side fallback sync using /api/articles-index.json
+    // 3. Client-side fallback sync using liveArticles (or fetch if not yet fetched)
     try {
-      const res = await fetch('/api/articles-index.json');
-      if (res.ok) {
-        const articles = await res.json();
+      let articles = liveArticles;
+      if (!articles || articles.length === 0) {
+        const res = await fetch(`/api/articles-index.json?_t=${Date.now()}`);
+        if (res.ok) {
+          const raw = await res.json();
+          articles = Array.isArray(raw) ? raw.filter((i) => (i.type || 'article') === 'article') : [];
+        }
+      }
+
+      if (Array.isArray(articles) && articles.length > 0) {
         let synced = 0;
         let imported = 0;
         const highlightIds = [];
@@ -355,6 +387,8 @@
               intent: 'Informational',
               slug: art.slug,
               liveUrl: art.url,
+              notes: art.description ? ('Ringkasan: ' + art.description) : undefined,
+              targetWordCount: 2500,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             });
@@ -370,7 +404,7 @@
           localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
         } catch (_) {}
 
-        // Persist immediately to server via /bulk or PUT so data is NEVER lost on refresh!
+        // Persist immediately to server via /bulk so data is saved to SQLite and JSON
         try {
           await callApi('/bulk', {
             method: 'POST',
@@ -391,6 +425,8 @@
         const breakdown = `Published: ${pubCount} • Scheduled: ${schedCount} • In Progress: ${progCount} • Planned: ${planCount}`;
 
         showToast(`✓ Sinkronisasi selesai: ${synced} status diselaraskan & ${imported} artikel baru diimpor! (${breakdown})`, true);
+      } else {
+        showToast('✕ Tidak ada data artikel yang ditemukan di website untuk disinkronkan.', false);
       }
     } catch (e) {
       showToast('✕ Gagal menyinkronkan data website: ' + e.message, false);
