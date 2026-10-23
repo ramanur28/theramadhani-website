@@ -5,6 +5,7 @@ import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 function decapServerIntegration() {
   return {
@@ -264,7 +265,6 @@ function decapServerIntegration() {
                   if (urlPath.includes('/sync') || payload.action === 'sync') {
                     // Automatically fast-forward remote commits (e.g. Decap CMS GitHub backend)
                     try {
-                      const { execSync } = await import('child_process');
                       execSync('git pull origin main --no-edit', { timeout: 10000, stdio: 'ignore' });
                     } catch (_) {}
                     const liveArticles = getWebsiteArticles();
