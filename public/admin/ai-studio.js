@@ -580,22 +580,36 @@
       if (!img.base64) continue;
       if (img.visionAnalysis) continue; // Skip if already analyzed
 
+      const currentTopic = state.topic || (state.focusKeyphrases && state.focusKeyphrases[0]) || '';
+      const keyphrasesStr = state.focusKeyphrases && state.focusKeyphrases.length > 0 ? state.focusKeyphrases.join(', ') : currentTopic;
+      const roleLabel = img.isCover ? (isEn ? 'Cover Hero Image' : 'Gambar Sampul/Hero Utama') : (isEn ? 'Body Content Diagram' : 'Diagram Pendukung Tubuh Artikel');
+
       const prompt = isEn
-        ? `Analyze this technical diagram/image (Image ${i + 1}/${imagesToAnalyze.length}: "${img.name}") in-depth for a digital marketing, architectural SEO, or Generative Engine Optimization (GEO) guide.
-Return response ONLY in valid JSON format with structure:
+        ? `You are analyzing a technical diagram/image for an authoritative article.
+Article Context:
+- Topic / Focus: "${currentTopic || 'Technical SEO & Digital Architecture'}"
+- Focus Keyphrases: "${keyphrasesStr || currentTopic}"
+- Image Role: ${roleLabel} (Image ${i + 1}/${imagesToAnalyze.length}: "${img.name}")
+
+Analyze this image in-depth and return response ONLY in valid JSON format:
 {
-  "alt": "SEO and screen-reader optimized alt text (max 120 characters)",
-  "caption": "Concise technical description for figcaption beneath the image",
-  "visualInsights": "Summary of core concepts, component relations, or statistical findings from this image",
-  "recommendedPlacement": "Recommendation of which outline section this diagram belongs in"
+  "alt": "Descriptive, SEO-optimized, and screen-reader friendly alt text mentioning core visual elements (max 120 characters)",
+  "caption": "Professional, highly contextual figcaption (1-2 clear sentences, max 200 characters) directly explaining what specific architectural flow, data metrics, benchmark comparison, or process this diagram illustrates regarding ${currentTopic || 'the topic'}. Avoid generic filler like 'This image shows' or 'Diagram of', state the takeaway directly.",
+  "visualInsights": "Detailed breakdown of specific entities, components, metrics, or relationships visible in this image to reference in the article narrative",
+  "recommendedPlacement": "Specific article outline section/heading where this image provides the strongest evidentiary or explanatory value"
 }`
-        : `Analisa gambar/diagram teknis ini (Gambar ${i + 1}/${imagesToAnalyze.length}: "${img.name}") secara mendalam untuk artikel teknis digital marketing, SEO arsitektural, atau GEO.
-Kembalikan respon HANYA dalam format JSON valid dengan struktur:
+        : `Anda sedang menganalisa gambar/diagram teknis untuk artikel profesional.
+Konteks Artikel:
+- Topik / Fokus: "${currentTopic || 'SEO Teknis & Arsitektur Digital'}"
+- Focus Keyphrases: "${keyphrasesStr || currentTopic}"
+- Peran Gambar: ${roleLabel} (Gambar ${i + 1}/${imagesToAnalyze.length}: "${img.name}")
+
+Analisa gambar ini secara mendalam dan kembalikan respon HANYA dalam format JSON valid:
 {
-  "alt": "Alt text teroptimasi SEO dan screen reader (maksimal 120 karakter)",
-  "caption": "Deskripsi teknis singkat yang akan diletakkan di figcaption di bawah gambar",
-  "visualInsights": "Ringkasan konsep utama, relasi komponen, atau temuan statistik dari gambar ini",
-  "recommendedPlacement": "Rekomendasi di section outline mana diagram ini harus dibahas dan diintegrasikan"
+  "alt": "Alt text deskriptif, teroptimasi SEO, dan ramah screen-reader yang menyebutkan elemen visual utama (maksimal 120 karakter)",
+  "caption": "Caption profesional dan sangat kontekstual untuk <figcaption> (1-2 kalimat lugas, maksimal 200 karakter) yang menjelaskan secara spesifik alur arsitektur, data/metrik, perbandingan tolok ukur, atau proses apa yang diilustrasikan diagram ini terkait ${currentTopic || 'topik artikel'}. Hindari kalimat klise seperti 'Gambar ini menampilkan' atau 'Diagram tentang', langsung sampaikan poin/insight utamanya.",
+  "visualInsights": "Rincian spesifik entitas, komponen, data/metrik, atau relasi yang terlihat pada gambar untuk diintegrasikan ke narasi teks artikel",
+  "recommendedPlacement": "Rekomendasi subjudul/section artikel yang paling tepat agar gambar ini memberikan nilai penjelasan maksimal"
 }`;
 
       try {
@@ -611,10 +625,16 @@ Kembalikan respon HANYA dalam format JSON valid dengan struktur:
         const cleanJson = rawResponse.replace(/```json\n?|```/g, '').trim();
         img.visionAnalysis = JSON.parse(cleanJson);
       } catch (e) {
+        const fallbackTopic = currentTopic || (isEn ? 'Technical Architecture' : 'Arsitektur Teknis');
+        const cleanImgTitle = (img.cleanName || img.name || 'Diagram').replace(/[-_]/g, ' ').replace(/\.[a-zA-Z0-9]+$/, '');
         img.visionAnalysis = {
-          alt: (img.cleanName || img.name || 'Diagram').replace(/[-_]/g, ' '),
-          caption: isEn ? 'System architecture diagram and implementation flow visualization.' : 'Diagram arsitektur sistem dan visualisasi alur implementasi.',
-          visualInsights: 'Technical diagram visualization for ' + (img.name || 'image'),
+          alt: `${cleanImgTitle} - ${fallbackTopic}`.slice(0, 120),
+          caption: isEn
+            ? `Visualization of ${cleanImgTitle} demonstrating key architectural flows and data relations for ${fallbackTopic}.`
+            : `Visualisasi ${cleanImgTitle} yang mengilustrasikan alur arsitektur dan relasi komponen utama dalam ${fallbackTopic}.`,
+          visualInsights: isEn
+            ? `Technical architectural components and implementation stages for ${fallbackTopic}.`
+            : `Komponen arsitektur teknis dan tahapan implementasi untuk ${fallbackTopic}.`,
           recommendedPlacement: isEn ? 'Technical architecture implementation section' : 'Bagian implementasi arsitektur teknis',
         };
       }
