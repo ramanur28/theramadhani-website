@@ -5,21 +5,34 @@ import { createRequire } from "node:module";
 const nodeRequire = createRequire(import.meta.url);
 function determineArticleStatus(art) {
   const s = (art.status || "").toLowerCase().trim();
-  const isDraft = art.draft === true || s === "draft";
+  const isDraft = art.draft === true || s === "draft" || s.includes("draft");
   if (isDraft) return "In Progress";
-  if (s === "scheduled") return "Scheduled";
+  if (s === "scheduled" || s.includes("schedule")) return "Scheduled";
   if (art.publishDate) {
     const pubTime = new Date(art.publishDate).getTime();
     if (!isNaN(pubTime) && pubTime > Date.now()) {
       return "Scheduled";
     }
   }
-  if (s === "published" || !s) {
+  if (s.includes("publish") || s === "live" || !s) {
     return "Published";
   }
-  return "In Progress";
+  return "Published";
+}
+function resetPlannerDB() {
+  if (sqliteDbInstance) {
+    try {
+      if (typeof sqliteDbInstance.close === "function") {
+        sqliteDbInstance.close();
+      }
+    } catch (_) {
+    }
+    sqliteDbInstance = null;
+    currentDbPath = null;
+  }
 }
 let sqliteDbInstance = null;
+let currentDbPath = null;
 function getDbPaths() {
   if (process.env.PLANNER_DB_PATH && process.env.PLANNER_JSON_PATH) {
     const dbPath2 = path.resolve(process.env.PLANNER_DB_PATH);
@@ -44,8 +57,18 @@ function getDbPaths() {
   return { dbPath, jsonPath };
 }
 function initPlannerDB() {
-  if (sqliteDbInstance) return sqliteDbInstance;
   const { dbPath, jsonPath } = getDbPaths();
+  if (sqliteDbInstance && currentDbPath === dbPath) return sqliteDbInstance;
+  if (sqliteDbInstance && currentDbPath !== dbPath) {
+    try {
+      if (typeof sqliteDbInstance.close === "function") {
+        sqliteDbInstance.close();
+      }
+    } catch (_) {
+    }
+    sqliteDbInstance = null;
+  }
+  currentDbPath = dbPath;
   try {
     const { DatabaseSync } = nodeRequire("node:sqlite");
     const db = new DatabaseSync(dbPath);
@@ -461,10 +484,18 @@ function syncWithWebsiteArticles(websiteArticles, autoImportMissing = true) {
   const updatedPlanIds = [];
   const importedPlanIds = [];
   const matchedArticleSlugs = /* @__PURE__ */ new Set();
+  const seenPlanSlugs = /* @__PURE__ */ new Map();
   for (const plan of currentPlans) {
     const matchedArt = findMatchingArticle(plan, websiteArticles);
     if (matchedArt) {
-      matchedArticleSlugs.add(normalizeText(matchedArt.slug));
+      const artSlugNorm = normalizeText(matchedArt.slug);
+      if (seenPlanSlugs.has(artSlugNorm)) {
+        deletePlan(plan.id);
+        syncedCount++;
+        continue;
+      }
+      seenPlanSlugs.set(artSlugNorm, plan.id);
+      matchedArticleSlugs.add(artSlugNorm);
       let needsUpdate = false;
       const updates = {};
       const targetStatus = determineArticleStatus(matchedArt);
@@ -733,6 +764,7 @@ export {
   getPlanById,
   initPlannerDB,
   parseCSV,
+  resetPlannerDB,
   splitKeyphrases,
   syncWithWebsiteArticles,
   updatePlan

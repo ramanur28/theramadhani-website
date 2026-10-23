@@ -134,44 +134,23 @@
       console.warn('[Article Planner] Offline/fallback mode:', err);
     }
 
-    if (Array.isArray(serverPlans)) {
+    if (Array.isArray(serverPlans) && serverPlans.length > 0) {
       state.plans = serverPlans;
-    }
-
-    // Merge or recover from localStorage so locally created/synced plans are never lost
-    try {
-      const local = localStorage.getItem('ap_article_plans');
-      if (local) {
-        const localPlans = JSON.parse(local);
-        if (Array.isArray(localPlans) && localPlans.length > 0) {
-          if (!state.plans || state.plans.length === 0) {
+      try {
+        localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
+      } catch (_) {}
+    } else {
+      // Offline fallback: load from localStorage if server unreachable or empty
+      try {
+        const local = localStorage.getItem('ap_article_plans');
+        if (local) {
+          const localPlans = JSON.parse(local);
+          if (Array.isArray(localPlans) && localPlans.length > 0) {
             state.plans = localPlans;
-          } else {
-            const serverIds = new Set(state.plans.map((p) => p.id));
-            const serverTitles = new Set(state.plans.map((p) => normalizeTextClient(p.articleTitle)));
-            let hasNewLocal = false;
-            for (const lp of localPlans) {
-              if (!serverIds.has(lp.id) && !serverTitles.has(normalizeTextClient(lp.articleTitle))) {
-                state.plans.push(lp);
-                hasNewLocal = true;
-              }
-            }
-            if (hasNewLocal) {
-              // Push merged plans back to server in background
-              callApi('/bulk', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'bulk', plans: state.plans }),
-              }).catch(() => {});
-            }
           }
         }
-      }
-    } catch (_) {}
-
-    try {
-      localStorage.setItem('ap_article_plans', JSON.stringify(state.plans));
-    } catch (_) {}
+      } catch (_) {}
+    }
 
     updateLauncherBadge();
     renderTable();

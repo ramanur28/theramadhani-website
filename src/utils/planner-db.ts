@@ -60,9 +60,9 @@ export interface WebsiteArticle {
  */
 export function determineArticleStatus(art: Partial<WebsiteArticle>): PlanStatus {
   const s = (art.status || '').toLowerCase().trim();
-  const isDraft = art.draft === true || s === 'draft';
+  const isDraft = art.draft === true || s === 'draft' || s.includes('draft');
   if (isDraft) return 'In Progress';
-  if (s === 'scheduled') return 'Scheduled';
+  if (s === 'scheduled' || s.includes('schedule')) return 'Scheduled';
 
   if (art.publishDate) {
     const pubTime = new Date(art.publishDate).getTime();
@@ -71,14 +71,27 @@ export function determineArticleStatus(art: Partial<WebsiteArticle>): PlanStatus
     }
   }
 
-  if (s === 'published' || !s) {
+  if (s.includes('publish') || s === 'live' || !s) {
     return 'Published';
   }
 
-  return 'In Progress';
+  return 'Published';
+}
+
+export function resetPlannerDB(): void {
+  if (sqliteDbInstance) {
+    try {
+      if (typeof sqliteDbInstance.close === 'function') {
+        sqliteDbInstance.close();
+      }
+    } catch (_) {}
+    sqliteDbInstance = null;
+    currentDbPath = null;
+  }
 }
 
 let sqliteDbInstance: any = null;
+let currentDbPath: string | null = null;
 
 function getDbPaths() {
   if (process.env.PLANNER_DB_PATH && process.env.PLANNER_JSON_PATH) {
@@ -108,9 +121,17 @@ function getDbPaths() {
  * Initializes the SQLite Database schema and JSON mirror file.
  */
 export function initPlannerDB(): any {
-  if (sqliteDbInstance) return sqliteDbInstance;
-
   const { dbPath, jsonPath } = getDbPaths();
+  if (sqliteDbInstance && currentDbPath === dbPath) return sqliteDbInstance;
+  if (sqliteDbInstance && currentDbPath !== dbPath) {
+    try {
+      if (typeof sqliteDbInstance.close === 'function') {
+        sqliteDbInstance.close();
+      }
+    } catch (_) {}
+    sqliteDbInstance = null;
+  }
+  currentDbPath = dbPath;
 
   try {
     // Attempt Node 22 native node:sqlite
@@ -648,13 +669,24 @@ export function syncWithWebsiteArticles(
   const updatedPlanIds: string[] = [];
   const importedPlanIds: string[] = [];
   const matchedArticleSlugs = new Set<string>();
+  const seenPlanSlugs = new Map<string, string>();
 
   // 1. Update existing plans with live website matching
   for (const plan of currentPlans) {
     const matchedArt = findMatchingArticle(plan, websiteArticles);
 
     if (matchedArt) {
-      matchedArticleSlugs.add(normalizeText(matchedArt.slug));
+      const artSlugNorm = normalizeText(matchedArt.slug);
+
+      // Auto-deduplicate: if another plan already linked to this article, delete redundant duplicate
+      if (seenPlanSlugs.has(artSlugNorm)) {
+        deletePlan(plan.id);
+        syncedCount++;
+        continue;
+      }
+      seenPlanSlugs.set(artSlugNorm, plan.id);
+      matchedArticleSlugs.add(artSlugNorm);
+
       let needsUpdate = false;
       const updates: Partial<ArticlePlan> = {};
       const targetStatus = determineArticleStatus(matchedArt);

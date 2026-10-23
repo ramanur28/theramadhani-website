@@ -1,7 +1,8 @@
 process.env.PLANNER_DB_PATH = 'data/test-article-plans.db';
 process.env.PLANNER_JSON_PATH = 'data/test-article-plans.json';
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import fs from 'node:fs';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import {
   getAllPlans,
   createPlan,
@@ -12,6 +13,7 @@ import {
   parseCSV,
   generateSlug,
   splitKeyphrases,
+  resetPlannerDB,
 } from '../src/utils/planner-db';
 
 describe('Article Planner Database & Sync Engine', () => {
@@ -394,5 +396,13 @@ Technical SEO Consultant,Landing Page,Hire Premier Technical SEO Consultant,Sche
     expect(updatedPlan?.status).toBe('Published');
     expect(updatedPlan?.slug).toBe('organic-seo-fundamentals-how-organic-search-works');
     expect(updatedPlan?.liveUrl).toBe('/articles/organic-seo-fundamentals-how-organic-search-works/');
+  });
+
+  afterAll(() => {
+    resetPlannerDB();
+    try {
+      if (fs.existsSync('data/test-article-plans.db')) fs.unlinkSync('data/test-article-plans.db');
+      if (fs.existsSync('data/test-article-plans.json')) fs.unlinkSync('data/test-article-plans.json');
+    } catch (_) {}
   });
 });

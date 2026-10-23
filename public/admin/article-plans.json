@@ -1,19 +1,23 @@
 [
   {
-    "id": "a154cf4a-a7e1-4c28-8f26-23cbcda69b35",
-    "focusKeyphrase": "Organic SEO",
+    "id": "96e312e7-99d2-47e8-bd68-23a8cf3839e0",
+    "focusKeyphrase": "Organic SEO, Technical SEO, Search Visibility, AI Search Optimization",
     "focusKeyphrases": [
-      "Organic SEO"
+      "Organic SEO",
+      "Technical SEO",
+      "Search Visibility",
+      "AI Search Optimization"
     ],
     "pageRole": "Topic Cluster",
-    "articleTitle": "Organic SEO Fundamentals",
+    "articleTitle": "Organic SEO Fundamentals: How Organic Search Works",
     "status": "Published",
     "intent": "Informational",
-    "slug": "organic-seo-b2b-prospek-berkualitas",
-    "liveUrl": "/articles/organic-seo-b2b-prospek-berkualitas/",
+    "slug": "organic-seo-fundamentals-how-organic-search-works",
+    "liveUrl": "/articles/organic-seo-fundamentals-how-organic-search-works/",
+    "notes": "Ringkasan: Learn organic SEO fundamentals, what organic search is, how organic",
     "targetWordCount": 2500,
-    "createdAt": "2026-10-22T14:23:15.698Z",
-    "updatedAt": "2026-10-23T02:48:45.073Z"
+    "createdAt": "2026-10-22T09:00:17.410Z",
+    "updatedAt": "2026-10-23T04:55:50.545Z"
   },
   {
     "id": "4b39c565-afc4-4bfd-8cc1-642caf3d602f",
@@ -126,26 +130,6 @@
     "targetWordCount": 2500,
     "createdAt": "2026-10-22T09:00:17.414Z",
     "updatedAt": "2026-10-22T09:00:17.414Z"
-  },
-  {
-    "id": "96e312e7-99d2-47e8-bd68-23a8cf3839e0",
-    "focusKeyphrase": "Organic SEO, Technical SEO, Search Visibility, AI Search Optimization",
-    "focusKeyphrases": [
-      "Organic SEO",
-      "Technical SEO",
-      "Search Visibility",
-      "AI Search Optimization"
-    ],
-    "pageRole": "Topic Cluster",
-    "articleTitle": "Organic SEO Fundamentals: How Organic Search Works",
-    "status": "Published",
-    "intent": "Informational",
-    "slug": "organic-seo-fundamentals-how-organic-search-works",
-    "liveUrl": "/articles/organic-seo-fundamentals-how-organic-search-works/",
-    "notes": "Ringkasan: Learn organic SEO fundamentals, what organic search is, how organic",
-    "targetWordCount": 2500,
-    "createdAt": "2026-10-22T09:00:17.410Z",
-    "updatedAt": "2026-10-22T09:00:17.410Z"
   },
   {
     "id": "2fe2f05d-92c9-4539-8d6d-9b384d2abfb1",
@@ -301,58 +285,5 @@
     "targetWordCount": 2500,
     "createdAt": "2026-10-22T09:00:17.373Z",
     "updatedAt": "2026-10-22T09:00:17.373Z"
-  },
-  {
-    "id": "cfb3286f-6005-4e9d-a66a-bc170a78ae94",
-    "focusKeyphrase": "",
-    "focusKeyphrases": [],
-    "pageRole": "Pillar Page",
-    "articleTitle": "Future Algorithm Predictions 2027",
-    "status": "Planned",
-    "intent": "Informational",
-    "slug": "future-algorithm-predictions-2027",
-    "targetWordCount": 2500,
-    "createdAt": "2026-10-22T08:56:28.474Z",
-    "updatedAt": "2026-10-22T09:00:17.365Z"
-  },
-  {
-    "id": "1b0ab341-a674-4de3-a864-d57da3491c36",
-    "focusKeyphrase": "",
-    "focusKeyphrases": [],
-    "pageRole": "Pillar Page",
-    "articleTitle": "Advanced Technical SEO Architecture",
-    "status": "Planned",
-    "intent": "Informational",
-    "slug": "advanced-technical-seo-architecture",
-    "targetWordCount": 2500,
-    "createdAt": "2026-10-22T08:56:28.468Z",
-    "updatedAt": "2026-10-22T09:00:17.358Z"
-  },
-  {
-    "id": "96f81d6d-6bae-4730-9000-37b7b8f1141f",
-    "focusKeyphrase": "",
-    "focusKeyphrases": [],
-    "pageRole": "Pillar Page",
-    "articleTitle": "Draft WIP Guide on Indexing",
-    "status": "In Progress",
-    "intent": "Informational",
-    "slug": "draft-wip-guide-on-indexing",
-    "liveUrl": "/articles/draft-wip-guide-on-indexing/",
-    "targetWordCount": 2500,
-    "createdAt": "2026-10-22T08:56:28.480Z",
-    "updatedAt": "2026-10-22T08:56:28.502Z"
-  },
-  {
-    "id": "cfb9478b-7a5d-4812-b811-ff1d1a931ec0",
-    "focusKeyphrase": "",
-    "focusKeyphrases": [],
-    "pageRole": "Pillar Page",
-    "articleTitle": "Deleted or Unwritten Guide",
-    "status": "Planned",
-    "intent": "Informational",
-    "slug": "deleted-or-unwritten-guide",
-    "targetWordCount": 2500,
-    "createdAt": "2026-10-22T08:56:28.491Z",
-    "updatedAt": "2026-10-22T08:56:28.497Z"
   }
 ]

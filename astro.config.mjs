@@ -195,11 +195,14 @@ function decapServerIntegration() {
 
             function getWebsiteArticles() {
               const articlesDir = path.resolve(process.cwd(), 'src/content/articles');
+              const workDir = path.resolve(process.cwd(), 'src/content/work');
               const items = [];
-              if (fs.existsSync(articlesDir)) {
-                for (const f of fs.readdirSync(articlesDir)) {
+
+              function scanDir(dirPath, typePrefix) {
+                if (!fs.existsSync(dirPath)) return;
+                for (const f of fs.readdirSync(dirPath)) {
                   if (f.endsWith('.md') || f.endsWith('.mdx')) {
-                    const filePath = path.join(articlesDir, f);
+                    const filePath = path.join(dirPath, f);
                     const text = fs.readFileSync(filePath, 'utf-8');
                     const fileSlug = path.basename(filePath, path.extname(filePath));
 
@@ -220,16 +223,16 @@ function decapServerIntegration() {
                       if (tagsBlockM) {
                         tags = tagsBlockM[1]
                           .split('\n')
-                          .map((line) => line.replace(/^\s*-\s*/, '').trim().replace(/^["']|["']$/g, ''))
+                          .map((l) => l.replace(/^\s*-\s*/, '').trim().replace(/^["']|["']$/g, ''))
                           .filter(Boolean);
                       }
                     }
 
                     items.push({
-                      type: 'article',
+                      type: typePrefix === 'articles' ? 'article' : 'case-study',
                       title,
                       slug,
-                      url: `/articles/${slug}/`,
+                      url: `/${typePrefix}/${slug}/`,
                       description,
                       tags,
                       status: rawStatus,
@@ -239,6 +242,9 @@ function decapServerIntegration() {
                   }
                 }
               }
+
+              scanDir(articlesDir, 'articles');
+              scanDir(workDir, 'work');
               return items;
             }
 
@@ -256,6 +262,11 @@ function decapServerIntegration() {
                 try {
                   const payload = JSON.parse(body || '{}');
                   if (urlPath.includes('/sync') || payload.action === 'sync') {
+                    // Automatically fast-forward remote commits (e.g. Decap CMS GitHub backend)
+                    try {
+                      const { execSync } = await import('child_process');
+                      execSync('git pull origin main --no-edit', { timeout: 10000, stdio: 'ignore' });
+                    } catch (_) {}
                     const liveArticles = getWebsiteArticles();
                     const result = plannerDb.syncWithWebsiteArticles(liveArticles, payload.autoImport !== false);
                     res.setHeader('Content-Type', 'application/json');
