@@ -1125,21 +1125,27 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
   // =========================================================================
   function setNativeValue(element, value) {
     if (!element) return false;
-    const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set;
-    const prototype = Object.getPrototypeOf(element);
-    const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+    if (element.type === 'file') return false;
+    try {
+      const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set;
+      const prototype = Object.getPrototypeOf(element);
+      const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
 
-    if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
-      prototypeValueSetter.call(element, value);
-    } else if (valueSetter) {
-      valueSetter.call(element, value);
-    } else {
-      element.value = value;
+      if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
+        prototypeValueSetter.call(element, value);
+      } else if (valueSetter) {
+        valueSetter.call(element, value);
+      } else {
+        element.value = value;
+      }
+
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    } catch (err) {
+      console.warn('[AI Studio] setNativeValue warning:', err);
+      return false;
     }
-
-    element.dispatchEvent(new Event('input', { bubbles: true }));
-    element.dispatchEvent(new Event('change', { bubbles: true }));
-    return true;
   }
 
   async function injectIntoDecapForm() {
@@ -1193,48 +1199,131 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
 
     // Helper to find field React Fiber onChange handler (fallback when native input is not present)
     function findFieldFiberOnChange(fieldName) {
-      const labels = Array.from(document.querySelectorAll('label'));
       const targetVariants = [
         fieldName.toLowerCase(),
         fieldName.replace(/([A-Z])/g, ' $1').toLowerCase().trim(),
         fieldName.replace(/([A-Z])/g, '-$1').toLowerCase(),
       ];
 
-      for (const label of labels) {
-        const labelText = (label.textContent || '').trim().toLowerCase();
-        const labelFor = (label.getAttribute('for') || '').toLowerCase();
-        if (targetVariants.some((v) => labelText.includes(v) || labelFor.includes(v))) {
-          const pane =
-            label.closest('[class*="ControlPane"], [class*="control"], [class*="Field"]') ||
-            label.parentElement?.parentElement ||
-            label.parentElement;
-          if (!pane) continue;
+      // Decap CMS uses span.TopBarLabel and div.ControlLabel, not only HTML <label>
+      const labelElements = Array.from(
+        document.querySelectorAll('label, [class*="TopBarLabel"], [class*="ControlLabel"], [class*="Label"], span, div')
+      ).filter((el) => {
+        const txt = (el.textContent || '').trim().toLowerCase();
+        const elFor = (el.getAttribute('for') || '').toLowerCase();
+        return targetVariants.some((v) => txt === v || txt.startsWith(v) || elFor.includes(v));
+      });
 
-          let dom = pane;
-          while (dom && dom !== document.body) {
-            const fiberKey = Object.keys(dom).find(
-              (k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance')
-            );
-            if (fiberKey && dom[fiberKey]) {
-              let curr = dom[fiberKey];
-              let depth = 0;
-              while (curr && depth < 35) {
-                if (curr.memoizedProps && typeof curr.memoizedProps.onChange === 'function') {
-                  const fn = curr.memoizedProps.field?.get
-                    ? curr.memoizedProps.field.get('name')
-                    : curr.memoizedProps.field?.name;
-                  if (fn === fieldName || (curr.memoizedProps.value !== undefined && curr.memoizedProps.field)) {
-                    return curr.memoizedProps.onChange;
-                  }
+      for (const label of labelElements) {
+        const pane =
+          label.closest('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane') ||
+          label.parentElement?.parentElement ||
+          label.parentElement;
+        if (!pane) continue;
+
+        let dom = pane;
+        while (dom && dom !== document.body) {
+          const fiberKey = Object.keys(dom).find(
+            (k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance')
+          );
+          if (fiberKey && dom[fiberKey]) {
+            let curr = dom[fiberKey];
+            let depth = 0;
+            while (curr && depth < 45) {
+              if (curr.memoizedProps && typeof curr.memoizedProps.onChange === 'function') {
+                const fn = curr.memoizedProps.field?.get
+                  ? curr.memoizedProps.field.get('name')
+                  : curr.memoizedProps.field?.name;
+                if (fn === fieldName || (curr.memoizedProps.value !== undefined && curr.memoizedProps.field)) {
+                  return curr.memoizedProps.onChange;
                 }
-                curr = curr.return;
-                depth++;
+              }
+              curr = curr.return;
+              depth++;
+            }
+          }
+          dom = dom.parentElement;
+        }
+      }
+
+      // Fallback: Traverse all control panes directly for fieldName match in React Fiber
+      const allPanes = Array.from(
+        document.querySelectorAll('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane')
+      );
+      for (const pane of allPanes) {
+        const fiberKey = Object.keys(pane).find(
+          (k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance')
+        );
+        if (fiberKey && pane[fiberKey]) {
+          let curr = pane[fiberKey];
+          let depth = 0;
+          while (curr && depth < 45) {
+            if (curr.memoizedProps && typeof curr.memoizedProps.onChange === 'function') {
+              const fn = curr.memoizedProps.field?.get
+                ? curr.memoizedProps.field.get('name')
+                : curr.memoizedProps.field?.name;
+              if (fn === fieldName) {
+                return curr.memoizedProps.onChange;
               }
             }
-            dom = dom.parentElement;
+            curr = curr.return;
+            depth++;
           }
         }
       }
+
+      return null;
+    }
+
+    // Dedicated Decap CMS Image Widget Fiber Discovery
+    function findCoverImageFiberOnChange() {
+      // 1. Check panes containing 'cover image' or image widget buttons
+      const candidates = [
+        ...Array.from(document.querySelectorAll('[class*="ControlPane"], [class*="control"], [class*="Field"], .control-pane')),
+        ...Array.from(document.querySelectorAll('label, [class*="TopBarLabel"], [class*="ControlLabel"], span'))
+          .filter((el) => {
+            const txt = (el.textContent || '').trim().toLowerCase();
+            return txt === 'cover image' || txt === 'cover image / diagram' || txt.startsWith('cover image');
+          })
+          .map((el) => el.closest('[class*="ControlPane"], [class*="control"], [class*="Field"]') || el.parentElement?.parentElement || el.parentElement)
+          .filter(Boolean),
+        ...Array.from(document.querySelectorAll('button'))
+          .filter((b) => {
+            const bt = (b.textContent || '').toLowerCase();
+            return bt.includes('choose different image') || bt.includes('choose an image') || bt.includes('remove image');
+          })
+          .map((b) => b.closest('[class*="ControlPane"], [class*="control"], [class*="Field"]') || b.parentElement?.parentElement || b.parentElement)
+          .filter(Boolean),
+      ];
+
+      for (const el of candidates) {
+        let dom = el;
+        while (dom && dom !== document.body) {
+          const fiberKey = Object.keys(dom).find(
+            (k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance')
+          );
+          if (fiberKey && dom[fiberKey]) {
+            let curr = dom[fiberKey];
+            let depth = 0;
+            while (curr && depth < 45) {
+              if (curr.memoizedProps) {
+                const props = curr.memoizedProps;
+                const fName = props.field?.get ? props.field.get('name') : props.field?.name;
+                if (fName === 'coverImage' && typeof props.onChange === 'function') {
+                  return props.onChange;
+                }
+                if (props.forID && props.forID.includes('coverImage') && typeof props.onChange === 'function') {
+                  return props.onChange;
+                }
+              }
+              curr = curr.return;
+              depth++;
+            }
+          }
+          dom = dom.parentElement;
+        }
+      }
+
       return null;
     }
 
@@ -1316,17 +1405,18 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
     // 5. Cover Image & Alt
     let coverInjected = false;
     const coverEl = findFieldInput('coverImage', 'input');
-    if (coverEl && setNativeValue(coverEl, art.coverImage)) {
+    if (coverEl && coverEl.type !== 'file' && setNativeValue(coverEl, art.coverImage)) {
       coverInjected = true;
     }
 
-    // React Fiber fallback for Decap CMS image widget (which uses button interface when set)
+    // React Fiber injection for Decap CMS image widget (which uses button interface)
     if (!coverInjected) {
-      const coverFiberOnChange = findFieldFiberOnChange('coverImage');
+      const coverFiberOnChange = findCoverImageFiberOnChange() || findFieldFiberOnChange('coverImage');
       if (typeof coverFiberOnChange === 'function') {
         try {
           coverFiberOnChange(art.coverImage);
           coverInjected = true;
+          console.log('[AI Studio] Cover image injected successfully via React Fiber:', art.coverImage);
         } catch (fibErr) {
           console.warn('[AI Studio] Cover image fiber injection warning:', fibErr);
         }
@@ -1851,12 +1941,12 @@ ${art.body}`;
           <!-- Image Upload & Vision Section -->
           <div class="ai-form-group">
             <label class="ai-form-label">Upload Gambar / Diagram (Multi-Upload & Kompresi WebP Otomatis)</label>
-            <div class="ai-upload-dropzone" id="ai-upload-dropzone">
+            <div class="ai-upload-dropzone" id="ai-upload-dropzone" tabindex="0" role="button" aria-label="Pilih gambar untuk diunggah">
               <div class="ai-upload-icon">🖼️</div>
               <div class="ai-upload-text">Tarik & letakkan satu atau banyak gambar di sini, atau klik untuk memilih</div>
               <div class="ai-upload-subtext">Mendukung banyak gambar sekaligus (PNG, JPG, WebP, SVG). Dilengkapi kompresi cerdas WebP agar load speed tetap kencang.</div>
-              <input type="file" id="ai-file-input" accept="image/*" multiple style="display:none" />
             </div>
+            <input type="file" id="ai-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/*" multiple style="display:none;" />
             <div id="ai-image-preview-container"></div>
           </div>
           <!-- Internal Links Hub -->
@@ -2408,24 +2498,55 @@ ${art.body}`;
     // File Upload Drag & Drop (Supports Multiple Files & Folders)
     const dropzone = document.getElementById('ai-upload-dropzone');
     const fileInput = document.getElementById('ai-file-input');
-    dropzone?.addEventListener('click', () => fileInput?.click());
+
+    dropzone?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fileInput?.click();
+    });
+
+    dropzone?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput?.click();
+      }
+    });
+
+    dropzone?.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('is-dragover');
+    });
 
     dropzone?.addEventListener('dragover', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       dropzone.classList.add('is-dragover');
     });
-    dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('is-dragover'));
+
+    dropzone?.addEventListener('dragleave', () => {
+      dropzone.classList.remove('is-dragover');
+    });
+
     dropzone?.addEventListener('drop', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       dropzone.classList.remove('is-dragover');
       if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
         handleUploadedImages(e.dataTransfer.files);
       }
     });
+
+    fileInput?.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
     fileInput?.addEventListener('change', (e) => {
       if (e.target?.files && e.target.files.length > 0) {
         handleUploadedImages(e.target.files);
       }
+      try {
+        e.target.value = '';
+      } catch (_) {}
     });
     // Add Manual Internal Link - Clean Inline UI
     const addLinkBtn = document.getElementById('ai-btn-add-link');
@@ -2741,14 +2862,29 @@ ${state.synthesizedArticle.body}`;
     }
 
     return new Promise((resolve) => {
+      let isDone = false;
+      let safetyTimeout = null;
+
+      const finish = (result) => {
+        if (!isDone) {
+          isDone = true;
+          if (safetyTimeout) clearTimeout(safetyTimeout);
+          resolve(result);
+        }
+      };
+
+      const fileExt = (file.name && file.name.split('.').pop()?.toLowerCase()) || 'jpg';
+      const fallbackMime = (file.type && file.type.startsWith('image/')) ? file.type : 'image/jpeg';
+
       const reader = new FileReader();
+
       reader.onload = (e) => {
         const dataUrl = e.target.result;
         if (typeof Image === 'undefined' || typeof document === 'undefined') {
           return finish({
             base64: dataUrl,
-            mimeType: file.type || 'image/jpeg',
-            format: (file.name && file.name.split('.').pop()) || 'jpg',
+            mimeType: fallbackMime,
+            format: fileExt,
             originalSize: file.size || 0,
             compressedSize: file.size || 0,
             savingsPercent: 0,
@@ -2757,21 +2893,12 @@ ${state.synthesizedArticle.body}`;
           });
         }
 
-        let isDone = false;
-        const finish = (result) => {
-          if (!isDone) {
-            isDone = true;
-            clearTimeout(safetyTimeout);
-            resolve(result);
-          }
-        };
-
         // Fallback timeout for environments like Happy-DOM / test runners where Image decode doesn't fire
-        const safetyTimeout = setTimeout(() => {
+        safetyTimeout = setTimeout(() => {
           finish({
             base64: dataUrl,
-            mimeType: file.type || 'image/jpeg',
-            format: (file.name && file.name.split('.').pop()) || 'jpg',
+            mimeType: fallbackMime,
+            format: fileExt,
             originalSize: file.size || 0,
             compressedSize: file.size || 0,
             savingsPercent: 0,
@@ -2805,8 +2932,8 @@ ${state.synthesizedArticle.body}`;
             if (!ctx) {
               return finish({
                 base64: dataUrl,
-                mimeType: file.type || 'image/jpeg',
-                format: (file.name && file.name.split('.').pop()) || 'jpg',
+                mimeType: fallbackMime,
+                format: fileExt,
                 originalSize: file.size || 0,
                 compressedSize: file.size || 0,
                 savingsPercent: 0,
@@ -2835,8 +2962,8 @@ ${state.synthesizedArticle.body}`;
             if (compressedBytes >= (file.size || 0) && (file.size || 0) < 250 * 1024) {
               return finish({
                 base64: dataUrl,
-                mimeType: file.type || 'image/jpeg',
-                format: (file.name && file.name.split('.').pop()) || 'jpg',
+                mimeType: fallbackMime,
+                format: fileExt,
                 originalSize: file.size || 0,
                 compressedSize: file.size || 0,
                 savingsPercent: 0,
@@ -2861,8 +2988,8 @@ ${state.synthesizedArticle.body}`;
           } catch (canvasErr) {
             finish({
               base64: dataUrl,
-              mimeType: file.type || 'image/jpeg',
-              format: (file.name && file.name.split('.').pop()) || 'jpg',
+              mimeType: fallbackMime,
+              format: fileExt,
               originalSize: file.size || 0,
               compressedSize: file.size || 0,
               savingsPercent: 0,
@@ -2873,10 +3000,10 @@ ${state.synthesizedArticle.body}`;
         };
 
         img.onerror = () => {
-          resolve({
+          finish({
             base64: dataUrl,
-            mimeType: file.type || 'image/jpeg',
-            format: (file.name && file.name.split('.').pop()) || 'jpg',
+            mimeType: fallbackMime,
+            format: fileExt,
             originalSize: file.size || 0,
             compressedSize: file.size || 0,
             savingsPercent: 0,
@@ -2964,13 +3091,17 @@ ${state.synthesizedArticle.body}`;
 
     let persisted = false;
 
-    // 2. Direct instant disk persistence via Astro/Vite dev server (/api/dev-upload)
+    // 2. Direct instant disk persistence via Astro/Vite dev server (/api/dev-upload) with timeout
     try {
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 4000) : null;
       const res = await fetch('/api/dev-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename: cleanName, content: rawBase64 }),
+        signal: controller ? controller.signal : undefined,
       });
+      if (timeoutId) clearTimeout(timeoutId);
       if (res.ok) {
         persisted = true;
         console.log('[AI Studio] Saved image to disk via /api/dev-upload:', cleanName);
@@ -2978,10 +3109,10 @@ ${state.synthesizedArticle.body}`;
         console.warn('[AI Studio] /api/dev-upload responded with status:', res.status);
       }
     } catch (err) {
-      console.warn('[AI Studio] /api/dev-upload failed:', err);
+      console.warn('[AI Studio] /api/dev-upload failed or timed out:', err);
     }
 
-    // 3. Persist via Decap CMS proxy server on 8081 if active
+    // 3. Persist via Decap CMS proxy server on 8081 if active with timeout
     try {
       const payload = {
         action: 'persistMedia',
@@ -2997,11 +3128,15 @@ ${state.synthesizedArticle.body}`;
           },
         },
       };
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 2000) : null;
       const decapRes = await fetch('http://localhost:8081/api/v1', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller ? controller.signal : undefined,
       });
+      if (timeoutId) clearTimeout(timeoutId);
       if (decapRes.ok) {
         persisted = true;
         console.log('[AI Studio] Synced image with decap-server (8081):', cleanName);
@@ -3014,20 +3149,48 @@ ${state.synthesizedArticle.body}`;
   async function handleUploadedImages(files) {
     if (!files) return;
     const fileList = Array.isArray(files) ? files : Array.from(files);
-    const validFiles = fileList.filter((f) => f && f.type && f.type.startsWith('image/'));
+
+    const isImageFile = (f) => {
+      if (!f) return false;
+      if (f.type && f.type.startsWith('image/')) return true;
+      const name = (f.name || '').toLowerCase();
+      return /\.(png|jpe?g|webp|svg|gif|avif|bmp|tiff)$/i.test(name);
+    };
+
+    const validFiles = fileList.filter(isImageFile);
 
     if (validFiles.length === 0) {
       showStudioToast('Berkas harus berupa gambar valid (PNG, JPG, WebP, SVG).', false);
       return;
     }
 
+    const dropzone = document.getElementById('ai-upload-dropzone');
+    if (dropzone) {
+      dropzone.classList.add('is-uploading');
+      dropzone.innerHTML = `
+        <div class="ai-upload-spinner"></div>
+        <div class="ai-upload-text" id="ai-upload-status-title">⚡ Sedang Mengompresi & Menyimpan (1/${validFiles.length})...</div>
+        <div class="ai-upload-subtext" id="ai-upload-status-sub">Mengonversi ke format WebP modern dan menyinkronkan ke media website...</div>
+      `;
+    }
+
     showStudioToast(`⚡ Mengompresi & mengunggah ${validFiles.length} gambar...`, true);
 
     let totalSaved = 0;
     let totalOrig = 0;
+    let addedCount = 0;
 
     for (let i = 0; i < validFiles.length; i++) {
       const file = validFiles[i];
+      const statusTitle = document.getElementById('ai-upload-status-title');
+      const statusSub = document.getElementById('ai-upload-status-sub');
+      if (statusTitle) {
+        statusTitle.textContent = `⚡ Mengompresi & Menyimpan (${i + 1}/${validFiles.length}): ${file.name}`;
+      }
+      if (statusSub) {
+        statusSub.textContent = `Mengoptimalkan resolusi dan menulis ke /images/uploads/...`;
+      }
+
       try {
         const compressed = await compressImage(file);
         if (!compressed || !compressed.base64) continue;
@@ -3059,6 +3222,7 @@ ${state.synthesizedArticle.body}`;
         await persistImageFile(imageItem);
 
         state.uploadedImages.push(imageItem);
+        addedCount++;
         totalOrig += compressed.originalSize;
         totalSaved += (compressed.originalSize - compressed.compressedSize);
       } catch (err) {
@@ -3066,14 +3230,27 @@ ${state.synthesizedArticle.body}`;
       }
     }
 
+    if (dropzone) {
+      dropzone.classList.remove('is-uploading');
+      dropzone.innerHTML = `
+        <div class="ai-upload-icon">🖼️</div>
+        <div class="ai-upload-text">Tarik & letakkan satu atau banyak gambar di sini, atau klik untuk memilih</div>
+        <div class="ai-upload-subtext">Mendukung banyak gambar sekaligus (PNG, JPG, WebP, SVG). Dilengkapi kompresi cerdas WebP agar load speed tetap kencang.</div>
+      `;
+    }
+
     syncCoverImage();
     renderImagePreviews();
 
-    const overallSavings = totalOrig > 0 ? Math.round((totalSaved / totalOrig) * 100) : 0;
-    showStudioToast(
-      `✓ Berhasil menambahkan ${validFiles.length} gambar (Terkompresi WebP, Hemat ${overallSavings}%)!`,
-      true
-    );
+    if (addedCount > 0) {
+      const overallSavings = totalOrig > 0 ? Math.round((totalSaved / totalOrig) * 100) : 0;
+      showStudioToast(
+        `✓ Berhasil menambahkan ${addedCount} gambar (Terkompresi WebP, Hemat ${overallSavings}%)!`,
+        true
+      );
+    } else {
+      showStudioToast('Gagal memproses gambar. Pastikan format berkas didukung.', false);
+    }
   }
 
   // Single-file backwards compatibility
@@ -3160,7 +3337,9 @@ ${state.synthesizedArticle.body}`;
 
     container.innerHTML = summaryHtml + `<div class="ai-image-preview-list">${cardsHtml}</div>`;
 
-    document.getElementById('ai-btn-add-more-img')?.addEventListener('click', () => {
+    document.getElementById('ai-btn-add-more-img')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       document.getElementById('ai-file-input')?.click();
     });
 

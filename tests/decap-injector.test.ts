@@ -473,4 +473,56 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
     visualPane.remove();
   });
 
+  it('INJ-13: discovers Decap CMS React Fiber on Cover Image widget (span.TopBarLabel) and invokes onChange with cover image path', async () => {
+    const form = document.querySelector('.decap-editor-form');
+    const coverPane = document.createElement('div');
+    coverPane.className = 'control-pane cover-pane';
+
+    // In Decap CMS, the image widget uses span.TopBarLabel and buttons, without an input[type=text]
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'TopBarLabel';
+    labelSpan.textContent = 'Cover Image';
+    coverPane.appendChild(labelSpan);
+
+    const chooseBtn = document.createElement('button');
+    chooseBtn.type = 'button';
+    chooseBtn.textContent = 'Choose different image';
+    coverPane.appendChild(chooseBtn);
+
+    let fiberCoverValue = '';
+    const fiberKey = '__reactFiber$test_cover';
+    (coverPane as any)[fiberKey] = {
+      memoizedProps: {
+        field: { get: (k: string) => (k === 'name' ? 'coverImage' : null) },
+        value: '/images/uploads/default-geo.svg',
+        onChange: (val: string) => { fiberCoverValue = val; },
+      },
+      return: null,
+    };
+
+    form?.appendChild(coverPane);
+
+    // Remove any mock inputs for coverImage in DOM to ensure Fiber discovery is tested
+    document.querySelectorAll('input[id*="coverImage-field-"], input[name="coverImage"]').forEach((el) => el.remove());
+
+    studio.state.synthesizedArticle = {
+      title: 'Cover Image Fiber Test',
+      slug: 'cover-image-fiber-test',
+      description: 'Testing cover image fiber dispatch',
+      quickAnswer: 'Quick answer',
+      coverImage: '/images/uploads/article-1792718-custom-hero.webp',
+      coverAlt: 'Custom Hero Alt Text',
+      body: '# Test Article',
+      tags: ['GEO'],
+      faq: [],
+    };
+
+    const injected = await studio.injectIntoDecapForm();
+    expect(injected).toBe(true);
+
+    // Verify React Fiber onChange was invoked with synthesized cover image URL
+    expect(fiberCoverValue).toBe('/images/uploads/article-1792718-custom-hero.webp');
+
+    coverPane.remove();
+  });
 });
