@@ -1112,7 +1112,7 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
         coverAlt: (state.uploadedImages && state.uploadedImages.length > 0)
           ? ((state.uploadedImages.find((im) => im.isCover) || state.uploadedImages[0]).visionAnalysis?.alt || state.visionAnalysis?.alt || (isEn ? 'Article cover diagram' : 'Diagram sampul artikel'))
           : (state.visionAnalysis?.alt || (isEn ? 'Article cover diagram' : 'Diagram sampul artikel')),
-        body: fullBody,
+        body: sanitizeMdxContent(fullBody),
       };
 
       return state.synthesizedArticle;
@@ -1120,6 +1120,26 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
       throw new Error('Gagal mensintesis metadata artikel: ' + e.message);
     }
   }
+  // Helper to sanitize Markdown body for MDX/JSX compatibility
+  function sanitizeMdxContent(content) {
+    if (!content || typeof content !== 'string') return '';
+
+    // Split by code blocks (```...```) and inline code (`...`) to preserve code spans
+    const parts = content.split(/(```[\s\S]*?```|`[^`\n]+`)/g);
+
+    for (let i = 0; i < parts.length; i += 2) {
+      // Even indices are prose (not inside code blocks)
+      parts[i] = parts[i]
+        .replace(/##\s+(Frequently Asked Questions|Pertanyaan yang Sering Diajukan)[\s\S]*?(?=(?:##|\n\n\n|$))/gi, '')
+        .replace(/<details\s+class="qa-item"[\s\S]*?<\/details>/gi, '')
+        .replace(/<(?![a-zA-Z\/!])/g, '&lt;')
+        .replace(/\{/g, '&#123;')
+        .replace(/\}/g, '&#125;');
+    }
+
+    return parts.join('').trim();
+  }
+
   // =========================================================================
   // 6. Decap CMS Form Injector Engine
   // =========================================================================
@@ -1839,14 +1859,7 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
 
     // 7. Body Markdown & Expandable Q&A Accordion (Non-blocking & Slate-safe)
     setInjectLoading(true, 'Menyuntikkan Body & Expandable Q&A...', 'Menyusun body markdown dan komponen accordion...');
-    let bodyContent = art.body || '';
-
-    // Ensure no raw FAQ accordions exist in the body markdown to prevent duplicate FAQs.
-    // The dropdown FAQ is rendered cleanly by the template from the frontmatter faq field.
-    bodyContent = bodyContent
-      .replace(/##\s+(Frequently Asked Questions|Pertanyaan yang Sering Diajukan)[\s\S]*?(?=(?:##|\n\n\n|$))/gi, '')
-      .replace(/<details\s+class="qa-item"[\s\S]*?<\/details>/gi, '')
-      .trim();
+    let bodyContent = sanitizeMdxContent(art.body || '');
     art.body = bodyContent;
 
     let bodyInjected = false;
@@ -4293,6 +4306,7 @@ ${state.synthesizedArticle.body}`;
     setInjectLoading: setInjectLoading,
     setNativeValue: setNativeValue,
     injectIntoDecapForm: injectIntoDecapForm,
+    sanitizeMdxContent: sanitizeMdxContent,
     getDecapReduxStore: getDecapReduxStore,
     setCoverImageViaRedux: setCoverImageViaRedux,
     setCoverImageViaFiber: setCoverImageViaFiber,

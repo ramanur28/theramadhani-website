@@ -661,4 +661,57 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
 
     coverPane.remove();
   });
+
+  it('INJ-17: sanitizes MDX-unsafe comparison operators and curly braces while preserving code blocks and HTML tags', () => {
+    const rawMarkdown = `## Test Analysis
+
+Average position movement should be <0.3-0.5 and CTR < 2% with latency <= 100ms.
+Pattern: {keyword} and {city} should be escaped.
+
+<figure class="article-image-figure">
+  <img src="/images/uploads/test.webp" alt="Test" />
+  <figcaption>Valid HTML figure</figcaption>
+</figure>
+
+Here is an inline code: \`val < 0.5\` and \`{city}\`.
+
+\`\`\`javascript
+if (x < 10) {
+  return { status: true };
+}
+\`\`\`
+
+## Frequently Asked Questions
+
+<details class="qa-item">
+<summary class="qa-question">Old Question?</summary>
+<div class="qa-answer"><p>Old answer</p></div>
+</details>`;
+
+    const sanitized = studio.sanitizeMdxContent(rawMarkdown);
+
+    // 1. Escapes < followed by numbers or spaces in prose
+    expect(sanitized).toContain('&lt;0.3-0.5');
+    expect(sanitized).toContain('CTR &lt; 2%');
+    expect(sanitized).toContain('latency &lt;= 100ms');
+
+    // 2. Escapes { and } in prose to prevent MDX rollup JSX evaluation errors
+    expect(sanitized).toContain('&#123;keyword&#125;');
+    expect(sanitized).toContain('&#123;city&#125;');
+
+    // 3. Preserves valid HTML elements
+    expect(sanitized).toContain('<figure class="article-image-figure">');
+    expect(sanitized).toContain('<img src="/images/uploads/test.webp" alt="Test" />');
+    expect(sanitized).toContain('</figure>');
+
+    // 4. Preserves inline code and fenced code blocks without escaping
+    expect(sanitized).toContain('`val < 0.5`');
+    expect(sanitized).toContain('`{city}`');
+    expect(sanitized).toContain('if (x < 10) {');
+    expect(sanitized).toContain('return { status: true };');
+
+    // 5. Removes duplicate FAQ section and details accordion from body
+    expect(sanitized).not.toContain('## Frequently Asked Questions');
+    expect(sanitized).not.toContain('<details class="qa-item">');
+  });
 });
