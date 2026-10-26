@@ -65,6 +65,10 @@ Options -MultiViews -Indexes +FollowSymLinks
     # Article Plans API Handler (SQLite & JSON snapshot for Shared Hosting)
     RewriteRule ^api/article-plans(/.*)?$ /api/article-plans.php [L,QSA]
 
+    # Media Upload API Handler (Shared Hosting Media Persistence)
+    RewriteRule ^api/dev-upload/?$ /api/dev-upload.php [L,QSA]
+    RewriteRule ^api/upload-media/?$ /api/dev-upload.php [L,QSA]
+
     # Clean URLs & Directory Slashing for Astro Static Files
     # If request is an existing directory and missing trailing slash, redirect with slash
     RewriteCond %{REQUEST_FILENAME} -d

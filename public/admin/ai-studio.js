@@ -3425,28 +3425,108 @@ ${state.synthesizedArticle.body}`;
 
     let persisted = false;
 
-    // 2. Direct instant disk persistence via Astro/Vite dev server (/api/dev-upload) with timeout
-    try {
-      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      const timeoutId = controller ? setTimeout(() => controller.abort(), 4000) : null;
-      const res = await fetch('/api/dev-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: cleanName, content: rawBase64 }),
-        signal: controller ? controller.signal : undefined,
-      });
-      if (timeoutId) clearTimeout(timeoutId);
-      if (res.ok) {
-        persisted = true;
-        console.log('[AI Studio] Saved image to disk via /api/dev-upload:', cleanName);
-      } else {
-        console.warn('[AI Studio] /api/dev-upload responded with status:', res.status);
+    // 2. Direct server disk persistence (/api/dev-upload & /api/upload-media)
+    // Handled by Astro dev server middleware locally, and by dev-upload.php on shared hosting
+    const endpoints = ['/api/dev-upload', '/api/upload-media'];
+    for (const ep of endpoints) {
+      try {
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timeoutId = controller ? setTimeout(() => controller.abort(), 6000) : null;
+        const res = await fetch(ep, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: cleanName, content: rawBase64 }),
+          signal: controller ? controller.signal : undefined,
+        });
+        if (timeoutId) clearTimeout(timeoutId);
+        if (res.ok) {
+          persisted = true;
+          console.log('[AI Studio] Saved image to disk via /api/dev-upload:', cleanName);
+          break;
+        } else {
+          console.warn(`[AI Studio] ${ep} responded with status:`, res.status);
+        }
+      } catch (err) {
+        // Continue to fallback
       }
-    } catch (err) {
-      console.warn('[AI Studio] /api/dev-upload failed or timed out:', err);
     }
 
-    // 3. Persist via Decap CMS proxy server on 8081 if active with timeout
+    // 3. Direct GitHub Repository Persistence via GitHub Contents API
+    // When logged into Decap CMS with GitHub backend, commit file directly to git repo
+    try {
+      let ghToken = null;
+      let ghRepo = 'ramanur28/theramadhani-website';
+      let ghBranch = 'main';
+
+      try {
+        const store = getDecapReduxStore();
+        if (store && typeof store.getState === 'function') {
+          const s = store.getState();
+          if (s.auth && s.auth.user && s.auth.user.token) {
+            ghToken = s.auth.user.token;
+          }
+          if (s.config && typeof s.config.getIn === 'function') {
+            ghRepo = s.config.getIn(['backend', 'repo']) || ghRepo;
+            ghBranch = s.config.getIn(['backend', 'branch']) || ghBranch;
+          }
+        }
+      } catch (_) {}
+
+      if (!ghToken) {
+        try {
+          const rawUser = localStorage.getItem('netlify-cms-user');
+          if (rawUser) {
+            const parsed = JSON.parse(rawUser);
+            if (parsed && parsed.token) ghToken = parsed.token;
+          }
+        } catch (_) {}
+      }
+
+      if (ghToken) {
+        const ghPath = `public/images/uploads/${cleanName}`;
+        const apiUrl = `https://api.github.com/repos/${ghRepo}/contents/${ghPath}`;
+
+        let existingSha = null;
+        try {
+          const checkRes = await fetch(`${apiUrl}?ref=${ghBranch}`, {
+            headers: {
+              Authorization: `Bearer ${ghToken}`,
+              Accept: 'application/vnd.github.v3+json',
+            },
+          });
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            existingSha = checkData.sha;
+          }
+        } catch (_) {}
+
+        const putRes = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${ghToken}`,
+            Accept: 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: `Upload ${cleanName} via AI Article Studio`,
+            content: rawBase64,
+            branch: ghBranch,
+            ...(existingSha ? { sha: existingSha } : {}),
+          }),
+        });
+
+        if (putRes.ok) {
+          persisted = true;
+          console.log('[AI Studio] Committed image directly to GitHub repository:', cleanName);
+        } else {
+          console.warn('[AI Studio] GitHub API media commit status:', putRes.status);
+        }
+      }
+    } catch (ghErr) {
+      console.warn('[AI Studio] GitHub direct media commit notice:', ghErr);
+    }
+
+    // 4. Decap CMS proxy server on 8081 if active with timeout
     try {
       const payload = {
         action: 'persistMedia',

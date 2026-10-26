@@ -196,6 +196,15 @@
         });
       }
 
+      // Also try /api/upload-media on shared hosting
+      try {
+        await fetch('/api/upload-media', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: cleanName, content: base64Data }),
+        });
+      } catch (_) {}
+
       console.log('[Decap Auto-Persist] Saved to disk: public/images/uploads/' + cleanName);
       showUploadToast('✓ Image saved to disk: /images/uploads/' + cleanName, true);
     } catch (err) {
