@@ -42,12 +42,50 @@ const umamiHostUrl = import.meta.env.PUBLIC_UMAMI_HOST_URL;
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="canonical" href={canonicalURL} />
 
-<!-- Google Tag Manager -->
-<script is:inline>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-P2RVJ8Q9');</script>
+<!-- Google Tag Manager (Deferred for High Mobile Performance & Low TBT) -->
+<script is:inline>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+
+  (function() {
+    var gtmLoaded = false;
+    function loadGTM() {
+      if (gtmLoaded) return;
+      gtmLoaded = true;
+      window.dataLayer.push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+      var f = document.getElementsByTagName('script')[0];
+      var j = document.createElement('script');
+      var dl = 'dataLayer' != 'dataLayer' ? '&l=dataLayer' : '';
+      j.async = true;
+      j.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-P2RVJ8Q9' + dl;
+      if (f && f.parentNode) {
+        f.parentNode.insertBefore(j, f);
+      } else {
+        document.head.appendChild(j);
+      }
+      removeListeners();
+    }
+
+    var events = ['scroll', 'touchstart', 'pointerdown', 'mousemove', 'keydown'];
+    function removeListeners() {
+      events.forEach(function(e) {
+        window.removeEventListener(e, loadGTM, { passive: true });
+      });
+    }
+
+    events.forEach(function(e) {
+      window.addEventListener(e, loadGTM, { passive: true, once: true });
+    });
+
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(function() {
+        setTimeout(loadGTM, 2500);
+      });
+    } else {
+      setTimeout(loadGTM, 3500);
+    }
+  })();
+</script>
 
 <script is:inline>
   document.addEventListener('astro:page-load', function () {
@@ -70,23 +108,27 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <meta name="theme-color" content="#FAFAF8" />
 
-<!-- Responsive Preloads for Instant LCP: Mobile downloads ONLY 26KB WebP -->
-<link
-  rel="preload"
-  as="image"
-  href="/images/hero-poster-mobile.webp"
-  type="image/webp"
-  media="(max-width: 767px)"
-  fetchpriority="high"
-/>
-<link
-  rel="preload"
-  as="image"
-  href="/images/hero-poster.webp"
-  type="image/webp"
-  media="(min-width: 768px)"
-  fetchpriority="high"
-/>
+<!-- Responsive Preloads for Instant LCP: Mobile downloads ONLY 26KB WebP (Homepage Only) -->
+{Astro.url.pathname === '/' && (
+  <>
+    <link
+      rel="preload"
+      as="image"
+      href="/images/hero-poster-mobile.webp"
+      type="image/webp"
+      media="(max-width: 767px)"
+      fetchpriority="high"
+    />
+    <link
+      rel="preload"
+      as="image"
+      href="/images/hero-poster.webp"
+      type="image/webp"
+      media="(min-width: 768px)"
+      fetchpriority="high"
+    />
+  </>
+)}
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content={article ? 'article' : 'website'} />
@@ -126,9 +168,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
+  rel="preload"
+  as="style"
+  href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+/>
+<link
   rel="stylesheet"
   href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
-  media="all"
+  media="print"
+  onload="this.media='all'"
 />
 <noscript>
   <link

@@ -98,14 +98,14 @@ const {
             }
           );
 
+          // On mobile or small screens, show immediately without forced layout reflow
+          if (window.innerWidth <= 768) {
+            revealElements.forEach((el) => el.classList.add('is-visible'));
+            return;
+          }
+
           revealElements.forEach((el) => {
-            const rect = el.getBoundingClientRect();
-            // If already in viewport on load or on mobile, show immediately
-            if (rect.top < window.innerHeight + 100 || window.innerWidth <= 768) {
-              el.classList.add('is-visible');
-            } else {
-              observer.observe(el);
-            }
+            observer.observe(el);
           });
         } else {
           // Fallback for older browsers

@@ -140,7 +140,7 @@ const isServicesActive = services.some(s => pathname.startsWith(s.href));
       <button
         type="button"
         id="mobile-menu-btn"
-        class="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-brand-text hover:bg-brand-surface hover:text-brand-accent focus:outline-none cursor-pointer transition-colors"
+        class="relative inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-brand-text hover:bg-brand-surface hover:text-brand-accent focus:outline-none cursor-pointer transition-colors"
         aria-controls="mobile-menu"
         aria-expanded="false"
         aria-label="Toggle navigation menu"
@@ -187,7 +187,7 @@ const isServicesActive = services.some(s => pathname.startsWith(s.href));
           <a
             href={item.href}
             aria-label={`${item.name} - ${item.desc}`}
-            class="block rounded-lg px-3 py-2 text-xs font-medium text-brand-text hover:bg-brand-surface hover:text-brand-accent transition-colors"
+            class="flex items-center min-h-[44px] rounded-lg px-3.5 py-2.5 text-xs font-medium text-brand-text hover:bg-brand-surface hover:text-brand-accent transition-colors"
           >
             {item.name}
           </a>
@@ -200,7 +200,7 @@ const isServicesActive = services.some(s => pathname.startsWith(s.href));
           <a
             href={link.href}
             aria-label={link.name}
-            class="block rounded-lg px-3 py-2 text-sm text-brand-text hover:bg-brand-surface hover:text-brand-accent transition-colors"
+            class="flex items-center min-h-[44px] rounded-lg px-3.5 py-2.5 text-sm text-brand-text hover:bg-brand-surface hover:text-brand-accent transition-colors"
           >
             {link.name}
           </a>
