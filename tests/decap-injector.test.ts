@@ -349,7 +349,7 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
     tagsPane.remove();
   });
 
-  it('INJ-11: automatically injects expandable Q&A accordions into Markdown body while populating FAQ frontmatter', async () => {
+  it('INJ-11: does not inject duplicate FAQ accordions into Markdown body, keeping FAQs purely in frontmatter dropdown', async () => {
     studio.state.language = 'en';
     studio.state.synthesizedArticle = {
       title: 'Accordion Article Guide',
@@ -375,11 +375,9 @@ describe('Decap CMS Form Injector & DOM Synchronizer', () => {
     const injected = await studio.injectIntoDecapForm();
     expect(injected).toBe(true);
 
-    // Verify Markdown body now contains the registered Decap qa-item accordion blocks
-    expect(studio.state.synthesizedArticle.body).toContain('## Frequently Asked Questions');
-    expect(studio.state.synthesizedArticle.body).toContain('<details class="qa-item">');
-    expect(studio.state.synthesizedArticle.body).toContain('<summary class="qa-question">What is Generative Engine Optimization?</summary>');
-    expect(studio.state.synthesizedArticle.body).toContain('<div class="qa-answer">\n<p>Generative Engine Optimization is content optimization for LLM citation.</p>\n</div>');
+    // Verify Markdown body does NOT contain raw qa-item or FAQ heading, ensuring only the frontmatter dropdown FAQ renders
+    expect(studio.state.synthesizedArticle.body).not.toContain('<details class="qa-item">');
+    expect(studio.state.synthesizedArticle.body).not.toContain('## Frequently Asked Questions');
   });
 
   it('LDR-01: displays active loading spinner card during outline generation and injection', async () => {

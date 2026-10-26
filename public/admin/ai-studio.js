@@ -1841,21 +1841,13 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
     setInjectLoading(true, 'Menyuntikkan Body & Expandable Q&A...', 'Menyusun body markdown dan komponen accordion...');
     let bodyContent = art.body || '';
 
-    // Automatically append Expandable Q&A accordions into Markdown body if not already present
-    if (art.faq && Array.isArray(art.faq) && art.faq.length > 0) {
-      if (!bodyContent.includes('class="qa-item"')) {
-        const isEn = state.language === 'en';
-        const faqSectionHeading = isEn ? '## Frequently Asked Questions' : '## Pertanyaan yang Sering Diajukan';
-        const faqAccordions = art.faq.map((item) => {
-          const q = (item.question || '').trim();
-          const a = (item.answer || '').trim();
-          return `<details class="qa-item">\n<summary class="qa-question">${q}</summary>\n<div class="qa-answer">\n<p>${a}</p>\n</div>\n</details>`;
-        }).join('\n\n');
-
-        bodyContent = `${bodyContent.trim()}\n\n${faqSectionHeading}\n\n${faqAccordions}`;
-        art.body = bodyContent;
-      }
-    }
+    // Ensure no raw FAQ accordions exist in the body markdown to prevent duplicate FAQs.
+    // The dropdown FAQ is rendered cleanly by the template from the frontmatter faq field.
+    bodyContent = bodyContent
+      .replace(/##\s+(Frequently Asked Questions|Pertanyaan yang Sering Diajukan)[\s\S]*?(?=(?:##|\n\n\n|$))/gi, '')
+      .replace(/<details\s+class="qa-item"[\s\S]*?<\/details>/gi, '')
+      .trim();
+    art.body = bodyContent;
 
     let bodyInjected = false;
 
