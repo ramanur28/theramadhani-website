@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import PerformanceAudit from '@/components/islands/PerformanceAudit.tsx';
+import PerformanceAudit from '@/components/common/PerformanceAudit.astro';
 import ServiceCard from '@/components/cards/ServiceCard.astro';
 import ArticleCard from '@/components/cards/ArticleCard.astro';
 import { getCollection } from 'astro:content';
@@ -474,7 +474,7 @@ const proofPoints = [
   <!-- 7. Interactive Diagnostic Tool -->
   <section class="py-20 sm:py-24 border-b border-brand-border">
     <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 reveal-on-scroll">
-      <PerformanceAudit client:idle />
+      <PerformanceAudit />
     </div>
   </section>
 
