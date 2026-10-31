@@ -33,7 +33,7 @@ const safeCoverImage = coverImage ? (coverImage.startsWith('http') || coverImage
 <article class="minimal-card group flex flex-col justify-between overflow-hidden">
   {safeCoverImage && (
     <a
-      href={`/articles/${slug}`}
+      href={`/articles/${slug}/`}
       class="block overflow-hidden border-b border-brand-border bg-brand-surface aspect-video relative focus:outline-none"
     >
       <img
@@ -71,7 +71,7 @@ const safeCoverImage = coverImage ? (coverImage.startsWith('http') || coverImage
       )}
 
       <h3 class="font-display text-lg font-bold tracking-tight text-brand-text group-hover:text-brand-accent transition-colors">
-        <a href={`/articles/${slug}`} class="focus:outline-none">
+        <a href={`/articles/${slug}/`} class="focus:outline-none">
           {title}
         </a>
       </h3>
@@ -90,7 +90,7 @@ const safeCoverImage = coverImage ? (coverImage.startsWith('http') || coverImage
     <div class="mt-6 flex items-center justify-between border-t border-brand-border pt-4 text-xs">
       <span class="text-brand-text-dim font-mono text-[11px]">By {author}</span>
       <a
-        href={`/articles/${slug}`}
+        href={`/articles/${slug}/`}
         class="font-semibold text-brand-accent inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
       >
         <span>Read Article</span>

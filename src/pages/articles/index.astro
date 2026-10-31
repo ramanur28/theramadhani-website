@@ -6,7 +6,7 @@ import { isArticlePublished } from '@/utils/articles';
 import type { BreadcrumbItem } from '@/types/schema';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { name: 'Articles', url: '/articles' },
+  { name: 'Articles', url: '/articles/' },
 ];
 
 const articles = await getCollection('articles', isArticlePublished);

@@ -4,31 +4,31 @@ const pathname = new URL(Astro.request.url).pathname;
 const services = [
   {
     name: 'Technical & Organic SEO',
-    href: '/services/seo',
+    href: '/services/seo/',
     desc: 'Architecture, schema graphs, rendering & indexing.',
     badge: 'Code-First'
   },
   {
     name: 'Generative Engine Optimization (GEO)',
-    href: '/services/geo',
+    href: '/services/geo/',
     desc: 'Answer engine visibility (Perplexity, ChatGPT, AI Overviews).',
     badge: 'AI Search'
   },
   {
     name: 'Google Ads & Paid Search',
-    href: '/services/google-ads',
+    href: '/services/google-ads/',
     desc: 'High-intent search capture & ROAS turnaround.',
     badge: 'High ROAS'
   }
 ];
 
 const otherLinks = [
-  { name: 'Proof / Work', href: '/work' },
-  { name: 'Articles', href: '/articles' },
-  { name: 'About', href: '/about' },
+  { name: 'Proof / Work', href: '/work/' },
+  { name: 'Articles', href: '/articles/' },
+  { name: 'About', href: '/about/' },
 ];
 
-const isServicesActive = services.some(s => pathname.startsWith(s.href));
+const isServicesActive = services.some(s => pathname.startsWith(s.href.replace(/\/$/, '')));
 ---
 
 <header class="sticky top-0 z-50 w-full border-b border-brand-border bg-brand-bg/95 backdrop-blur-md">
@@ -108,7 +108,7 @@ const isServicesActive = services.some(s => pathname.startsWith(s.href));
 
       <!-- Other Links -->
       {otherLinks.map((link) => {
-        const isActive = pathname.startsWith(link.href);
+        const isActive = pathname.startsWith(link.href.replace(/\/$/, ''));
         return (
           <a
             href={link.href}
@@ -127,7 +127,7 @@ const isServicesActive = services.some(s => pathname.startsWith(s.href));
 
       <!-- Primary CTA -->
       <a
-        href="/contact"
+        href="/contact/"
         aria-label="Book Strategic Performance Audit"
         class="ml-2 inline-flex items-center justify-center rounded-lg bg-brand-accent px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-accent-hover transition-colors focus-visible:ring-2 focus-visible:ring-brand-accent"
       >
@@ -210,7 +210,7 @@ const isServicesActive = services.some(s => pathname.startsWith(s.href));
       <!-- CTA -->
       <div class="pt-2">
         <a
-          href="/contact"
+          href="/contact/"
           aria-label="Book Strategic Performance Audit"
           class="block w-full rounded-lg bg-brand-accent py-2.5 text-center text-xs font-semibold text-white hover:bg-brand-accent-hover transition-colors shadow-sm"
         >

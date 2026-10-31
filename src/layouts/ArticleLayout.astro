@@ -5,6 +5,14 @@ import QuickAnswer from '@/components/common/QuickAnswer.astro';
 import FaqAccordion from '@/components/islands/FaqAccordion.tsx';
 import type { FAQItem, BreadcrumbItem, ArticleSchemaData } from '@/types/schema';
 
+export interface RelatedArticleItem {
+  title: string;
+  description: string;
+  slug: string;
+  tags: string[];
+  publishDate: Date;
+}
+
 export interface Props {
   title: string;
   description: string;
@@ -18,6 +26,7 @@ export interface Props {
   slug: string;
   faq?: FAQItem[];
   headings?: { depth: number; slug: string; text: string }[];
+  relatedArticles?: RelatedArticleItem[];
 }
 
 const {
@@ -33,6 +42,7 @@ const {
   slug,
   faq = [],
   headings = [],
+  relatedArticles = [],
 } = Astro.props;
 
 const formattedPublishDate = publishDate.toLocaleDateString('en-US', {
@@ -42,8 +52,8 @@ const formattedPublishDate = publishDate.toLocaleDateString('en-US', {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { name: 'Articles', url: '/articles' },
-  { name: title, url: `/articles/${slug}` },
+  { name: 'Articles', url: '/articles/' },
+  { name: title, url: `/articles/${slug}/` },
 ];
 
 const articleSchema: ArticleSchemaData = {
@@ -52,9 +62,9 @@ const articleSchema: ArticleSchemaData = {
   datePublished: publishDate.toISOString(),
   dateModified: updatedDate ? updatedDate.toISOString() : publishDate.toISOString(),
   authorName: author,
-  authorUrl: 'https://theramadhani.com/about',
+  authorUrl: 'https://theramadhani.com/about/',
   imageUrl: coverImage,
-  articleUrl: `https://theramadhani.com/articles/${slug}`,
+  articleUrl: `https://theramadhani.com/articles/${slug}/`,
   keywords: tags,
 };
 
@@ -155,7 +165,7 @@ const safeCoverImage = coverImage ? (coverImage.startsWith('http') || coverImage
           <div class="flex-1 text-xs leading-relaxed text-brand-text-muted">
             <div class="flex items-center justify-between">
               <span class="font-display text-sm font-bold text-brand-text">Written by {author}</span>
-              <a href="/about" class="text-brand-accent font-semibold hover:underline font-mono text-[11px]">Profile &rarr;</a>
+              <a href="/about/" class="text-brand-accent font-semibold hover:underline font-mono text-[11px]">Profile &rarr;</a>
             </div>
             <p class="mt-1.5 text-brand-text-muted text-xs">
               Digital Marketing Specialist in Technical SEO, Generative Engine Optimization (GEO), and paid search acquisition.
@@ -163,6 +173,53 @@ const safeCoverImage = coverImage ? (coverImage.startsWith('http') || coverImage
           </div>
         </div>
       </div>
+
+      <!-- Related Technical Guides (Internal Link Graph Connectivity) -->
+      {relatedArticles.length > 0 && (
+        <section class="mt-16 border-t border-brand-border pt-12" aria-label="Related Technical Guides">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-brand-accent block mb-1">
+                Continue Reading &bull; Topic Cluster
+              </span>
+              <h2 class="font-display text-xl font-bold tracking-tight text-brand-text">
+                Related Technical Guides &amp; Frameworks
+              </h2>
+            </div>
+            <a href="/articles/" class="text-xs font-semibold text-brand-accent hover:underline font-mono">
+              All Guides &rarr;
+            </a>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {relatedArticles.map((rel) => (
+              <a
+                href={`/articles/${rel.slug}/`}
+                class="minimal-card group p-5 flex flex-col justify-between hover:border-brand-accent transition-all"
+              >
+                <div>
+                  <span class="font-mono text-[10px] font-semibold text-brand-accent uppercase tracking-wider">
+                    #{rel.tags[0] || 'Technical SEO'}
+                  </span>
+                  <h3 class="mt-1.5 font-display text-sm sm:text-base font-bold text-brand-text group-hover:text-brand-accent transition-colors leading-snug">
+                    {rel.title}
+                  </h3>
+                  <p class="mt-2 text-xs text-brand-text-muted line-clamp-2 leading-relaxed">
+                    {rel.description}
+                  </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-brand-border/60 flex items-center justify-between text-[11px] font-mono">
+                  <span class="text-brand-text-dim">
+                    {rel.publishDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </span>
+                  <span class="text-brand-accent font-semibold group-hover:translate-x-0.5 transition-transform">
+                    Read Guide &rarr;
+                  </span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   </article>
 </BaseLayout>

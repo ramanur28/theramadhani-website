@@ -28,7 +28,12 @@ const {
 } = Astro.props;
 
 const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : 'https://theramadhani.com';
-const canonicalURL = new URL(Astro.url.pathname, siteUrl);
+const rawPathname = Astro.url.pathname;
+const normalizedPathname =
+  rawPathname === '/' || rawPathname.endsWith('/') || /\.[a-z0-9]+$/i.test(rawPathname)
+    ? rawPathname
+    : `${rawPathname}/`;
+const canonicalURL = new URL(normalizedPathname, siteUrl);
 const ogImageURL = image.startsWith('http') ? image : new URL(image, siteUrl).toString();
 const siteName = 'The Ramadhani | SEO, GEO & Google Ads Specialist';
 const fullTitle = title.includes('The Ramadhani') ? title : `${title} | The Ramadhani`;

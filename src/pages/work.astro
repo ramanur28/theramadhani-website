@@ -5,7 +5,7 @@ import { getCollection } from 'astro:content';
 import type { BreadcrumbItem } from '@/types/schema';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { name: 'Work / Proof', url: '/work' },
+  { name: 'Work / Proof', url: '/work/' },
 ];
 
 const workEntries = await getCollection('work');

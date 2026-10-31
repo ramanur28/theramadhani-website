@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 export interface ArticleItem {
   id: string;
@@ -18,7 +18,7 @@ interface Props {
   allTags: string[];
 }
 
-const ITEMS_PER_PAGE = 9;
+const ITEMS_PER_PAGE = 18;
 
 export const CORE_TOPICS = [
   {
@@ -143,11 +143,6 @@ export default function ArticleFilter({ articles, allTags }: Props) {
   const totalItems = filteredArticles.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
   const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
-
-  const paginatedArticles = useMemo(() => {
-    const startIndex = (validCurrentPage - 1) * ITEMS_PER_PAGE;
-    return filteredArticles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredArticles, validCurrentPage]);
 
   // Sync URL query string when filters or page change
   useEffect(() => {
@@ -355,7 +350,7 @@ export default function ArticleFilter({ articles, allTags }: Props) {
       </div>
 
       {/* Articles Grid */}
-      {paginatedArticles.length === 0 ? (
+      {filteredArticles.length === 0 ? (
         <div className="rounded-xl border border-dashed border-brand-border bg-brand-surface p-12 text-center text-xs text-brand-text-muted">
           <p className="font-semibold text-brand-text mb-2 text-sm">No publications match your criteria.</p>
           <p className="mb-4 text-brand-text-dim">Try adjusting your search terms or clearing the active tag filter.</p>
@@ -369,7 +364,9 @@ export default function ArticleFilter({ articles, allTags }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {paginatedArticles.map((art) => {
+          {filteredArticles.map((art, index) => {
+            const pageStart = (validCurrentPage - 1) * ITEMS_PER_PAGE;
+            const isOnCurrentPage = index >= pageStart && index < pageStart + ITEMS_PER_PAGE;
             const safeImg = art.coverImage
               ? art.coverImage.startsWith('http') || art.coverImage.startsWith('/')
                 ? art.coverImage
@@ -377,10 +374,18 @@ export default function ArticleFilter({ articles, allTags }: Props) {
               : null;
 
             return (
-              <article key={art.slug} className="minimal-card group flex flex-col justify-between overflow-hidden">
+              <article
+                key={art.slug}
+                hidden={!isOnCurrentPage}
+                className={
+                  isOnCurrentPage
+                    ? 'minimal-card group flex flex-col justify-between overflow-hidden'
+                    : 'hidden'
+                }
+              >
                 {safeImg && (
                   <a
-                    href={`/articles/${art.slug}`}
+                    href={`/articles/${art.slug}/`}
                     className="block overflow-hidden border-b border-brand-border bg-brand-surface aspect-video relative focus:outline-none"
                   >
                     <img
@@ -438,7 +443,7 @@ export default function ArticleFilter({ articles, allTags }: Props) {
                     )}
 
                     <h2 className="font-display text-base sm:text-lg font-bold text-brand-text group-hover:text-brand-accent transition-colors leading-snug">
-                      <a href={`/articles/${art.slug}`} className="hover:underline">
+                      <a href={`/articles/${art.slug}/`} className="hover:underline">
                         {art.title}
                       </a>
                     </h2>
@@ -456,7 +461,7 @@ export default function ArticleFilter({ articles, allTags }: Props) {
                   <div className="mt-6 flex items-center justify-between border-t border-brand-border pt-4 text-xs">
                     <span className="text-brand-text-dim font-mono text-[11px]">By {art.author}</span>
                     <a
-                      href={`/articles/${art.slug}`}
+                      href={`/articles/${art.slug}/`}
                       className="font-semibold text-brand-accent inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
                     >
                       <span>Read Guide</span>
@@ -478,17 +483,22 @@ export default function ArticleFilter({ articles, allTags }: Props) {
           className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-brand-border pt-8 sm:flex-row"
           aria-label="Pagination Navigation"
         >
-          {/* Previous Page Button */}
-          <button
-            type="button"
-            onClick={() => handlePageChange(validCurrentPage - 1)}
-            disabled={validCurrentPage === 1}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+          {/* Previous Page Link */}
+          <a
+            href={validCurrentPage > 2 ? `/articles/?page=${validCurrentPage - 1}` : '/articles/'}
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(validCurrentPage - 1);
+            }}
+            aria-disabled={validCurrentPage === 1}
+            className={`inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface cursor-pointer ${
+              validCurrentPage === 1 ? 'opacity-30 pointer-events-none' : ''
+            }`}
             aria-label="Go to previous page"
           >
             <span>&larr;</span>
             <span>Previous</span>
-          </button>
+          </a>
 
           {/* Page Numbers */}
           <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -503,36 +513,45 @@ export default function ArticleFilter({ articles, allTags }: Props) {
                   </span>
                 );
               }
-              const isCurrent = num === validCurrentPage;
+              const pageNum = num as number;
+              const isCurrent = pageNum === validCurrentPage;
               return (
-                <button
-                  key={`page-${num}`}
-                  type="button"
-                  onClick={() => handlePageChange(num as number)}
+                <a
+                  key={`page-${pageNum}`}
+                  href={pageNum > 1 ? `/articles/?page=${pageNum}` : '/articles/'}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(pageNum);
+                  }}
                   aria-current={isCurrent ? 'page' : undefined}
-                  className={`h-9 min-w-[2.25rem] px-2.5 rounded-lg font-mono text-xs font-semibold transition-all border cursor-pointer ${
+                  className={`inline-flex items-center justify-center h-9 min-w-[2.25rem] px-2.5 rounded-lg font-mono text-xs font-semibold transition-all border cursor-pointer ${
                     isCurrent
                       ? 'border-brand-accent bg-brand-accent text-brand-bg shadow-xs'
                       : 'border-brand-border bg-brand-card text-brand-text-muted hover:border-brand-border-hover hover:bg-brand-surface hover:text-brand-text'
                   }`}
                 >
-                  {num}
-                </button>
+                  {pageNum}
+                </a>
               );
             })}
           </div>
 
-          {/* Next Page Button */}
-          <button
-            type="button"
-            onClick={() => handlePageChange(validCurrentPage + 1)}
-            disabled={validCurrentPage === totalPages}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+          {/* Next Page Link */}
+          <a
+            href={validCurrentPage < totalPages ? `/articles/?page=${validCurrentPage + 1}` : `/articles/?page=${totalPages}`}
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(validCurrentPage + 1);
+            }}
+            aria-disabled={validCurrentPage === totalPages}
+            className={`inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-card px-4 py-2 font-mono text-xs font-medium text-brand-text transition-all hover:border-brand-border-hover hover:bg-brand-surface cursor-pointer ${
+              validCurrentPage === totalPages ? 'opacity-30 pointer-events-none' : ''
+            }`}
             aria-label="Go to next page"
           >
             <span>Next</span>
             <span>&rarr;</span>
-          </button>
+          </a>
         </nav>
       )}
     </div>

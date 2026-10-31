@@ -51,11 +51,16 @@ export default function FaqAccordion({ items, title = 'Frequently Asked Question
                   +
                 </span>
               </button>
-              {isOpen && (
-                <div className="border-t border-brand-border px-4 pb-4 pt-3 sm:px-5 sm:pb-5 text-xs sm:text-sm leading-relaxed text-brand-text-muted">
-                  <p>{item.answer}</p>
-                </div>
-              )}
+              <div
+                hidden={!isOpen}
+                className={
+                  isOpen
+                    ? 'border-t border-brand-border px-4 pb-4 pt-3 sm:px-5 sm:pb-5 text-xs sm:text-sm leading-relaxed text-brand-text-muted'
+                    : 'hidden'
+                }
+              >
+                <p>{item.answer}</p>
+              </div>
             </div>
           );
         })}

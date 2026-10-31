@@ -43,8 +43,8 @@ const formattedPublishDate = publishDate.toLocaleDateString('en-US', {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { name: 'Work / Proof', url: '/work' },
-  { name: title, url: `/work/${slug}` },
+  { name: 'Work / Proof', url: '/work/' },
+  { name: title, url: `/work/${slug}/` },
 ];
 
 const safeCoverImage = coverImage
@@ -56,9 +56,9 @@ const caseStudySchema: ArticleSchemaData = {
   description: description,
   datePublished: publishDate.toISOString(),
   authorName: 'Ramadhani',
-  authorUrl: 'https://theramadhani.com/about',
+  authorUrl: 'https://theramadhani.com/about/',
   imageUrl: safeCoverImage || 'https://theramadhani.com/images/brand-logo.svg',
-  articleUrl: `https://theramadhani.com/work/${slug}`,
+  articleUrl: `https://theramadhani.com/work/${slug}/`,
   keywords: [service, industry, 'Case Study', 'Performance Audit', ...techStack],
 };
 
@@ -193,11 +193,11 @@ const tocHeadings = headings.filter(h => h.depth === 2 || h.depth === 3);
         </p>
 
         <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <a href="/contact" class="btn-primary">
+          <a href="/contact/" class="btn-primary">
             <span>Schedule Strategic Audit</span>
             <span class="ml-1.5">&rarr;</span>
           </a>
-          <a href="/work" class="btn-secondary">
+          <a href="/work/" class="btn-secondary">
             <span>View All Case Studies</span>
           </a>
         </div>

@@ -65,7 +65,7 @@ const organizationSchema: Record<string, any> = {
     '@type': 'ContactPoint',
     contactType: 'sales & consulting',
     email: 'contact@theramadhani.com',
-    url: `${siteUrl}/contact`,
+    url: `${siteUrl}/contact/`,
   },
 };
 
@@ -78,7 +78,7 @@ const personSchema: Record<string, any> = {
   worksFor: {
     '@id': orgId,
   },
-  url: `${siteUrl}/about`,
+  url: `${siteUrl}/about/`,
   image: `${siteUrl}/images/ramadhani-portrait.svg`,
   description: person?.description || 'Digital marketing authority specializing in Technical SEO, Generative Engine Optimization (GEO), and full-funnel Google Ads growth.',
   sameAs: person?.sameAs || [
@@ -114,12 +114,16 @@ const graph: Record<string, any>[] = [
 
 // 4. BreadcrumbList Schema (Every non-home page)
 if (breadcrumbs && breadcrumbs.length > 0) {
-  const itemListElement = breadcrumbs.map((crumb, idx) => ({
-    '@type': 'ListItem',
-    position: idx + 1,
-    name: crumb.name,
-    item: crumb.url.startsWith('http') ? crumb.url : `${siteUrl}${crumb.url}`,
-  }));
+  const itemListElement = breadcrumbs.map((crumb, idx) => {
+    const rawUrl = crumb.url.startsWith('http') ? crumb.url : `${siteUrl}${crumb.url}`;
+    const normalizedUrl = rawUrl.endsWith('/') || /\.[a-z0-9]+$/i.test(rawUrl) ? rawUrl : `${rawUrl}/`;
+    return {
+      '@type': 'ListItem',
+      position: idx + 1,
+      name: crumb.name,
+      item: normalizedUrl,
+    };
+  });
 
   graph.push({
     '@type': 'BreadcrumbList',
@@ -148,7 +152,7 @@ if (service) {
       '@type': 'Offer',
       price: service.offers?.price || 'Custom Scope',
       priceCurrency: service.offers?.priceCurrency || 'USD',
-      url: `${siteUrl}/contact`,
+      url: `${siteUrl}/contact/`,
     },
   });
 }

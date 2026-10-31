@@ -143,7 +143,7 @@ export default function WorkFilter({ workItems, allServices }: Props) {
                       </span>
                     </div>
                     <h2 className="font-display text-xl sm:text-2xl font-bold text-brand-text group-hover:text-brand-accent transition-colors">
-                      <a href={`/work/${study.slug}`} className="hover:underline">
+                      <a href={`/work/${study.slug}/`} className="hover:underline">
                         {study.title}
                       </a>
                     </h2>
@@ -154,7 +154,7 @@ export default function WorkFilter({ workItems, allServices }: Props) {
 
                   <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
                     <a
-                      href={`/work/${study.slug}`}
+                      href={`/work/${study.slug}/`}
                       className="btn-primary text-xs py-2 px-3.5"
                     >
                       <span>Read Case Study</span>

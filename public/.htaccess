@@ -102,8 +102,13 @@ Options -MultiViews -Indexes +FollowSymLinks
     # Feature & Permissions Policy
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 
-    # Revalidation for HTML, XML, YAML, and Decap CMS config & preview
-    <FilesMatch "\.(html|htm|xml|txt|yml|yaml|json)$">
+    # Fast revalidation for public HTML, XML sitemaps, and text directives (crawler-friendly, no no-store block)
+    <FilesMatch "\.(html|htm|xml|txt)$">
+        Header set Cache-Control "public, max-age=0, must-revalidate"
+    </FilesMatch>
+
+    # Strict no-store for Decap CMS YAML & JSON dynamic state files
+    <FilesMatch "\.(yml|yaml|json)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate"
         Header set Pragma "no-cache"
         Header set Expires "0"

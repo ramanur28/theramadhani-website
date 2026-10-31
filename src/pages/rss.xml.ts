@@ -11,15 +11,18 @@ export async function GET(context: APIContext) {
     title: 'The Ramadhani | SEO, GEO & Google Ads Insights',
     description: 'Actionable publications on Technical SEO Engineering, Generative Engine Optimization (GEO), and High-ROI Paid Search.',
     site: context.site || 'https://theramadhani.com',
-    items: sortedArticles.map((article) => ({
-      title: article.data.title,
-      description: article.data.description,
-      pubDate: article.data.publishDate,
-      link: `/articles/${article.data.slug || article.id}`,
-      author: `${article.data.author} (contact@theramadhani.com)`,
-      categories: article.data.tags,
-      customData: `<guid isPermaLink="true">https://theramadhani.com/articles/${article.data.slug || article.id}</guid>`,
-    })),
+    items: sortedArticles.map((article) => {
+      const slug = article.data.slug || article.id;
+      return {
+        title: article.data.title,
+        description: article.data.description,
+        pubDate: article.data.publishDate,
+        link: `/articles/${slug}/`,
+        author: `${article.data.author} (contact@theramadhani.com)`,
+        categories: article.data.tags,
+        customData: `<guid isPermaLink="true">https://theramadhani.com/articles/${slug}/</guid>`,
+      };
+    }),
     customData: `<language>en-us</language>`,
   });
 }

@@ -18,6 +18,7 @@ const { items } = Astro.props;
 
     {items.map((item, index) => {
       const isLast = index === items.length - 1;
+      const normalizedHref = item.url.endsWith('/') || /\.[a-z0-9]+$/i.test(item.url) ? item.url : `${item.url}/`;
       return (
         <li class="inline-flex items-center">
           <span class="mx-1 text-brand-text-dim/60">/</span>
@@ -26,7 +27,7 @@ const { items } = Astro.props;
               {item.name}
             </span>
           ) : (
-            <a href={item.url} class="transition-colors hover:text-brand-accent">
+            <a href={normalizedHref} class="transition-colors hover:text-brand-accent">
               {item.name}
             </a>
           )}
