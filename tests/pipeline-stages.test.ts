@@ -659,4 +659,76 @@ describe('Multi-Stage AI Article Pipeline', () => {
       expect(capturedPrompt).toContain('/images/uploads/article-benchmark.webp');
     });
   });
+
+  describe('Anti-AI Detection & Burstiness Humanizer Engine', () => {
+    it('HUM-01: deduplicates multi-chunk footnote definitions and strips prompt-leaked subheadings', () => {
+      const rawAiText = `## Section 1: Foundations
+
+Organic search visibility is no longer limited to ten blue links. This distinction matters because modern search systems retrieve entities.[^1][^2]
+
+In practice, teams must track impressions. In practice, they also need to monitor clicks. In practice, conversion tracking is essential.
+
+<figure class="article-image-figure"><img src="/images/uploads/test.webp" alt="Test" /><figcaption class="article-image-caption">SEO organic keywords are framed as unpaid search terms.</figcaption></figure>
+
+[^1]: Google Search Central. Creating helpful content.
+[^2]: Google Search Central. How Search works.
+
+## Section 2: Advanced Implementation
+
+A page does not exist only as a string; it is not merely a keyword list. It is a semantic entity graph. That is the answer to **what do you mean by organic keywords** in enterprise SEO.
+
+Corrective action:
+- Audit Search Console queries
+- Map intent to landing pages
+
+### Planned inline citation anchors and source integration
+
+Use inline citations wherever the article makes claims.
+
+### Reference list structure: Google Search Central, IEEE, arXiv, Gartner, W3C
+
+- Google Search Central
+
+### References & Authoritative Sources
+
+[^1]: Google Search Central. Creating helpful content.
+[^2]: Google Search Central. How Search works.
+[^3]: IEEE Xplore information retrieval benchmarks.`;
+
+      const cleaned = studio.humanizeGeneratedContent(rawAiText);
+
+      // 1. Deduplicates [^1]: so it only appears once at the bottom
+      const fn1Matches = cleaned.match(/^\[\^1\]:/gm) || [];
+      expect(fn1Matches.length).toBe(1);
+
+      // 2. Strips prompt-leaked meta-headings
+      expect(cleaned).not.toContain('### Planned inline citation anchors');
+      expect(cleaned).not.toContain('### Reference list structure:');
+
+      // 3. Strips AI watermarks ("This distinction matters because", "are framed as", "Corrective action:")
+      expect(cleaned).not.toContain('This distinction matters because');
+      expect(cleaned).not.toContain('are framed as');
+      expect(cleaned).not.toContain('Corrective action:');
+
+      // 4. Caps "In practice," to at most 1 occurrence
+      const inPracticeMatches = cleaned.match(/\bIn practice,/gi) || [];
+      expect(inPracticeMatches.length).toBeLessThanOrEqual(1);
+
+      // 5. Converts stiff uncontracted prose ("does not") to natural contraction ("doesn't")
+      expect(cleaned).toContain("doesn't");
+
+      // 6. Un-bolds awkward question keyphrases mid-sentence
+      expect(cleaned).toContain('"what do you mean by organic keywords"');
+    });
+
+    it('HUM-02: calculates burstiness and human score accurately', () => {
+      const highBurstinessSample = `
+Rankings lie. When you inspect raw Google Search Console exports across 40,000 indexed enterprise URLs—especially after a core algorithm rollout—you'll quickly notice that average position rarely correlates with actual pipeline revenue. Why? Because AI Overviews absorb top-of-funnel informational clicks before users ever scroll to position three. Most teams miss this completely. Instead of chasing vanity volume, smart practitioners map bottom-of-funnel commercial queries directly to product comparison hubs that convert at 4.8% or higher.
+      `.trim();
+
+      const stats = studio.calculateHumanBurstinessScore(highBurstinessSample);
+      expect(stats.score).toBeGreaterThanOrEqual(85);
+      expect(stats.burstiness).toBeGreaterThan(6);
+    });
+  });
 });

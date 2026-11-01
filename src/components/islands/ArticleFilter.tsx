@@ -18,7 +18,7 @@ interface Props {
   allTags: string[];
 }
 
-const ITEMS_PER_PAGE = 18;
+const ITEMS_PER_PAGE = 30;
 
 export const CORE_TOPICS = [
   {

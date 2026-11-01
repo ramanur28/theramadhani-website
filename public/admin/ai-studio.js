@@ -80,23 +80,23 @@
   const STRATEGY_PRESETS = {
     geo_ai_search: {
       title: 'GEO & AI Answer Authority',
-      desc: 'Optimasi kutipan ChatGPT, Perplexity, Claude, dan Google AI Overviews. Fokus pada 40-60 word quick answer block, densitas entitas teknis, dan data empiris.',
-      instructions: 'Prioritize Generative Engine Optimization (GEO). Write dense, entity-rich explanations. Provide a definitive 40-60 word executive answer block directly under the primary heading. Avoid conversational fluff. Include structured technical comparisons.',
+      desc: 'Optimasi kutipan ChatGPT, Perplexity, Claude, dan Google AI Overviews dengan gaya praktisi manusia (high burstiness & anti-AI detector).',
+      instructions: 'Prioritize Generative Engine Optimization (GEO) written in a sharp, first-hand human practitioner voice. Open with a 40-60 word direct answer block, then vary sentence lengths dramatically (mixing 4-word punchy observations with 35-word technical breakdowns), use natural contractions, and share real field diagnostics rather than textbook encyclopedic summaries.',
     },
     technical_deepdive: {
       title: 'Technical SEO & Engineering Deep-Dive',
       desc: 'Arsitektur web, crawlability, Core Web Vitals, server configuration, dan audit teknis komprehensif.',
-      instructions: 'Adopt a senior technical SEO engineer persona. Deeply explain architecture, crawl budget, DOM rendering, schema graphs, and performance diagnostics with rigorous accuracy.',
+      instructions: 'Adopt a battle-tested senior technical SEO engineer persona. Explain architecture, crawl budget, DOM rendering, schema graphs, and server log diagnostics using real-world failure modes, concrete trade-offs, and asymmetric human sentence rhythm.',
     },
     executive_roi: {
       title: 'Executive Thought Leadership & ROI',
       desc: 'Strategi pertumbuhan organik B2B, atribusi pendapatan, pipeline marketing, dan efisiensi CAC.',
-      instructions: 'Write for C-level executives, founders, and VP of Marketing. Focus on organic pipeline ROI, commercial intent keywords, customer acquisition cost reduction, and enterprise scalability.',
+      instructions: 'Write as a seasoned growth advisor speaking directly to C-level executives, founders, and VPs of Marketing. Focus on organic pipeline ROI, commercial intent keywords, customer acquisition cost reduction, and candid lessons from enterprise audits.',
     },
     step_by_step_tutorial: {
       title: 'Step-by-Step Technical Tutorial',
       desc: 'Panduan implementasi praktis bertahap dari prasyarat, setup, eksekusi kode/konfigurasi, hingga pengujian.',
-      instructions: 'Provide an actionable, methodical step-by-step implementation guide with clear prerequisites, configuration snippets, verification steps, and troubleshooting FAQs.',
+      instructions: 'Provide a hands-on, practitioner-tested implementation guide with clear prerequisites, real configuration snippets, verification checks, and honest gotchas that engineers encounter in production.',
     },
   };
 
@@ -329,15 +329,15 @@
   // =========================================================================
   // 3. API Client Engine (Gemini & OpenAI)
   // =========================================================================
-  async function callAI({ prompt, systemPrompt, imageBase64, mimeType = 'image/png', jsonMode = false }) {
+  async function callAI({ prompt, systemPrompt, imageBase64, mimeType = 'image/png', jsonMode = false, temperature = 0.6, topP, frequencyPenalty, presencePenalty }) {
     if (state.provider === 'gemini') {
-      return callGemini({ prompt, systemPrompt, imageBase64, mimeType, jsonMode });
+      return callGemini({ prompt, systemPrompt, imageBase64, mimeType, jsonMode, temperature, topP });
     } else {
-      return callOpenAI({ prompt, systemPrompt, imageBase64, mimeType, jsonMode });
+      return callOpenAI({ prompt, systemPrompt, imageBase64, mimeType, jsonMode, temperature, topP, frequencyPenalty, presencePenalty });
     }
   }
 
-  async function callGemini({ prompt, systemPrompt, imageBase64, mimeType, jsonMode }) {
+  async function callGemini({ prompt, systemPrompt, imageBase64, mimeType, jsonMode, temperature = 0.6, topP }) {
     if (!state.geminiKey) throw new Error('Google Gemini API Key belum diisi. Masukkan kunci di tab Pengaturan.');
     
     const model = state.geminiModel || 'gemini-3.8-flash';
@@ -361,7 +361,8 @@
     const payload = {
       contents: [{ role: 'user', parts: parts }],
       generationConfig: {
-        temperature: 0.6,
+        temperature: typeof temperature === 'number' ? temperature : 0.6,
+        ...(typeof topP === 'number' ? { topP } : {}),
         maxOutputTokens: 8192,
         ...(jsonMode ? { responseMimeType: 'application/json' } : {}),
       },
@@ -386,7 +387,7 @@
     return candidate.content.parts[0].text;
   }
 
-  async function callOpenAI({ prompt, systemPrompt, imageBase64, mimeType, jsonMode }) {
+  async function callOpenAI({ prompt, systemPrompt, imageBase64, mimeType, jsonMode, temperature = 0.6, topP, frequencyPenalty, presencePenalty }) {
     if (!state.openaiKey) throw new Error('OpenAI API Key belum diisi. Masukkan kunci di tab Pengaturan.');
 
     const model = state.openaiModel || 'gpt-6-luna';
@@ -415,10 +416,19 @@
     // Reasoning models (Luna, o1, o3, gpt-6) often do not support temperature parameters
     const isReasoning = model.includes('luna') || model.startsWith('o1') || model.startsWith('o3') || model.startsWith('gpt-6');
 
+    const samplingParams = isReasoning
+      ? {}
+      : {
+          temperature: typeof temperature === 'number' ? temperature : 0.6,
+          ...(typeof topP === 'number' ? { top_p: topP } : {}),
+          ...(typeof frequencyPenalty === 'number' ? { frequency_penalty: frequencyPenalty } : {}),
+          ...(typeof presencePenalty === 'number' ? { presence_penalty: presencePenalty } : {}),
+        };
+
     const payload = {
       model: model,
       messages: messages,
-      ...(isReasoning ? {} : { temperature: 0.6 }),
+      ...samplingParams,
       ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
     };
 
@@ -594,7 +604,7 @@ Article Context:
 Analyze this image in-depth and return response ONLY in valid JSON format:
 {
   "alt": "Descriptive, SEO-optimized, and screen-reader friendly alt text mentioning core visual elements (max 120 characters)",
-  "caption": "Professional, highly contextual figcaption (1-2 clear sentences, max 200 characters) directly explaining what specific architectural flow, data metrics, benchmark comparison, or process this diagram illustrates regarding ${currentTopic || 'the topic'}. Avoid generic filler like 'This image shows' or 'Diagram of', state the takeaway directly.",
+  "caption": "Sharp, direct editorial figcaption (1 sentence, max 170 characters) stating the exact metric, workflow, or architectural relationship shown. NEVER use AI clichés like 'is framed as', 'are framed as', 'This image shows', 'Diagram of', or 'Visualization of'. Write like a human editor.",
   "visualInsights": "Detailed breakdown of specific entities, components, metrics, or relationships visible in this image to reference in the article narrative",
   "recommendedPlacement": "Specific article outline section/heading where this image provides the strongest evidentiary or explanatory value"
 }`
@@ -607,7 +617,7 @@ Konteks Artikel:
 Analisa gambar ini secara mendalam dan kembalikan respon HANYA dalam format JSON valid:
 {
   "alt": "Alt text deskriptif, teroptimasi SEO, dan ramah screen-reader yang menyebutkan elemen visual utama (maksimal 120 karakter)",
-  "caption": "Caption profesional dan sangat kontekstual untuk <figcaption> (1-2 kalimat lugas, maksimal 200 karakter) yang menjelaskan secara spesifik alur arsitektur, data/metrik, perbandingan tolok ukur, atau proses apa yang diilustrasikan diagram ini terkait ${currentTopic || 'topik artikel'}. Hindari kalimat klise seperti 'Gambar ini menampilkan' atau 'Diagram tentang', langsung sampaikan poin/insight utamanya.",
+  "caption": "Caption editorial lugas untuk <figcaption> (1 kalimat tajam, maksimal 170 karakter) yang langsung menyebutkan metrik, alur, atau relasi teknis pada diagram. DILARANG menggunakan kalimat klise AI seperti 'dibingkai sebagai', 'Gambar ini menampilkan', atau 'Visualisasi dari'.",
   "visualInsights": "Rincian spesifik entitas, komponen, data/metrik, atau relasi yang terlihat pada gambar untuk diintegrasikan ke narasi teks artikel",
   "recommendedPlacement": "Rekomendasi subjudul/section artikel yang paling tepat agar gambar ini memberikan nilai penjelasan maksimal"
 }`;
@@ -630,8 +640,8 @@ Analisa gambar ini secara mendalam dan kembalikan respon HANYA dalam format JSON
         img.visionAnalysis = {
           alt: `${cleanImgTitle} - ${fallbackTopic}`.slice(0, 120),
           caption: isEn
-            ? `Visualization of ${cleanImgTitle} demonstrating key architectural flows and data relations for ${fallbackTopic}.`
-            : `Visualisasi ${cleanImgTitle} yang mengilustrasikan alur arsitektur dan relasi komponen utama dalam ${fallbackTopic}.`,
+            ? `${cleanImgTitle}: core architectural flow and data pipeline for ${fallbackTopic}.`
+            : `${cleanImgTitle}: alur arsitektur dan relasi komponen utama dalam ${fallbackTopic}.`,
           visualInsights: isEn
             ? `Technical architectural components and implementation stages for ${fallbackTopic}.`
             : `Komponen arsitektur teknis dan tahapan implementasi untuk ${fallbackTopic}.`,
@@ -643,6 +653,41 @@ Analisa gambar ini secara mendalam dan kembalikan respon HANYA dalam format JSON
     const coverImg = imagesToAnalyze.find((im) => im.isCover) || imagesToAnalyze[0];
     state.visionAnalysis = coverImg ? coverImg.visionAnalysis : null;
     return state.visionAnalysis;
+  }
+
+  // Anti-AI Detection & Human Burstiness Linguistic Rules
+  function getAntiAiDetectionInstructions(isEn) {
+    if (isEn) {
+      return `HUMAN VOICE, HIGH BURSTINESS & ANTI-AI DETECTOR RULES (CRITICAL):
+1. EXTREME SENTENCE-LENGTH VARIANCE (HIGH BURSTINESS):
+   - AI detectors flag uniform 16-to-24 word sentences. You MUST vary sentence length dramatically within every paragraph.
+   - Mix ultra-short, punchy 3-to-7 word sentences ("Rankings alone don't pay bills.", "Here's where teams get burned.", "Most setups miss this.", "Look at the raw logs.") with longer, multi-clause 28-to-42 word analytical sentences using em-dashes (—), colons, or parenthetical asides.
+   - Never write three consecutive sentences of similar length.
+2. ASYMMETRIC PARAGRAPH RHYTHM:
+   - Do NOT write uniform 3-sentence paragraphs. Alternate between 1-sentence standalone punchy paragraphs, 2-sentence sharp explanations, and 4-sentence deep technical breakdowns.
+3. MANDATORY CONTRACTIONS & PRACTITIONER TONE:
+   - Write like a battle-tested human practitioner at theramadhani.com, not an encyclopedia. Use natural contractions ("don't", "isn't", "won't", "can't", "it's", "that's", "we've", "you'll") in prose.
+   - Include first-hand diagnostic observations ("In our client audits...", "When we inspect Search Console exports...", "We regularly see engineering teams...").
+4. NATURAL KEYPHRASE INFLECTION (NO AWKWARD EXACT-MATCH STUFFING):
+   - If a Focus Keyphrase is an ungrammatical search string (e.g., "what do you mean by organic keywords" or "organic search keywords Google Analytics"), NEVER paste it verbatim in bold inside mid-sentence prose. Inflect it naturally with prepositions/punctuation or use it as a natural question heading.
+5. STRICT BLACKLIST OF AI DETECTOR WATERMARKS (NEVER USE THESE):
+   - BANNED PHRASES: "This matters because", "This distinction matters", "That distinction matters", "For GEO, this matters because", "In practice," (use at most once in the entire article), "is not merely X", "is not just X; it is Y", "do not exist only as X", "is framed as", "are framed as", "It is worth noting", "When it comes to", "In conclusion", "Furthermore,", "Moreover,", "Ultimately,", "Delve", "Tapestry", "Testament", "Underscores", "Crucial", "Pivotal", "Realm", "Landscape".
+   - BANNED COLON MICRO-HEADERS: Never precede bullet lists with robotic labels like "Corrective action:", "Risk reduction requires:", "A useful distinction is:", or "The sequence is foundational:".
+   - BANNED SERIAL TRIADS: Do not end consecutive sentences with 3-item or 4-item comma lists ("A, B, and C").`;
+    }
+
+    return `ATURAN GAYA MANUSIA, BURSTINESS TINGGI & ANTI-AI DETECTOR (KRUSIAL):
+1. VARIASI PANJANG KALIMAT EKSTREM (HIGH BURSTINESS):
+   - Detektor AI menandai teks yang setiap kalimatnya seragam (16-24 kata). Anda WAJIB memvariasikan panjang kalimat secara kontras di setiap paragraf.
+   - Padukan kalimat pendek yang lugas (3-7 kata, misalnya: "Angka ini sering menipu.", "Di sinilah masalahnya.", "Banyak tim keliru di titik ini.") dengan kalimat analitis panjang (28-40 kata) yang memuat tanda pisah (—) atau keterangan sisipan dalam tanda kurung.
+2. RITME PARAGRAF ASIMETRIS:
+   - DILARANG menulis paragraf yang semuanya terdiri dari 3 kalimat seragam. Selang-seling antara paragraf 1 kalimat (penekanan), 2 kalimat lugas, dan 4 kalimat bedah teknis.
+3. SUARA PRAKTISI LAPANGAN (E-E-A-T):
+   - Tulis dengan sudut pandang konsultan dan engineer praktisi di theramadhani.com ("Dalam audit klien kami...", "Saat kami membedah data Search Console...", "Kasus yang paling sering kami temukan di lapangan...").
+4. INTEGRASI KEYPHRASE ALAMI:
+   - Jangan memaksakan kata kunci mentah secara kaku di tengah kalimat atau menebalkan (bold) kata kunci berulang-ulang di setiap paragraf. Gunakan tata bahasa yang mengalir alami.
+5. DAFTAR HITAM KLISE AI (DILARANG KERAS):
+   - Hindari frasa cetakan AI seperti: "Hal ini penting karena", "Perbedaan ini penting karena", "Dalam praktiknya," (maksimal 1 kali di seluruh artikel), "bukan sekadar X, melainkan Y", "Lebih lanjut,", "Pada akhirnya,", "Dalam lanskap digital", "Sangat krusial", "Tindakan korektif:", "Pengurangan risiko memerlukan:".`;
   }
 
   // STAGE 2: Outline Generation
@@ -677,12 +722,12 @@ Analisa gambar ini secara mendalam dan kembalikan respon HANYA dalam format JSON
 
     const citationInstruction = state.includeCitations
       ? (isEn
-          ? 'CITATIONS REQUIREMENT: Plan integration of authoritative industry/academic references (Google Search Central, IEEE, arXiv, Gartner, W3C) with inline citation anchors and a planned References section.'
-          : 'PERSYARATAN SITASI: Rencanakan integrasi rujukan industri/akademik otoritatif (Google Search Central, IEEE, arXiv, Gartner, W3C) dengan jangkar sitasi dan rencana bagian Referensi.')
+          ? 'CITATIONS REQUIREMENT: Weave authoritative industry/academic references (Google Search Central, IEEE, arXiv, Gartner, W3C) naturally into technical sections. Do NOT create outline headings about "Planned inline citation anchors" or "Reference list structure".'
+          : 'PERSYARATAN SITASI: Integrasikan rujukan industri/akademik otoritatif (Google Search Central, IEEE, arXiv, Gartner, W3C) secara alami ke dalam pembahasan teknis. JANGAN membuat heading/subjudul tentang "Rencana sitasi" atau "Struktur daftar referensi".')
       : '';
 
     const prompt = isEn
-      ? `You are an elite SEO strategist and technical architect creating an outline for an authoritative, comprehensive technical guide (target: 2,500+ words) optimized for Generative Engine Optimization (GEO) and Google AI Overviews.
+      ? `You are an elite SEO strategist and technical architect creating an outline for an authoritative, human-written technical guide (target: 2,500+ words) optimized for Generative Engine Optimization (GEO) and Google AI Overviews.
 
 CRITICAL LANGUAGE INSTRUCTION:
 Write 100% in English. Never output Indonesian words, labels, or placeholders.
@@ -706,7 +751,7 @@ SPECIFICATION REQUIREMENTS:
 4. Tags: Array of 3-6 relevant technical tags.
 5. Outline Hierarchy:
    - H1: Authoritative article headline.
-   - Sections (H2s and H3s): Allocate a proposed target word count for each section (e.g. 300 to 500 words per section).
+   - Sections (H2s and H3s): Write sharp, specific, practitioner-style H2 and H3 headings (avoid generic textbook symmetry or meta-headings about citations/references). Allocate a proposed target word count for each section (e.g. 300 to 500 words per section).
    - Strategic Placements:
      * Exactly 1 Comparison / Benchmark Table: Specify the exact section in "tableNote".
      * 1 to 2 Expert Quotes: Specify the exact section in "quoteNote".
@@ -769,7 +814,7 @@ PERSYARATAN SPESIFIKASI:
 4. Tags: Array 3-6 tag teknis relevan.
 5. Hierarki Outline:
    - H1: Judul H1 artikel yang berbobot.
-   - Sections (H2 & H3): Alokasikan usulan target kata untuk setiap bagian (misal 300 - 500 kata per section).
+   - Sections (H2 & H3): Buat subjudul H2 & H3 yang tajam ala praktisi (hindari subjudul kaku atau subjudul meta tentang struktur sitasi/referensi). Alokasikan usulan target kata untuk setiap bagian (misal 300 - 500 kata per section).
    - Penempatan Khusus:
      * Tepat 1 Tabel Perbandingan / Benchmark: Catat di "tableNote".
      * 1-2 Kutipan Ahli (Expert Quotes): Catat di "quoteNote".
@@ -861,15 +906,16 @@ Kembalikan HANYA format JSON valid dengan struktur:
 
     let accumulatedText = '';
     const internalLinksList = state.selectedLinks.map((l) => `[${l.anchor}](${l.url})`).join(', ');
+    const antiAiInstructions = getAntiAiDetectionInstructions(isEn);
 
     for (const chunk of chunks) {
       const pct = 40 + Math.round((chunk.index / chunk.total) * 45);
       updateProgressUI(
         isEn
-          ? `Stage 3: Writing Article Body (${chunk.index}/${chunk.total})...`
+          ? `Stage 3: Writing Human-Calibrated Body (${chunk.index}/${chunk.total})...`
           : `Tahap 3: Menulis Body Artikel (${chunk.index}/${chunk.total})...`,
         isEn
-          ? `Synthesizing ${chunk.name} using ${state.provider === 'openai' ? state.openaiModel : state.geminiModel}...`
+          ? `Synthesizing ${chunk.name} with high burstiness using ${state.provider === 'openai' ? state.openaiModel : state.geminiModel}...`
           : `Sedang menyusun ${chunk.name} dengan model ${state.provider === 'openai' ? state.openaiModel : state.geminiModel}...`,
         pct
       );
@@ -905,30 +951,33 @@ Kembalikan HANYA format JSON valid dengan struktur:
 
       const strategyConfig = getAllStrategies()[state.strategy] || STRATEGY_PRESETS.geo_ai_search;
       const prompt = isEn
-        ? `You are an elite technical author writing for theramadhani.com. Write the following article section strictly in professional, authoritative English.
+        ? `You are Ramadhani, a senior search engineer and digital growth practitioner writing for theramadhani.com. Write the following article section strictly in authentic, human-written English that passes AI detectors with 100% human burstiness and perplexity.
 
 CRITICAL LANGUAGE INSTRUCTION:
 Write 100% in English. Never output Indonesian words, labels, or placeholders.
 
+${antiAiInstructions}
+
 Primary Topic: "${state.proposedTitle || state.topic}"
 Strategy (${strategyConfig.title}):
 ${strategyConfig.instructions}
-Focus Keyphrases: ${state.focusKeyphrases.join(', ')}
+Focus Keyphrases (inflect naturally, NEVER stuff ungrammatically): ${state.focusKeyphrases.join(', ')}
 Relevant Internal Links to embed naturally: ${internalLinksList}
 
 ${isFirst ? `CRITICAL FOR FIRST SECTION:
 - Start IMMEDIATELY with a definitive 40-60 word Quick Answer Block summarizing the direct answer for AI Overviews, Perplexity, and ChatGPT. Must be 100% in English.
 - Proceed directly to the first H2 without conversational greetings or rhetorical opening remarks.` : ''}
 
-${!isFirst ? `PREVIOUS NARRATIVE CONTEXT (Maintain seamless flow without repeating intro phrases):
+${!isFirst ? `PREVIOUS NARRATIVE CONTEXT (Maintain seamless flow without repeating definitions or intro phrases, and start directly with the ## H2 heading):
 ${accumulatedText.slice(-800)}` : ''}
 
 ${isLast ? `CRITICAL FOR FINAL SECTION:
-- Provide strategic conclusions, next actionable steps, and executive takeaways.
-${state.includeCitations ? '- Append a formal `### References & Authoritative Sources` section listing cited research, standards, and whitepapers (e.g., Google Search Central, IEEE, W3C, arXiv) with formal citations.' : ''}` : ''}
+- Provide concrete practitioner takeaways and next steps without using clichés like "In conclusion" or "Ultimately".
+${state.includeCitations ? '- Append a formal `### References & Authoritative Sources` section at the very bottom listing the footnote definitions (`[^1]: ...`, `[^2]: ...`) for Google Search Central, IEEE, W3C, or arXiv cited in the article.' : ''}` : ''}
 
 ${state.includeCitations ? `CITATION INSTRUCTIONS:
-- Include inline citations such as [^1], [^2], or authoritative in-text citations (e.g. Google Search Central, 2025) for data claims, technical metrics, and algorithmic explanations.` : ''}
+- Include inline citations such as [^1], [^2], or authoritative in-text citations (e.g. Google Search Central, 2025) for data claims, technical metrics, and algorithmic explanations.
+${!isLast ? '- IMPORTANT: Do NOT output the `[^1]: ...` footnote definitions list at the bottom of this intermediate chunk; save all footnote definitions exclusively for the final chunk.' : ''}` : ''}
 
 OUTLINE FOR THIS CHUNK:
 ${sectionOutlineText}
@@ -937,34 +986,36 @@ TECHNICAL RULES:
 - Use ## for H2 and ### for H3.
 - Do NOT output an H1 (rendered automatically by the template).
 - If a section contains a tableNote, construct a full, clean Markdown comparison table.
-- If a section contains a quoteNote, include a formatted blockquote (> "...") with expert attribution.
+- If a section contains a quoteNote, include a formatted blockquote (> "...") with real, specific attribution (NEVER write "paraphrased from established literature").
 - If a section contains a ctaNote, format a high-converting outcome-driven call-to-action block.
-- Write dense, high-impact technical markdown with specific metrics, architecture, and examples.
 - Output pure Markdown only.`
-        : `Anda adalah penulis teknis kelas dunia untuk theramadhani.com. Tulis bagian artikel berikut dengan gaya profesional, otoritatif, dan mendalam.
+        : `Anda adalah Ramadhani, praktisi senior Technical SEO & GEO di theramadhani.com. Tulis bagian artikel berikut dengan gaya manusia asli yang tajam, variatif (high burstiness), dan bebas dari pola robotik AI detector.
 
 TARGET BAHASA: ${isEn ? 'English' : 'Bahasa Indonesia'}
 INSTRUKSI BAHASA: Tulis 100% dalam ${isEn ? 'English' : 'Bahasa Indonesia'}. Seluruh konten, heading, tabel, kutipan, dan CTA harus konsisten dalam ${isEn ? 'English' : 'Bahasa Indonesia'}.
 
+${antiAiInstructions}
+
 Topik Utama: "${state.proposedTitle || state.topic}"
 Strategi Penulisan (${strategyConfig.title}):
 ${strategyConfig.instructions}
-Fokus Keyphrases: ${state.focusKeyphrases.join(', ')}
+Fokus Keyphrases (gunakan secara luwes, jangan dipaksakan kaku): ${state.focusKeyphrases.join(', ')}
 Internal Link yang relevan untuk disisipkan alami: ${internalLinksList}
 
 ${isFirst ? `PENTING UNTUK BAGIAN AWAL:
 - Mulai langsung dengan Quick Answer Block definitif 40-60 kata yang merangkum inti jawaban untuk GEO / AI Search dalam Bahasa Indonesia baku.
 - Setelah itu lanjutkan ke H2 pertama tanpa kalimat pengantar basa-basi.` : ''}
 
-${!isFirst ? `KONTEKS SEBELUMNYA (Jaga kesinambungan alur tanpa mengulang kalimat pembuka):
+${!isFirst ? `KONTEKS SEBELUMNYA (Jaga kesinambungan alur tanpa mengulang kalimat pembuka, langsung mulai dengan heading ## H2):
 ${accumulatedText.slice(-800)}` : ''}
 
 ${isLast ? `PENTING UNTUK BAGIAN AKHIR:
 - Sertakan kesimpulan strategis, rekomendasi langkah berikutnya, dan ringkasan eksekutif.
-${state.includeCitations ? '- Sertakan bagian `### Referensi & Sumber Rujukan` yang mencantumkan sumber resmi (Google Search Central, IEEE, W3C, arXiv).' : ''}` : ''}
+${state.includeCitations ? '- Sertakan bagian `### Referensi & Sumber Rujukan` paling akhir yang mencantumkan daftar definisi catatan kaki (`[^1]: ...`) dari sumber resmi (Google Search Central, IEEE, W3C, arXiv).' : ''}` : ''}
 
 ${state.includeCitations ? `INSTRUKSI SITASI:
-- Sertakan sitasi inline seperti [^1], [^2], atau kutipan otoritatif (misal Google Search Central, 2025) untuk klaim data dan metrik teknis.` : ''}
+- Sertakan sitasi inline seperti [^1], [^2], atau kutipan otoritatif (misal Google Search Central, 2025) untuk klaim data dan metrik teknis.
+${!isLast ? '- PENTING: JANGAN menuliskan daftar definisi catatan kaki (`[^1]: ...`) di akhir chunk tengah ini; kumpulkan seluruh daftar referensi hanya di akhir chunk terakhir.' : ''}` : ''}
 
 OUTLINE YANG HARUS DITULIS PADA CHUNK INI:
 ${sectionOutlineText}
@@ -981,8 +1032,12 @@ INSTRUKSI TEKNIS:
       const chunkOutput = await callAI({
         prompt,
         systemPrompt: isEn
-          ? 'You are a world-class Technical SEO & GEO Author writing exclusively in English. Dense, high-impact technical markdown without fluff.'
-          : 'You are a world-class Technical SEO & GEO Author. Write dense, high-impact technical markdown without fluff.',
+          ? 'You are a human senior Technical SEO & GEO practitioner writing exclusively in English. You write with high burstiness (alternating 4-word punchy sentences and 35-word analytical sentences), natural contractions (don\'t, isn\'t, can\'t, it\'s), and zero AI clichés.'
+          : 'Anda adalah praktisi senior Technical SEO & GEO manusia. Tulis dengan variasi panjang kalimat yang kontras (burstiness tinggi), pengalaman lapangan nyata, dan tanpa klise AI.',
+        temperature: 0.85,
+        topP: 0.92,
+        frequencyPenalty: 0.35,
+        presencePenalty: 0.25,
       });
 
       state.bodyChunks.push(chunkOutput);
@@ -1013,7 +1068,7 @@ ${fullBody.substring(0, 3500)}...
 Focus Keyphrases: ${keyphrasesList}
 
 CRITICAL LANGUAGE REQUIREMENT:
-All outputs must be 100% in English. The Quick Answer block and ALL FAQ questions and answers MUST be strictly in English. Never output Indonesian words, terms, or placeholders.
+All outputs must be 100% in English. The Quick Answer block and ALL FAQ questions and answers MUST be strictly in English. Never output Indonesian words, terms, or placeholders. Write FAQ answers with a direct, practitioner voice using natural contractions and concrete specifics—avoid repetitive textbook phrasing.
 
 Return ONLY a valid JSON object with the following structure:
 {
@@ -1120,12 +1175,256 @@ CATATAN: Buat 4 hingga 8 FAQ dinamis berniat tinggi sesuai alur pembaca. Jangan 
       throw new Error('Gagal mensintesis metadata artikel: ' + e.message);
     }
   }
-  // Helper to sanitize Markdown body for MDX/JSX compatibility
+
+  /**
+   * Deterministic Anti-AI-Detector Post-Processor & Rhythm Humanizer.
+   * Removes multi-chunk duplicate footnotes, prompt-leaked headings, negative parallelisms,
+   * robotic colon labels, and high-frequency AI watermark phrases while injecting natural contractions.
+   */
+  function humanizeGeneratedContent(content) {
+    if (!content || typeof content !== 'string') return '';
+
+    let text = content;
+
+    // 1. Deduplicate multi-chunk footnote definitions (e.g. [^1]: ... repeated across chunks)
+    const footnoteLineRegex = /^(\s*(?:\d+\.\s*)?\[\^(\d+)\]:\s*(.+))$/gm;
+    const allFootnoteMatches = [...text.matchAll(footnoteLineRegex)];
+    if (allFootnoteMatches.length > 0) {
+      const seenFootnotes = new Map();
+      let hasDuplicates = false;
+      for (const m of allFootnoteMatches) {
+        const num = m[2];
+        if (seenFootnotes.has(num)) {
+          hasDuplicates = true;
+        } else {
+          seenFootnotes.set(num, m[3].trim());
+        }
+      }
+
+      // Check if any footnote definition appears before the final H2/H3 section
+      const lastH2Index = text.lastIndexOf('\n## ');
+      const firstFootnoteIndex = allFootnoteMatches[0].index || 0;
+      const hasMidArticleFootnotes = lastH2Index !== -1 && firstFootnoteIndex < lastH2Index;
+
+      if (hasDuplicates || hasMidArticleFootnotes) {
+        text = text.replace(/^\s*\[\^\d+\]:\s*.+$\n?/gm, '');
+        const consolidatedFootnotes = Array.from(seenFootnotes.entries())
+          .sort((a, b) => Number(a[0]) - Number(b[0]))
+          .map(([num, desc]) => `[^${num}]: ${desc}`)
+          .join('\n');
+
+        if (!/###\s+(References|Referensi)/i.test(text)) {
+          text = text.trim() + '\n\n### References & Authoritative Sources\n\n' + consolidatedFootnotes + '\n';
+        } else {
+          text = text.replace(
+            /(###\s+(?:References|Referensi)[^\n]*\n+)/i,
+            `$1\n${consolidatedFootnotes}\n\n`
+          );
+        }
+      }
+    }
+
+    // 2. Remove prompt-leaked meta-subheadings and AI self-referential quote attributions
+    text = text
+      .replace(/^###\s+Planned inline citation anchors[^\n]*\n+([\s\S]*?)(?=^##|^###|\n\n>|$)/gim, '')
+      .replace(/^###\s+Reference list structure:[^\n]*\n+([\s\S]*?)(?=^##|^###|\n\n>|$)/gim, '')
+      .replace(/—\s*paraphrased from established information retrieval research literature[^\n]*/gi, '— Information Retrieval & Semantic Search Architecture Principles');
+
+    // 3. Replace <figcaption> "is/are framed as" AI watermark
+    text = text
+      .replace(/(<figcaption[^>]*>[^<]*?)\b(?:is|are)\s+framed\s+as\s+/gi, '$1illustrates ')
+      .replace(/(<figcaption[^>]*>)\s*Visualization of\s+/gi, '$1');
+
+    // 4. Process prose segments outside of code blocks
+    const segments = text.split(/(```[\s\S]*?```|`[^`\n]+`)/g);
+    let inPracticeCount = 0;
+
+    for (let i = 0; i < segments.length; i += 2) {
+      let prose = segments[i];
+
+      // Cap "In practice," to at most 1 occurrence per article
+      prose = prose.replace(/\bIn practice,\s+/gi, (match) => {
+        inPracticeCount++;
+        if (inPracticeCount === 1) return match;
+        const replacements = ['On live sites, ', 'In real-world audits, ', 'Operationally, ', 'Day to day, ', ''];
+        return replacements[inPracticeCount % replacements.length];
+      });
+
+      // Eliminate AI causal watermarks ("This distinction matters because...", "For GEO, this matters because...")
+      prose = prose
+        .replace(/\bFor GEO,\s+this\s+(?:distinction\s+)?matters\s+because\s+/gi, 'In generative search, ')
+        .replace(/\b(?:This|That)\s+distinction\s+matters\s+because\s+/gi, 'Why? Because ')
+        .replace(/\b(?:This|That)\s+distinction\s+is\s+central\s+to\s+understanding\s+/gi, 'This directly shapes ')
+        .replace(/\bThis\s+matters\s+because\s+/gi, 'Here is why: ')
+        .replace(/\bThat\s+principle\s+matters\s+for\s+GEO\s+because\s+/gi, 'For AI citation pipelines, ')
+        .replace(/\b(?:Furthermore|Moreover),\s+/g, 'Beyond that, ')
+        .replace(/\bIt\s+is\s+(?:important|worth)\s+noting\s+that\s+/gi, 'Note that ')
+        .replace(/\bis\s+no\s+longer\s+limited\s+to\s+ten\s+blue\s+links\b/gi, 'extends far beyond classic blue-link SERPs')
+        .replace(/\bdo\s+not\s+“?exist”?\s+only\s+as\s+([^;]+);\s+they\s+exist\s+as\s+/gi, 'work both as $1 and as ')
+        .replace(/\bis\s+not\s+(?:merely|just)\s+([^.;,]+)[.;,]\s+It\s+is\s+/gi, 'goes beyond $1 to act as ');
+
+      // Replace robotic colon micro-headers before bullet lists
+      prose = prose
+        .replace(/^(?:Corrective action|Risk reduction requires|The sequence is foundational|A useful distinction is|The distinction is operationally important):\s*$/gim, (m) => {
+          if (/Corrective/i.test(m)) return 'How to fix it:';
+          if (/Risk/i.test(m)) return 'To prevent ranking drops:';
+          if (/sequence/i.test(m)) return 'The pipeline runs in three stages:';
+          return 'Here is how they break down:';
+        });
+
+      // Un-bold awkward ungrammatical question keyphrases stuffed mid-sentence
+      prose = prose.replace(/([a-z,;]\s+)\*\*(what\s+(?:is|are|do|does)\s+[^*]+)\*\*/gi, '$1"$2"');
+
+      // Apply natural English contractions in prose (outside blockquotes) to boost human perplexity
+      prose = prose
+        .split('\n')
+        .map((line) => {
+          if (line.trim().startsWith('>') || line.trim().startsWith('|') || line.trim().startsWith('#')) {
+            return line;
+          }
+          return line
+            .replace(/\bdoes not\b/g, "doesn't")
+            .replace(/\bdo not\b/g, "don't")
+            .replace(/\bis not\b/g, "isn't")
+            .replace(/\bare not\b/g, "aren't")
+            .replace(/\bcannot\b/g, "can't")
+            .replace(/\bwill not\b/g, "won't")
+            .replace(/\bshould not\b/g, "shouldn't");
+        })
+        .join('\n');
+
+      segments[i] = prose;
+    }
+
+    return segments.join('').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  /**
+   * Computes a live Human Burstiness & Anti-AI Readiness Score (0-100)
+   * based on sentence-length standard deviation, contraction density, and absence of AI clichés.
+   */
+  function calculateHumanBurstinessScore(content) {
+    if (!content || typeof content !== 'string') return { score: 0, burstiness: 0, label: 'Belum Ada Konten' };
+
+    const clean = content
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/^#+\s+.*$/gm, '')
+      .replace(/^\|.*$/gm, '')
+      .replace(/^\[\^\d+\]:.*$/gm, '');
+
+    const sentences = clean
+      .split(/[.!?]+(?:\s+|$)/)
+      .map((s) => s.trim())
+      .filter((s) => s.split(/\s+/).length >= 3);
+
+    if (sentences.length < 3) return { score: 92, burstiness: 8.5, label: 'Human-Calibrated' };
+
+    const lengths = sentences.map((s) => s.split(/\s+/).length);
+    const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+    const variance = lengths.reduce((acc, l) => acc + Math.pow(l - mean, 2), 0) / lengths.length;
+    const stdDev = Math.sqrt(variance);
+
+    // Check for short punchy sentences (<= 8 words) and long analytical sentences (>= 26 words)
+    const shortCount = lengths.filter((l) => l <= 8).length;
+    const longCount = lengths.filter((l) => l >= 26).length;
+
+    // Check remaining AI watermark clichés
+    const aiClicheMatches = (clean.match(/\b(this distinction matters|this matters because|furthermore|moreover|delve into|tapestry|framed as|not merely)\b/gi) || []).length;
+
+    let rawScore = 72 + Math.min(18, Math.round(stdDev * 1.4));
+    if (shortCount > 0 && longCount > 0) rawScore += 6;
+    if (/\b(don't|doesn't|isn't|aren't|can't|won't|it's|that's)\b/i.test(clean)) rawScore += 4;
+    rawScore -= aiClicheMatches * 5;
+
+    const finalScore = Math.max(45, Math.min(99, rawScore));
+    const label = finalScore >= 88
+      ? 'Lolos Uji Human / Burstiness Tinggi'
+      : finalScore >= 75
+        ? 'Natural (Disarankan Klik Humanize)'
+        : 'Terdeteksi Pola AI (Klik Humanize)';
+
+    return {
+      score: finalScore,
+      burstiness: Number(stdDev.toFixed(1)),
+      label,
+    };
+  }
+
+  /**
+   * On-Demand AI + Deterministic Humanizer Pass for Step 5 Review Pane.
+   * Rewrites uniform paragraphs with extreme burstiness, practitioner nuance, and natural contractions.
+   */
+  async function runHumanizePass() {
+    if (!state.synthesizedArticle || !state.synthesizedArticle.body) {
+      showStudioToast('Belum ada isi artikel untuk di-humanize.', false);
+      return null;
+    }
+
+    const isEn = state.language === 'en';
+    const currentBody = state.synthesizedArticle.body;
+
+    // First apply deterministic anti-AI cleanup
+    const deterministicallyCleaned = humanizeGeneratedContent(currentBody);
+
+    // If API key is configured, also run a high-burstiness practitioner refinement pass
+    const hasActiveKey = state.provider === 'gemini' ? Boolean(state.geminiKey) : Boolean(state.openaiKey);
+    if (!hasActiveKey) {
+      state.synthesizedArticle.body = sanitizeMdxContent(deterministicallyCleaned);
+      populateReviewPane();
+      return state.synthesizedArticle.body;
+    }
+
+    const prompt = isEn
+      ? `You are a human senior technical editor at theramadhani.com. Rewrite and refine the prose in the following Markdown article so that it scores 95-100% HUMAN on GPTZero, Originality.ai, and ZeroGPT.
+
+STRICT REWRITING RULES:
+1. PRESERVE STRUCTURE: Keep all ## H2 and ### H3 headings, Markdown tables, <figure> HTML blocks, internal links [anchor](/url/), blockquotes (>), and [^N] citations intact.
+2. MAXIMIZE BURSTINESS: Break up monotonous 18-22 word sentences! Insert short 4-to-7 word punchy sentences ("That's the trap.", "Most audits miss this.", "Numbers tell a different story.", "Here's why.") right next to longer 30-to-40 word multi-clause analytical sentences with em-dashes (—) or parenthetical remarks.
+3. ASYMMETRIC PARAGRAPHS: Mix 1-sentence standalone paragraphs, 2-sentence paragraphs, and 4-sentence paragraphs. Never leave uniform 3-sentence paragraphs in a row.
+4. NATURAL CONTRACTIONS & PRACTITIONER VOICE: Use contractions naturally ("don't", "doesn't", "isn't", "can't", "won't", "it's", "that's") and concrete practitioner phrasing ("In our log audits...", "When inspecting live SERPs...").
+5. REMOVE AI TELLS: Strip any remaining "This matters because", "In practice,", "is not merely", "framed as", or serial 3-item lists at the end of consecutive sentences.
+6. Output ONLY the rewritten Markdown body without frontmatter or code fences.
+
+ARTICLE MARKDOWN TO HUMANIZE:
+${deterministicallyCleaned}`
+      : `Anda adalah editor teknis senior manusia di theramadhani.com. Poles dan tulis ulang narasi pada artikel Markdown berikut agar lolos 95-100% MANUSIA pada GPTZero, Originality.ai, dan ZeroGPT.
+
+ATURAN REWRITE KETAT:
+1. PERTAHANKAN STRUKTUR: Pertahankan seluruh heading ## H2 dan ### H3, tabel Markdown, blok HTML <figure>, internal link [anchor](/url/), blockquote (>), dan sitasi [^N].
+2. MAKSIMALKAN BURSTINESS: Pecah kalimat yang panjangnya seragam! Padukan kalimat pendek yang tajam (4-7 kata, misal: "Di sinilah jebakannya.", "Data lapangan berkata lain.", "Banyak tim luput di titik ini.") dengan kalimat analitis panjang (30-40 kata) yang menggunakan tanda pisah (—) atau sisipan kurung.
+3. PARAGRAF ASIMETRIS: Variasikan antara paragraf 1 kalimat, 2 kalimat, dan 4 kalimat. Jangan biarkan ada deretan paragraf 3 kalimat yang seragam.
+4. SUARA PRAKTISI: Gunakan sudut pandang praktisi nyata ("Dalam audit yang kami jalankan...", "Saat membedah laporan Search Console...") dan hapus frasa klise AI ("Hal ini penting karena", "Dalam praktiknya,", "bukan sekadar X melainkan Y").
+5. Keluarkan HANYA isi Markdown yang telah di-humanize tanpa frontmatter.
+
+ARTIKEL MARKDOWN:
+${deterministicallyCleaned}`;
+
+    const refined = await callAI({
+      prompt,
+      systemPrompt: isEn
+        ? 'You are a human technical editor specializing in high-burstiness, high-perplexity technical writing that passes every AI detector. Output pure Markdown only.'
+        : 'Anda adalah editor teknis manusia yang ahli menulis dengan burstiness tinggi dan lolos semua detektor AI. Keluarkan Markdown murni saja.',
+      temperature: 0.88,
+      topP: 0.94,
+      frequencyPenalty: 0.4,
+      presencePenalty: 0.3,
+    });
+
+    const cleanRefined = refined.replace(/^```(?:markdown|mdx)?\n?|```$/g, '').trim();
+    state.synthesizedArticle.body = sanitizeMdxContent(cleanRefined || deterministicallyCleaned);
+    populateReviewPane();
+    return state.synthesizedArticle.body;
+  }
+
+  // Helper to sanitize Markdown body for MDX/JSX compatibility + Anti-AI Post-Processing
   function sanitizeMdxContent(content) {
     if (!content || typeof content !== 'string') return '';
 
+    const humanized = humanizeGeneratedContent(content);
+
     // Split by code blocks (```...```) and inline code (`...`) to preserve code spans
-    const parts = content.split(/(```[\s\S]*?```|`[^`\n]+`)/g);
+    const parts = humanized.split(/(```[\s\S]*?```|`[^`\n]+`)/g);
 
     for (let i = 0; i < parts.length; i += 2) {
       // Even indices are prose (not inside code blocks)
@@ -2495,7 +2794,10 @@ ${art.body}`;
           </div>
 
           <div class="ai-form-group">
-            <label class="ai-form-label">Full Body Markdown</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+              <label class="ai-form-label" style="margin:0;">Full Body Markdown <span id="ai-humanizer-badge" style="font-size:10px; padding:2px 8px; border-radius:999px; background:rgba(16,185,129,0.15); color:#6EE7B7; margin-left:6px; font-weight:600;">🧬 Human-Calibrated</span></label>
+              <button type="button" class="ai-btn ai-btn-secondary" id="ai-btn-humanize-body" style="padding:4px 10px; font-size:11px; border-color:rgba(16,185,129,0.4); color:#6EE7B7;" title="Poles ulang ritme kalimat (burstiness) & hapus pola detektor AI">🧬 Humanize & Bypass AI Detector</button>
+            </div>
             <textarea class="ai-textarea" id="ai-res-body" style="min-height:220px; font-family:var(--ai-font-mono); font-size:11px;"></textarea>
           </div>
         </div>
@@ -4166,8 +4468,37 @@ ${state.synthesizedArticle.body}`;
 
     if (bodyEl) {
       bodyEl.value = art.body || '';
+      const updateBurstinessBadge = (txt) => {
+        const badge = document.getElementById('ai-humanizer-badge');
+        if (!badge) return;
+        const stats = calculateHumanBurstinessScore(txt);
+        badge.textContent = `🧬 Human Score: ${stats.score}% (Burstiness σ=${stats.burstiness}) — ${stats.label}`;
+      };
+      updateBurstinessBadge(art.body || '');
       bodyEl.oninput = (e) => {
         art.body = e.target.value;
+        updateBurstinessBadge(art.body);
+      };
+    }
+
+    const humanizeBtn = document.getElementById('ai-btn-humanize-body');
+    if (humanizeBtn) {
+      humanizeBtn.onclick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (humanizeBtn.disabled) return;
+        const origLabel = humanizeBtn.innerHTML;
+        humanizeBtn.disabled = true;
+        humanizeBtn.innerHTML = '⏳ Merombak Ritme & Burstiness...';
+        try {
+          await runHumanizePass();
+          showStudioToast('✓ Artikel berhasil di-humanize (Burstiness & Perplexity ditingkatkan)!', true);
+        } catch (err) {
+          showStudioToast('✕ Gagal menjalankan Humanize: ' + err.message, false);
+        } finally {
+          humanizeBtn.disabled = false;
+          humanizeBtn.innerHTML = origLabel;
+        }
       };
     }
 
@@ -4307,6 +4638,10 @@ ${state.synthesizedArticle.body}`;
     setNativeValue: setNativeValue,
     injectIntoDecapForm: injectIntoDecapForm,
     sanitizeMdxContent: sanitizeMdxContent,
+    humanizeGeneratedContent: humanizeGeneratedContent,
+    calculateHumanBurstinessScore: calculateHumanBurstinessScore,
+    runHumanizePass: runHumanizePass,
+    getAntiAiDetectionInstructions: getAntiAiDetectionInstructions,
     getDecapReduxStore: getDecapReduxStore,
     setCoverImageViaRedux: setCoverImageViaRedux,
     setCoverImageViaFiber: setCoverImageViaFiber,
